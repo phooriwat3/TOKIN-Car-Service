@@ -1,0 +1,24 @@
+import { AppData, User } from './types';
+const future = (days:number) => { const d=new Date(); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10) };
+export const demoUsers: User[] = [
+  {id:'u-req',employeeId:'E1042',fullName:'Narin Srisuk',email:'narin@tokin.example',department:'Engineering',role:'requester'},
+  {id:'u-app',employeeId:'M0201',fullName:'Pimchanok Arun',email:'pimchanok@tokin.example',department:'Engineering',role:'approver'},
+  {id:'u-admin',employeeId:'GA001',fullName:'Kanya Boonmee',email:'kanya@tokin.example',department:'General Affairs',role:'admin'},
+  {id:'u-driver',employeeId:'D0031',fullName:'Somchai Dee',email:'somchai@tokin.example',department:'General Affairs',role:'driver'}
+];
+export const seedData: AppData = {
+  vehicles:[
+    {id:'v1',licensePlate:'1 กข 4521',brand:'Toyota',model:'Commuter',type:'van',capacity:12,color:'Silver',year:2023,active:true},
+    {id:'v2',licensePlate:'กท 9088',brand:'Toyota',model:'Camry',type:'car',capacity:4,color:'Black',year:2022,active:true},
+    {id:'v3',licensePlate:'3 ฒข 7710',brand:'Isuzu',model:'D-Max',type:'pickup',capacity:4,color:'White',year:2021,active:true}
+  ],
+  drivers:[
+    {id:'d1',userId:'u-driver',employeeId:'D0031',fullName:'Somchai Dee',phone:'081-555-0131',licenseNumber:'DL-TH-883104',licenseExpiry:future(240),active:true},
+    {id:'d2',employeeId:'D0044',fullName:'Anan Kittikul',phone:'086-555-0178',licenseNumber:'DL-TH-773902',licenseExpiry:future(20),active:true}
+  ],
+  bookings:[
+    {id:'b1',bookingNo:'CSR-2026-000101',requesterId:'u-req',requesterName:'Narin Srisuk',department:'Engineering',status:'pending_approval',category:'business_trip',usingDate:future(3),startTime:'08:30',endTime:'16:00',pickupLocation:'TOKIN Main Office',destination:'Amata City Industrial Estate',purpose:'Supplier quality review and production line inspection',numPassengers:3,passengerList:[],meetingPoint:'front_area',vehicleTypePref:'van',driverRequired:true,urgent:false,afterHours:false,overtimeTransport:false,createdAt:new Date().toISOString()},
+    {id:'b2',bookingNo:'CSR-2026-000100',requesterId:'u-req',requesterName:'Narin Srisuk',department:'Engineering',status:'approved',category:'visitor_pickup',usingDate:future(2),startTime:'10:00',endTime:'13:00',pickupLocation:'Suvarnabhumi Airport',destination:'TOKIN Main Office',purpose:'Pick up regional audit team from the airport',numPassengers:2,passengerList:[],meetingPoint:'front_area',vehicleTypePref:'car',driverRequired:true,urgent:false,afterHours:false,overtimeTransport:false,createdAt:new Date(Date.now()-86400000).toISOString(),approval:{action:'approved',comments:'Approved for audit visit.',actedAt:new Date().toISOString(),approverName:'Pimchanok Arun'}},
+    {id:'b3',bookingNo:'CSR-2026-000099',requesterId:'u-req',requesterName:'Narin Srisuk',department:'Engineering',status:'assigned',category:'errand',usingDate:future(1),startTime:'09:00',endTime:'11:30',pickupLocation:'TOKIN Main Office',destination:'Bangkok Customs Office',purpose:'Submit original import clearance documentation',numPassengers:1,passengerList:[],meetingPoint:'loading_area',vehicleTypePref:'car',driverRequired:true,urgent:true,urgentReason:'Customs filing deadline',afterHours:false,overtimeTransport:false,createdAt:new Date(Date.now()-172800000).toISOString(),approval:{action:'approved',comments:'Time-sensitive filing.',actedAt:new Date().toISOString(),approverName:'Pimchanok Arun'},assignment:{vehicleId:'v2',driverId:'d1',assignedAt:new Date().toISOString(),accepted:false}}
+  ]
+};

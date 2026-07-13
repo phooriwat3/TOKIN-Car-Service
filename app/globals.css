@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+    box-sizing: border-box
+}
+
+body {
+    color: #18212f;
+    background: #f4f6f8
+}
+
+button,
+a,
+select {
+    touch-action: manipulation
+}
+
+table {
+    border-collapse: collapse
+}
