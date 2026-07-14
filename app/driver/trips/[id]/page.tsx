@@ -1,11 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { useApp } from '@/components/app-provider';
 import { BookingDetail } from '@/components/booking-detail';
 import { Button, Card, Field, Input, Textarea } from '@/components/ui';
-export default function Trip({ params }: { params: { id: string } }) {
+export default function Trip({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
     const { data, updateBooking } = useApp();
-    const b = data.bookings.find(x => x.id === params.id);
+    const b = data.bookings.find(x => x.id === id);
     const [out, setOut] = useState('');
     const [start, setStart] = useState('');
     const [end, setEnd] = useState('');
@@ -14,11 +15,11 @@ export default function Trip({ params }: { params: { id: string } }) {
         [parking, setParking] = useState('0'),
         [remarks, setRemarks] = useState('');
     if (!b) return null;
-    const accept = () => updateBooking(b.id, { assignment: { ...b.assignment!, accepted: true } });
-    const begin = () => updateBooking(b.id, { status: 'in_progress', tripLog: { actualTimeOut: out, startMileage: +start, fuelCost: 0, tollFee: 0, parkingFee: 0 } });
-    const complete = () => {
+    const accept = async () => updateBooking(b.id, { assignment: { ...b.assignment!, accepted: true } });
+    const begin = async () => updateBooking(b.id, { status: 'in_progress', tripLog: { actualTimeOut: out, startMileage: +start, fuelCost: 0, tollFee: 0, parkingFee: 0 } });
+    const complete = async () => {
         if (+end <= (b.tripLog?.startMileage || 0)) return;
-        updateBooking(b.id, {
+        await updateBooking(b.id, {
             status: 'completed',
             tripLog: { ...b.tripLog!, actualTimeIn: new Date().toISOString(), endMileage: +end, fuelCost: +fuel, tollFee: +toll, parkingFee: +parking, remarks }
         })

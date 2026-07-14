@@ -1,4 +1,6 @@
 import { BookingDetail } from '@/components/booking-detail';
-export default function Page({ params }: { params: { id: string } }) {
-    return <BookingDetail id={params.id} />
+
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    return <BookingDetail id={id} />
 }

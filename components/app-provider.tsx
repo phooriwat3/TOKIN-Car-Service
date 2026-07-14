@@ -1,8 +1,228 @@
 'use client';
+
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { seedData, demoUsers } from '@/lib/mock-data';
-import { AppData, Booking, Driver, Role, Vehicle } from '@/lib/types';
-type Ctx = { data: AppData; role: Role; user: typeof demoUsers[number]; setRole: (r: Role) => void; updateBooking: (id: string, patch: Partial<Booking>) => void; addBooking: (b: Booking) => void; saveVehicle: (v: Vehicle) => void; saveDriver: (d: Driver) => void; reset: () => void };
-const AppContext = createContext<Ctx | null>(null); const KEY = 'csrs-mvp-data';
-export function AppProvider({ children }: { children: React.ReactNode }) { const [data, setData] = useState<AppData>(seedData); const [role, setRoleState] = useState<Role>('requester'); const [ready, setReady] = useState(false); useEffect(() => { try { const v = localStorage.getItem(KEY); if (v) setData(JSON.parse(v)); const r = localStorage.getItem('csrs-role') as Role; if (r) setRoleState(r) } finally { setReady(true) } }, []); useEffect(() => { if (ready) localStorage.setItem(KEY, JSON.stringify(data)) }, [data, ready]); const setRole = (r: Role) => { setRoleState(r); localStorage.setItem('csrs-role', r) }; const updateBooking = (id: string, patch: Partial<Booking>) => setData(d => ({ ...d, bookings: d.bookings.map(b => b.id === id ? { ...b, ...patch } : b) })); const addBooking = (b: Booking) => setData(d => ({ ...d, bookings: [b, ...d.bookings] })); const saveVehicle = (v: Vehicle) => setData(d => ({ ...d, vehicles: d.vehicles.some(x => x.id === v.id) ? d.vehicles.map(x => x.id === v.id ? v : x) : [...d.vehicles, v] })); const saveDriver = (v: Driver) => setData(d => ({ ...d, drivers: d.drivers.some(x => x.id === v.id) ? d.drivers.map(x => x.id === v.id ? v : x) : [...d.drivers, v] })); const reset = () => { setData(seedData); localStorage.removeItem(KEY) }; const user = demoUsers.find(u => u.role === role)!; const value = useMemo(() => ({ data, role, user, setRole, updateBooking, addBooking, saveVehicle, saveDriver, reset }), [data, role, user]); return <AppContext.Provider value={value}>{children}</AppContext.Provider> }
-export const useApp = () => { const c = useContext(AppContext); if (!c) throw new Error('useApp outside provider'); return c };
+import type { AppData, Booking, Driver, Role, User, Vehicle } from '@/lib/types';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
+import {
+  insertBooking,
+  loadAppData,
+  loadProfile,
+  persistBookingUpdate,
+  persistDriver,
+  persistVehicle,
+} from '@/lib/supabase/repository';
+
+type Ctx = {
+  data: AppData;
+  role: Role;
+  user: User;
+  configured: boolean;
+  authenticated: boolean;
+  loading: boolean;
+  error: string | null;
+  setRole: (role: Role) => void;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  updateBooking: (id: string, patch: Partial<Booking>) => Promise<void>;
+  addBooking: (booking: Booking) => Promise<Booking>;
+  saveVehicle: (vehicle: Vehicle) => Promise<void>;
+  saveDriver: (driver: Driver) => Promise<void>;
+  reset: () => void;
+};
+
+const AppContext = createContext<Ctx | null>(null);
+const DATA_KEY = 'csrs-mvp-data';
+const ROLE_KEY = 'csrs-role';
+
+export function AppProvider({ children }: { children: React.ReactNode }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [data, setData] = useState<AppData>(seedData);
+  const [role, setRoleState] = useState<Role>('requester');
+  const [user, setUser] = useState<User>(demoUsers[0]);
+  const [authenticated, setAuthenticated] = useState(!isSupabaseConfigured);
+  const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [error, setError] = useState<string | null>(null);
+  const [demoReady, setDemoReady] = useState(false);
+
+  const refresh = async () => {
+    if (!supabase) return;
+    setData(await loadAppData(supabase));
+  };
+
+  useEffect(() => {
+    if (!supabase) {
+      try {
+        const saved = localStorage.getItem(DATA_KEY);
+        if (saved) setData(JSON.parse(saved));
+        const savedRole = localStorage.getItem(ROLE_KEY) as Role | null;
+        if (savedRole) {
+          setRoleState(savedRole);
+          setUser(demoUsers.find((item) => item.role === savedRole) ?? demoUsers[0]);
+        }
+      } finally {
+        setDemoReady(true);
+      }
+      return;
+    }
+
+    let active = true;
+    const hydrate = async () => {
+      try {
+        setLoading(true);
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError || !authData.user) {
+          if (active) setAuthenticated(false);
+          return;
+        }
+        const [profile, appData] = await Promise.all([
+          loadProfile(supabase),
+          loadAppData(supabase),
+        ]);
+        if (active) {
+          setUser(profile);
+          setRoleState(profile.role);
+          setData(appData);
+          setAuthenticated(true);
+          setError(null);
+        }
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : 'Unable to load application data.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void hydrate();
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        window.setTimeout(() => void hydrate(), 0);
+      }
+      if (event === 'SIGNED_OUT') {
+        setAuthenticated(false);
+        setLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!supabase && demoReady) localStorage.setItem(DATA_KEY, JSON.stringify(data));
+  }, [data, demoReady, supabase]);
+
+  const setRole = (nextRole: Role) => {
+    if (supabase) return;
+    setRoleState(nextRole);
+    setUser(demoUsers.find((item) => item.role === nextRole) ?? demoUsers[0]);
+    localStorage.setItem(ROLE_KEY, nextRole);
+  };
+
+  const signIn = async (email: string, password: string) => {
+    if (!supabase) return;
+    setError(null);
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      setError(signInError.message);
+      throw signInError;
+    }
+  };
+
+  const signOut = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+  };
+
+  const updateBooking = async (id: string, patch: Partial<Booking>) => {
+    if (!supabase) {
+      setData((current) => ({
+        ...current,
+        bookings: current.bookings.map((booking) =>
+          booking.id === id ? { ...booking, ...patch } : booking,
+        ),
+      }));
+      return;
+    }
+    try {
+      await persistBookingUpdate(supabase, id, patch);
+      await refresh();
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to update booking.');
+      throw cause;
+    }
+  };
+
+  const addBooking = async (booking: Booking) => {
+    if (!supabase) {
+      setData((current) => ({ ...current, bookings: [booking, ...current.bookings] }));
+      return booking;
+    }
+    const created = await insertBooking(supabase, booking);
+    await refresh();
+    return created;
+  };
+
+  const saveVehicle = async (vehicle: Vehicle) => {
+    if (!supabase) {
+      setData((current) => ({
+        ...current,
+        vehicles: current.vehicles.some((item) => item.id === vehicle.id)
+          ? current.vehicles.map((item) => item.id === vehicle.id ? vehicle : item)
+          : [...current.vehicles, vehicle],
+      }));
+      return;
+    }
+    await persistVehicle(supabase, vehicle);
+    await refresh();
+  };
+
+  const saveDriver = async (driver: Driver) => {
+    if (!supabase) {
+      setData((current) => ({
+        ...current,
+        drivers: current.drivers.some((item) => item.id === driver.id)
+          ? current.drivers.map((item) => item.id === driver.id ? driver : item)
+          : [...current.drivers, driver],
+      }));
+      return;
+    }
+    await persistDriver(supabase, driver);
+    await refresh();
+  };
+
+  const reset = () => {
+    if (supabase) return;
+    setData(seedData);
+    localStorage.removeItem(DATA_KEY);
+  };
+
+  const value = useMemo<Ctx>(() => ({
+    data,
+    role,
+    user,
+    configured: isSupabaseConfigured,
+    authenticated,
+    loading,
+    error,
+    setRole,
+    signIn,
+    signOut,
+    updateBooking,
+    addBooking,
+    saveVehicle,
+    saveDriver,
+    reset,
+  }), [data, role, user, authenticated, loading, error]);
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) throw new Error('useApp must be used inside AppProvider');
+  return context;
+};

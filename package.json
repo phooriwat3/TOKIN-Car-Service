@@ -2,12 +2,44 @@
   "name": "car-service-requisition-system",
   "version": "1.0.0",
   "private": true,
-  "scripts": { "dev": "next dev", "build": "next build", "start": "next start", "lint": "next lint" },
-  "dependencies": {
-    "@hookform/resolvers": "^3.9.1", "@tanstack/react-table": "^8.20.5", "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1", "date-fns": "^4.1.0", "exceljs": "^4.4.0", "jspdf": "^2.5.2", "lucide-react": "^0.468.0",
-    "next": "14.2.21", "react": "^18.3.1", "react-dom": "^18.3.1", "react-hook-form": "^7.54.2",
-    "recharts": "^2.15.0", "tailwind-merge": "^2.6.0", "zod": "^3.24.1"
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit"
   },
-  "devDependencies": { "@types/node": "^20.17.10", "@types/react": "^18.3.12", "@types/react-dom": "^18.3.1", "autoprefixer": "^10.4.20", "postcss": "^8.4.49", "tailwindcss": "^3.4.16", "typescript": "^5.7.2" }
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
+    "@supabase/ssr": "^0.12.1",
+    "@supabase/supabase-js": "^2.110.3",
+    "@tanstack/react-table": "^8.20.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "exceljs": "^4.4.0",
+    "jspdf": "4.2.1",
+    "lucide-react": "^0.468.0",
+    "next": "16.2.10",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-hook-form": "^7.54.2",
+    "recharts": "^2.15.0",
+    "tailwind-merge": "^2.6.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "8.5.10",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "11.1.1"
+    },
+    "postcss": "8.5.10"
+  }
 }
