@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.line-notify-assignment]
 verify_jwt = false
+
+[functions.line-driver-api]
+verify_jwt = false

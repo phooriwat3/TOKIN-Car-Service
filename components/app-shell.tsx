@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const path = usePathname();
     const router = useRouter();
     const [open, setOpen] = useState(false);
-    if (path === '/login') return <>{children}</>;
+    if (path === '/login' || path.startsWith('/liff/')) return <>{children}</>;
     if (configured && loading) return <div className="grid min-h-screen place-items-center bg-canvas text-sm text-gray-500">Loading workspace...</div>;
     if (configured && error) return <div className="grid min-h-screen place-items-center bg-canvas p-6"><div className="max-w-lg text-center"><h1 className="text-xl font-bold">Unable to load workspace</h1><p className="mt-2 text-sm text-red-600">{error}</p><Button className="mt-4" onClick={async () => { await signOut(); router.push('/login'); router.refresh() }}>Return to sign in</Button></div></div>;
     if (configured && !authenticated) return null;
