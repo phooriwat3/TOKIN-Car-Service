@@ -61,13 +61,36 @@ Deno.serve(async (request) => {
 
   const { data: booking, error: bookingError } = await admin.from('bookings')
     .select('id,booking_no,status,using_date,start_time,end_time,pickup_location,destination')
-    .eq('id', bookingId).single();
-  if (bookingError || !booking || booking.status !== 'assigned') return new Response('Assigned booking not found', { status: 404 });
+    .eq('id', bookingId).maybeSingle();
+  if (bookingError) {
+    console.error('Unable to load booking', { bookingId, error: bookingError });
+    return Response.json({ sent: false, reason: 'booking_query_failed' }, { status: 500, headers: corsHeaders });
+  }
+  if (!booking) {
+    console.warn('Booking does not exist', { bookingId });
+    return Response.json({ sent: false, reason: 'booking_missing', bookingId }, { status: 404, headers: corsHeaders });
+  }
+  if (booking.status !== 'assigned') {
+    console.warn('Booking is not assigned', { bookingId, status: booking.status });
+    return Response.json({
+      sent: false,
+      reason: 'booking_not_assigned',
+      bookingId,
+      status: booking.status,
+    }, { status: 409, headers: corsHeaders });
+  }
 
   const { data: assignment, error: assignmentError } = await admin.from('vehicle_assignments')
     .select('driver_id,assigned_at,vehicle:vehicles(license_plate,brand,model)')
-    .eq('booking_id', bookingId).single();
-  if (assignmentError || !assignment) return new Response('Assignment not found', { status: 404 });
+    .eq('booking_id', bookingId).maybeSingle();
+  if (assignmentError) {
+    console.error('Unable to load assignment', { bookingId, error: assignmentError });
+    return Response.json({ sent: false, reason: 'assignment_query_failed' }, { status: 500, headers: corsHeaders });
+  }
+  if (!assignment) {
+    console.warn('Assignment does not exist', { bookingId });
+    return Response.json({ sent: false, reason: 'assignment_missing', bookingId }, { status: 404, headers: corsHeaders });
+  }
 
   const { data: driver, error: driverError } = await admin.from('drivers')
     .select('user_id,full_name').eq('id', assignment.driver_id).single();
