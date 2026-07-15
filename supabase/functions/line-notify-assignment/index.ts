@@ -40,6 +40,21 @@ Deno.serve(async (request) => {
   const { data: authData, error: authError } = await admin.auth.getUser(jwt);
   if (authError || !authData.user) return new Response('Unauthorized', { status: 401 });
 
+  const authorization = request.headers.get('Authorization') ?? '';
+  const callerClient = createClient(
+    required('SUPABASE_URL'),
+    required('SUPABASE_ANON_KEY'),
+    {
+      global: { headers: { Authorization: authorization } },
+      auth: { persistSession: false },
+    },
+  );
+  const { data: callerRole, error: callerRoleError } = await callerClient.rpc('app_role');
+  if (callerRoleError) {
+    console.error('Unable to verify caller role', callerRoleError);
+    return new Response('Unable to verify caller role', { status: 500 });
+  }
+  if (callerRole !== 'admin') return new Response('Admin role required', { status: 403 });
 
   const { bookingId } = await request.json() as { bookingId?: string };
   if (!bookingId) return new Response('bookingId is required', { status: 400 });
@@ -50,12 +65,9 @@ Deno.serve(async (request) => {
   if (bookingError || !booking || booking.status !== 'assigned') return new Response('Assigned booking not found', { status: 404 });
 
   const { data: assignment, error: assignmentError } = await admin.from('vehicle_assignments')
-    .select('driver_id,assigned_by,assigned_at,vehicle:vehicles(license_plate,brand,model)')
+    .select('driver_id,assigned_at,vehicle:vehicles(license_plate,brand,model)')
     .eq('booking_id', bookingId).single();
   if (assignmentError || !assignment) return new Response('Assignment not found', { status: 404 });
-  if (assignment.assigned_by !== authData.user.id) {
-    return new Response('Only the assigning admin can send this notification', { status: 403 });
-  }
 
   const { data: driver } = await admin.from('drivers').select('user_id,full_name').eq('id', assignment.driver_id).single();
   if (!driver?.user_id) return Response.json({ sent: false, reason: 'driver_has_no_login' }, { headers: corsHeaders });
