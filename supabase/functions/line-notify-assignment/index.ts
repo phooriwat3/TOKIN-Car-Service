@@ -40,8 +40,6 @@ Deno.serve(async (request) => {
   const { data: authData, error: authError } = await admin.auth.getUser(jwt);
   if (authError || !authData.user) return new Response('Unauthorized', { status: 401 });
 
-  const { data: caller } = await admin.from('profiles').select('role,is_active').eq('id', authData.user.id).single();
-  if (!caller?.is_active || caller.role !== 'admin') return new Response('Forbidden', { status: 403 });
 
   const { bookingId } = await request.json() as { bookingId?: string };
   if (!bookingId) return new Response('bookingId is required', { status: 400 });
@@ -52,9 +50,12 @@ Deno.serve(async (request) => {
   if (bookingError || !booking || booking.status !== 'assigned') return new Response('Assigned booking not found', { status: 404 });
 
   const { data: assignment, error: assignmentError } = await admin.from('vehicle_assignments')
-    .select('driver_id,assigned_at,vehicle:vehicles(license_plate,brand,model)')
+    .select('driver_id,assigned_by,assigned_at,vehicle:vehicles(license_plate,brand,model)')
     .eq('booking_id', bookingId).single();
   if (assignmentError || !assignment) return new Response('Assignment not found', { status: 404 });
+  if (assignment.assigned_by !== authData.user.id) {
+    return new Response('Only the assigning admin can send this notification', { status: 403 });
+  }
 
   const { data: driver } = await admin.from('drivers').select('user_id,full_name').eq('id', assignment.driver_id).single();
   if (!driver?.user_id) return Response.json({ sent: false, reason: 'driver_has_no_login' }, { headers: corsHeaders });
