@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart3, CalendarDays, Car, CarFront, ClipboardCheck, ClipboardList, LayoutDashboard, LogOut, Menu, Plus, Users, X } from 'lucide-react';
+import { BarChart3, CalendarDays, Car, CarFront, ClipboardCheck, ClipboardList, LayoutDashboard, LogOut, Menu, MessageCircle, Plus, Users, X } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from './app-provider';
 import { Button } from './ui';
@@ -27,7 +27,8 @@ const links: Record<Role, { href: string; label: string; icon: any }[]> = {
     ],
     driver: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/driver/trips', label: 'Assigned trips', icon: CarFront }
+        { href: '/driver/trips', label: 'Assigned trips', icon: CarFront },
+        { href: '/driver/line', label: 'Connect LINE', icon: MessageCircle }
     ]
 };
 export function AppShell({ children }: { children: React.ReactNode }) {

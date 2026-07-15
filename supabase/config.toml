@@ -1,0 +1,5 @@
+[functions.line-webhook]
+verify_jwt = false
+
+[functions.line-notify-assignment]
+verify_jwt = true

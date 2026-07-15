@@ -215,6 +215,15 @@ export async function persistBookingUpdate(
       p_driver_id: patch.assignment.driverId,
       p_notes: patch.assignment.notes ?? null,
     });
+    if (!result.error) {
+      const notification = await supabase.functions.invoke('line-notify-assignment', {
+        body: { bookingId: id },
+      });
+      if (notification.error) {
+        // Assignment is already committed, so notification failure is non-fatal.
+        console.warn('LINE assignment notification was not sent:', notification.error.message);
+      }
+    }
   } else if (patch.status === 'in_progress' && patch.tripLog) {
     result = await supabase.rpc('start_trip', {
       p_booking_id: id,
@@ -242,6 +251,33 @@ export async function persistBookingUpdate(
 
 const isUuid = (id: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+export type LineConnection = {
+  displayName: string | null;
+  linkedAt: string;
+};
+
+export async function loadLineConnection(supabase: SupabaseClient): Promise<LineConnection | null> {
+  const { data, error } = await supabase
+    .from('line_accounts')
+    .select('display_name,linked_at')
+    .eq('is_active', true)
+    .maybeSingle();
+  throwIfError(error);
+  return data ? { displayName: data.display_name, linkedAt: data.linked_at } : null;
+}
+
+export async function createLineLinkCode(supabase: SupabaseClient): Promise<string> {
+  const { data, error } = await supabase.rpc('create_line_link_code');
+  throwIfError(error);
+  if (typeof data !== 'string') throw new Error('LINE link code was not created.');
+  return data;
+}
+
+export async function disconnectLineAccount(supabase: SupabaseClient): Promise<void> {
+  const { error } = await supabase.rpc('disconnect_line_account');
+  throwIfError(error);
+}
+
 
 export async function persistVehicle(supabase: SupabaseClient, vehicle: Vehicle) {
   const payload = {
