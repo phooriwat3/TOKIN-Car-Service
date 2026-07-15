@@ -1,5 +1,20 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { jsonHeaders, lineRequest } from '../_shared/line.ts';
+const jsonHeaders = { 'Content-Type': 'application/json' };
+
+async function lineRequest(path: string, token: string, body: unknown) {
+  const response = await fetch(`https://api.line.me${path}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(`LINE API ${response.status}: ${await response.text()}`);
+  }
+  return response;
+}
 
 const required = (name: string) => {
   const value = Deno.env.get(name);
