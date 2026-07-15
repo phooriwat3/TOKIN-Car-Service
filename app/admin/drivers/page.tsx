@@ -1,1 +1,5 @@
-import { Drivers } from '@/components/resource-management';export default function Page(){return <Drivers/>}
+import { DriverManagement } from '@/components/driver-management';
+
+export default function Page() {
+  return <DriverManagement />;
+}

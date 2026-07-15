@@ -4,7 +4,7 @@ export type Category = 'business_trip' | 'after_hours' | 'errand' | 'overtime_tr
 export type VehicleType = 'van' | 'car' | 'pickup' | 'other';
 export interface User { id:string; employeeId:string; fullName:string; email:string; department:string; role:Role }
 export interface Vehicle { id:string; licensePlate:string; brand:string; model:string; type:VehicleType; capacity:number; color:string; year:number; active:boolean; notes?:string }
-export interface Driver { id:string; userId?:string; employeeId:string; fullName:string; phone:string; licenseNumber:string; licenseExpiry:string; active:boolean; notes?:string }
+export interface Driver { id:string; userId?:string; employeeId:string; fullName:string; phone:string; licenseNumber:string; licenseExpiry:string; active:boolean; notes?:string; lineConnection?:{ displayName:string|null; linkedAt:string } }
 export interface Assignment { vehicleId:string; driverId:string; assignedAt:string; notes?:string; accepted:boolean }
 export interface Approval { action:'approved'|'rejected'; comments:string; actedAt:string; approverName:string }
 export interface TripLog { actualTimeOut?:string; actualTimeIn?:string; startMileage?:number; endMileage?:number; fuelCost:number; tollFee:number; parkingFee:number; remarks?:string }

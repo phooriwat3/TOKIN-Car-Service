@@ -96,25 +96,55 @@ Deno.serve(async (request) => {
     }
 
     const codeHash = await sha256Hex(match[1].toUpperCase());
-    const { data: linkCode } = await admin
-      .from('line_link_codes')
-      .select('id,profile_id,expires_at,used_at')
+    const { data: driverLinkCode, error: driverCodeError } = await admin
+      .from('driver_line_link_codes')
+      .select('id,driver_id,expires_at,used_at')
       .eq('code_hash', codeHash)
       .is('used_at', null)
       .gt('expires_at', new Date().toISOString())
       .maybeSingle();
 
-    if (!linkCode) {
+    if (driverCodeError) throw driverCodeError;
+
+    let legacyLinkCode: { id: string; profile_id: string } | null = null;
+    if (!driverLinkCode) {
+      const { data, error } = await admin
+        .from('line_link_codes')
+        .select('id,profile_id')
+        .eq('code_hash', codeHash)
+        .is('used_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+      if (error) throw error;
+      legacyLinkCode = data;
+    }
+
+    if (!driverLinkCode && !legacyLinkCode) {
       await reply(accessToken, event.replyToken, 'รหัสไม่ถูกต้องหรือหมดอายุ กรุณาสร้างรหัสใหม่จากระบบรถบริษัท');
       continue;
     }
 
-    const { data: existing } = await admin
-      .from('line_accounts')
-      .select('profile_id')
-      .eq('line_user_id', lineUserId)
-      .maybeSingle();
-    if (existing && existing.profile_id !== linkCode.profile_id) {
+    const targetDriverQuery = driverLinkCode
+      ? admin.from('drivers').select('id,user_id').eq('id', driverLinkCode.driver_id)
+      : admin.from('drivers').select('id,user_id').eq('user_id', legacyLinkCode!.profile_id);
+    const { data: targetDriver, error: targetDriverError } = await targetDriverQuery.maybeSingle();
+    if (targetDriverError) throw targetDriverError;
+
+    const targetDriverId = driverLinkCode?.driver_id ?? targetDriver?.id ?? null;
+    const targetProfileId = legacyLinkCode?.profile_id ?? targetDriver?.user_id ?? null;
+    const [existingDriverResult, existingLegacyResult] = await Promise.all([
+      admin.from('driver_line_accounts')
+        .select('driver_id').eq('line_user_id', lineUserId).maybeSingle(),
+      admin.from('line_accounts')
+        .select('profile_id').eq('line_user_id', lineUserId).maybeSingle(),
+    ]);
+    if (existingDriverResult.error) throw existingDriverResult.error;
+    if (existingLegacyResult.error) throw existingLegacyResult.error;
+
+    const linkedToAnotherEmployee =
+      (existingDriverResult.data && existingDriverResult.data.driver_id !== targetDriverId) ||
+      (existingLegacyResult.data && existingLegacyResult.data.profile_id !== targetProfileId);
+    if (linkedToAnotherEmployee) {
       await reply(accessToken, event.replyToken, 'LINE บัญชีนี้เชื่อมกับพนักงานคนอื่นอยู่แล้ว กรุณาติดต่อผู้ดูแลระบบ');
       continue;
     }
@@ -126,18 +156,39 @@ Deno.serve(async (request) => {
       ? await profileResponse.json() as { displayName?: string; pictureUrl?: string }
       : {};
 
-    const { error: accountError } = await admin.from('line_accounts').upsert({
-      profile_id: linkCode.profile_id,
+    const accountValues = {
       line_user_id: lineUserId,
       display_name: lineProfile.displayName ?? null,
       picture_url: lineProfile.pictureUrl ?? null,
       is_active: true,
       linked_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'profile_id' });
-    if (accountError) throw accountError;
+    };
 
-    await admin.from('line_link_codes').update({ used_at: new Date().toISOString() }).eq('id', linkCode.id);
+    if (targetDriverId) {
+      const { error } = await admin.from('driver_line_accounts').upsert({
+        driver_id: targetDriverId,
+        ...accountValues,
+      }, { onConflict: 'driver_id' });
+      if (error) throw error;
+    }
+
+    if (targetProfileId) {
+      const { error } = await admin.from('line_accounts').upsert({
+        profile_id: targetProfileId,
+        ...accountValues,
+      }, { onConflict: 'profile_id' });
+      if (error) throw error;
+    }
+
+    const usedAt = new Date().toISOString();
+    if (driverLinkCode) {
+      const { error } = await admin.from('driver_line_link_codes').update({ used_at: usedAt }).eq('id', driverLinkCode.id);
+      if (error) throw error;
+    } else if (legacyLinkCode) {
+      const { error } = await admin.from('line_link_codes').update({ used_at: usedAt }).eq('id', legacyLinkCode.id);
+      if (error) throw error;
+    }
     await reply(accessToken, event.replyToken, 'เชื่อมบัญชีคนขับสำเร็จแล้ว ระบบจะแจ้งงานใหม่ผ่าน LINE นี้');
   }
 

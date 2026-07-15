@@ -98,10 +98,6 @@ Deno.serve(async (request) => {
     console.error('Unable to load assigned driver', driverError);
     return new Response('Unable to load assigned driver', { status: 500 });
   }
-  if (!driver?.user_id) {
-    console.warn('Assigned driver has no linked login', { driverId: assignment.driver_id });
-    return Response.json({ sent: false, reason: 'driver_has_no_login' }, { status: 422, headers: corsHeaders });
-  }
 
   const idempotencyKey = `${bookingId}:assigned:${assignment.assigned_at}`;
   const { data: existing, error: existingError } = await admin.from('line_notifications')
@@ -112,15 +108,28 @@ Deno.serve(async (request) => {
   }
   if (existing?.status === 'sent') return Response.json({ sent: true, duplicate: true }, { headers: corsHeaders });
 
-  const { data: lineAccount, error: lineAccountError } = await admin.from('line_accounts')
-    .select('line_user_id').eq('profile_id', driver.user_id).eq('is_active', true).maybeSingle();
-  if (lineAccountError) {
-    console.error('Unable to load LINE account', lineAccountError);
-    return new Response('Unable to load LINE account', { status: 500 });
+  const { data: driverLineAccount, error: driverLineError } = await admin.from('driver_line_accounts')
+    .select('line_user_id').eq('driver_id', assignment.driver_id).eq('is_active', true).maybeSingle();
+  if (driverLineError) {
+    console.error('Unable to load driver LINE account', driverLineError);
+    return new Response('Unable to load driver LINE account', { status: 500 });
   }
-  if (!lineAccount) {
+
+  let lineUserId = driverLineAccount?.line_user_id;
+  if (!lineUserId && driver.user_id) {
+    const { data: legacyLineAccount, error: legacyLineError } = await admin.from('line_accounts')
+      .select('line_user_id').eq('profile_id', driver.user_id).eq('is_active', true).maybeSingle();
+    if (legacyLineError) {
+      console.error('Unable to load legacy LINE account', legacyLineError);
+      return new Response('Unable to load LINE account', { status: 500 });
+    }
+    lineUserId = legacyLineAccount?.line_user_id;
+  }
+
+  if (!lineUserId) {
     const { error: skippedError } = await admin.from('line_notifications').upsert({
       booking_id: bookingId,
+      driver_id: assignment.driver_id,
       profile_id: driver.user_id,
       event_type: 'assignment',
       idempotency_key: idempotencyKey,
@@ -132,6 +141,7 @@ Deno.serve(async (request) => {
   }
 
   const { error: pendingError } = await admin.from('line_notifications').upsert({
+    driver_id: assignment.driver_id,
     booking_id: bookingId,
     profile_id: driver.user_id,
     event_type: 'assignment',
@@ -177,7 +187,7 @@ Deno.serve(async (request) => {
 
   try {
     const response = await lineRequest('/v2/bot/message/push', required('LINE_CHANNEL_ACCESS_TOKEN'), {
-      to: lineAccount.line_user_id,
+      to: lineUserId,
       messages: [message],
     });
     const { error: sentError } = await admin.from('line_notifications').update({

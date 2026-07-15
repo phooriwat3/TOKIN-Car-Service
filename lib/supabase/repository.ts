@@ -111,7 +111,7 @@ export async function loadAppData(supabase: SupabaseClient): Promise<AppData> {
       expenses(fuel_cost,toll_fee,parking_fee)
     `).order('created_at', { ascending: false }),
     supabase.from('vehicles').select('*').order('license_plate'),
-    supabase.from('drivers').select('*').order('full_name'),
+    supabase.from('drivers').select('*,driver_line_accounts(display_name,linked_at,is_active)').order('full_name'),
   ]);
   throwIfError(bookingsResult.error);
   throwIfError(vehiclesResult.error);
@@ -140,6 +140,10 @@ export async function loadAppData(supabase: SupabaseClient): Promise<AppData> {
       licenseNumber: row.license_number,
       licenseExpiry: row.license_expiry,
       active: row.is_active,
+      lineConnection: one(row.driver_line_accounts)?.is_active ? {
+        displayName: one(row.driver_line_accounts)?.display_name ?? null,
+        linkedAt: one(row.driver_line_accounts)?.linked_at,
+      } : undefined,
       notes: row.notes ?? undefined,
     })),
   };
@@ -277,6 +281,19 @@ export async function disconnectLineAccount(supabase: SupabaseClient): Promise<v
   const { error } = await supabase.rpc('disconnect_line_account');
   throwIfError(error);
 }
+export async function createDriverLineLinkCode(supabase: SupabaseClient, driverId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('create_driver_line_link_code', { p_driver_id: driverId });
+  throwIfError(error);
+  if (typeof data !== 'string') throw new Error('LINE link code was not created.');
+  return data;
+}
+
+export async function disconnectDriverLineAccount(supabase: SupabaseClient, driverId: string): Promise<void> {
+  const { error } = await supabase.rpc('disconnect_driver_line_account', { p_driver_id: driverId });
+  throwIfError(error);
+}
+
+
 
 
 export async function persistVehicle(supabase: SupabaseClient, vehicle: Vehicle) {
