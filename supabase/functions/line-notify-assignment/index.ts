@@ -69,17 +69,34 @@ Deno.serve(async (request) => {
     .eq('booking_id', bookingId).single();
   if (assignmentError || !assignment) return new Response('Assignment not found', { status: 404 });
 
-  const { data: driver } = await admin.from('drivers').select('user_id,full_name').eq('id', assignment.driver_id).single();
-  if (!driver?.user_id) return Response.json({ sent: false, reason: 'driver_has_no_login' }, { headers: corsHeaders });
+  const { data: driver, error: driverError } = await admin.from('drivers')
+    .select('user_id,full_name').eq('id', assignment.driver_id).single();
+  if (driverError) {
+    console.error('Unable to load assigned driver', driverError);
+    return new Response('Unable to load assigned driver', { status: 500 });
+  }
+  if (!driver?.user_id) {
+    console.warn('Assigned driver has no linked login', { driverId: assignment.driver_id });
+    return Response.json({ sent: false, reason: 'driver_has_no_login' }, { status: 422, headers: corsHeaders });
+  }
 
   const idempotencyKey = `${bookingId}:assigned:${assignment.assigned_at}`;
-  const { data: existing } = await admin.from('line_notifications').select('status').eq('idempotency_key', idempotencyKey).maybeSingle();
+  const { data: existing, error: existingError } = await admin.from('line_notifications')
+    .select('status').eq('idempotency_key', idempotencyKey).maybeSingle();
+  if (existingError) {
+    console.error('Unable to check notification history', existingError);
+    return new Response('Unable to check notification history', { status: 500 });
+  }
   if (existing?.status === 'sent') return Response.json({ sent: true, duplicate: true }, { headers: corsHeaders });
 
-  const { data: lineAccount } = await admin.from('line_accounts')
+  const { data: lineAccount, error: lineAccountError } = await admin.from('line_accounts')
     .select('line_user_id').eq('profile_id', driver.user_id).eq('is_active', true).maybeSingle();
+  if (lineAccountError) {
+    console.error('Unable to load LINE account', lineAccountError);
+    return new Response('Unable to load LINE account', { status: 500 });
+  }
   if (!lineAccount) {
-    await admin.from('line_notifications').upsert({
+    const { error: skippedError } = await admin.from('line_notifications').upsert({
       booking_id: bookingId,
       profile_id: driver.user_id,
       event_type: 'assignment',
@@ -87,7 +104,21 @@ Deno.serve(async (request) => {
       status: 'skipped',
       error_message: 'Driver has not linked LINE.',
     }, { onConflict: 'idempotency_key' });
+    if (skippedError) console.error('Unable to record skipped notification', skippedError);
     return Response.json({ sent: false, reason: 'line_not_linked' }, { headers: corsHeaders });
+  }
+
+  const { error: pendingError } = await admin.from('line_notifications').upsert({
+    booking_id: bookingId,
+    profile_id: driver.user_id,
+    event_type: 'assignment',
+    idempotency_key: idempotencyKey,
+    status: 'pending',
+    error_message: null,
+  }, { onConflict: 'idempotency_key' });
+  if (pendingError) {
+    console.error('Unable to record pending notification', pendingError);
+    return new Response('Unable to record pending notification', { status: 500 });
   }
 
   const vehicleValue = Array.isArray(assignment.vehicle) ? assignment.vehicle[0] : assignment.vehicle;
@@ -126,26 +157,27 @@ Deno.serve(async (request) => {
       to: lineAccount.line_user_id,
       messages: [message],
     });
-    await admin.from('line_notifications').upsert({
-      booking_id: bookingId,
-      profile_id: driver.user_id,
-      event_type: 'assignment',
-      idempotency_key: idempotencyKey,
+    const { error: sentError } = await admin.from('line_notifications').update({
       status: 'sent',
       line_message_id: response.headers.get('x-line-request-id'),
       error_message: null,
       sent_at: new Date().toISOString(),
-    }, { onConflict: 'idempotency_key' });
+    }).eq('idempotency_key', idempotencyKey);
+    if (sentError) {
+      console.error('LINE accepted the message but history update failed', sentError);
+      return new Response(JSON.stringify({ sent: true, historyRecorded: false }), {
+        headers: { ...jsonHeaders, ...corsHeaders },
+      });
+    }
     return new Response(JSON.stringify({ sent: true }), { headers: { ...jsonHeaders, ...corsHeaders } });
   } catch (error) {
-    await admin.from('line_notifications').upsert({
-      booking_id: bookingId,
-      profile_id: driver.user_id,
-      event_type: 'assignment',
-      idempotency_key: idempotencyKey,
+    const messageText = error instanceof Error ? error.message : 'Unknown LINE error';
+    console.error('Unable to send LINE notification', messageText);
+    const { error: failedError } = await admin.from('line_notifications').update({
       status: 'failed',
-      error_message: error instanceof Error ? error.message : 'Unknown LINE error',
-    }, { onConflict: 'idempotency_key' });
+      error_message: messageText,
+    }).eq('idempotency_key', idempotencyKey);
+    if (failedError) console.error('Unable to record failed notification', failedError);
     return new Response('Unable to send LINE notification', { status: 502, headers: corsHeaders });
   }
 });
