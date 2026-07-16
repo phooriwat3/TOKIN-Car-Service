@@ -45,8 +45,8 @@ export default function Login() {
         <div className="mb-7 flex items-center justify-center gap-3 text-white">
           <div className="grid h-12 w-12 place-items-center rounded-lg bg-white text-brand"><CarFront /></div>
           <div>
-            <h1 className="text-2xl font-bold">Car Service Requisition System</h1>
-            <p className="text-sm text-blue-200">TOKIN operations</p>
+            <h1 className="text-2xl font-bold">TOKIN Transport</h1>
+            <p className="text-sm text-blue-200">Vehicle &amp; OT transportation portal</p>
           </div>
         </div>
 

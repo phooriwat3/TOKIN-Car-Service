@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AppData, Booking, Driver, User, Vehicle } from '@/lib/types';
+import type { AppData, AssignmentDraft, Booking, Driver, User, Vehicle } from '@/lib/types';
 
 type ProfileRow = {
   id: string;
@@ -43,6 +43,7 @@ function mapBooking(row: any): Booking {
     String(b.acted_at).localeCompare(String(a.acted_at)),
   )[0];
   const assignment = one(row.vehicle_assignments);
+  const assignmentDraft = one(row.assignment_drafts);
   const trip = one(row.trip_logs);
   const expense = one(row.expenses);
   return {
@@ -52,6 +53,10 @@ function mapBooking(row: any): Booking {
     requesterName: one(row.requester)?.full_name ?? '',
     department: one(row.department)?.name ?? '',
     status: row.status,
+    requestType: row.request_type ?? 'outside_company',
+    approverId: row.approver_id ?? '',
+    approverName: row.approver_name ?? '',
+    approverEmail: row.approver_email ?? '',
     category: row.category,
     usingDate: row.using_date,
     startTime: String(row.start_time).slice(0, 5),
@@ -63,7 +68,18 @@ function mapBooking(row: any): Booking {
     passengerList: (row.booking_passengers ?? [])
       .sort((a: any, b: any) => a.seq - b.seq)
       .map((x: any) => x.name),
+    overtimeEmployees: (row.overtime_employees ?? []).sort((a: any, b: any) => a.seq - b.seq).map((x: any) => ({
+      employeeId: x.employee_id,
+      employeeName: x.employee_name,
+      workDescription: x.work_description,
+      workStart: String(x.work_start).slice(0, 5),
+      workEnd: String(x.work_end).slice(0, 5),
+      totalWeeklyHours: Number(x.total_weekly_hours),
+      transportRequired: x.transport_required,
+      busStop: x.bus_stop ?? '',
+    })),
     meetingPoint: row.meeting_point,
+    withStaff: row.with_staff ?? false,
     vehicleTypePref: row.vehicle_type_pref,
     driverRequired: row.driver_required,
     urgent: row.urgent,
@@ -85,6 +101,12 @@ function mapBooking(row: any): Booking {
       notes: assignment.notes ?? undefined,
       accepted: Boolean(assignment.driver_accepted),
     } : undefined,
+    assignmentDraft: assignmentDraft ? {
+      vehicleId: assignmentDraft.vehicle_id,
+      driverId: assignmentDraft.driver_id,
+      notes: assignmentDraft.notes ?? undefined,
+      plannedAt: assignmentDraft.updated_at ?? assignmentDraft.planned_at,
+    } : undefined,
     tripLog: trip ? {
       actualTimeOut: trip.actual_time_out ?? undefined,
       actualTimeIn: trip.actual_time_in ?? undefined,
@@ -105,7 +127,9 @@ export async function loadAppData(supabase: SupabaseClient): Promise<AppData> {
       requester:profiles!bookings_requester_id_fkey(full_name),
       department:departments!bookings_department_id_fkey(name),
       booking_passengers(name,seq),
+      overtime_employees(employee_id,employee_name,work_description,work_start,work_end,total_weekly_hours,transport_required,bus_stop,seq),
       approvals(action,comments,acted_at,approver:profiles!approvals_approver_id_fkey(full_name)),
+      assignment_drafts(vehicle_id,driver_id,notes,planned_at,updated_at),
       vehicle_assignments(vehicle_id,driver_id,assigned_at,notes,driver_accepted),
       trip_logs(actual_time_out,actual_time_in,start_mileage,end_mileage,remarks),
       expenses(fuel_cost,toll_fee,parking_fee)
@@ -168,6 +192,11 @@ export async function insertBooking(
     requester_id: booking.requesterId,
     department_id: profile.department_id,
     status: booking.status,
+    request_type: booking.requestType ?? 'outside_company',
+    approver_id: booking.approverId,
+    approver_name: booking.approverName,
+    approver_email: booking.approverEmail,
+    with_staff: booking.withStaff ?? false,
     category: booking.category,
     using_date: booking.usingDate,
     start_time: booking.startTime,
@@ -194,9 +223,38 @@ export async function insertBooking(
     throwIfError(passengerError);
   }
 
+  if (booking.overtimeEmployees?.length) {
+    const { error: overtimeError } = await supabase.from('overtime_employees').insert(
+      booking.overtimeEmployees.map((employee, seq) => ({
+        booking_id: data.id,
+        employee_id: employee.employeeId,
+        employee_name: employee.employeeName,
+        work_description: employee.workDescription,
+        work_start: employee.workStart,
+        work_end: employee.workEnd,
+        total_weekly_hours: employee.totalWeeklyHours,
+        transport_required: employee.transportRequired,
+        bus_stop: employee.transportRequired ? employee.busStop : null,
+        seq,
+      })),
+    );
+    throwIfError(overtimeError);
+  }
+
   const refreshed = await loadAppData(supabase);
   return refreshed.bookings.find((item) => item.id === data.id)!;
 }
+export async function persistAssignmentDraft(
+  supabase: SupabaseClient,
+  bookingId: string,
+  draft: AssignmentDraft,
+): Promise<void> {
+  const { error } = await supabase.rpc('save_assignment_draft', {
+    p_booking_id: bookingId, p_vehicle_id: draft.vehicleId, p_driver_id: draft.driverId, p_notes: draft.notes ?? null,
+  });
+  throwIfError(error);
+}
+
 
 export async function persistBookingUpdate(
   supabase: SupabaseClient,
@@ -219,15 +277,6 @@ export async function persistBookingUpdate(
       p_driver_id: patch.assignment.driverId,
       p_notes: patch.assignment.notes ?? null,
     });
-    if (!result.error) {
-      const notification = await supabase.functions.invoke('line-notify-assignment', {
-        body: { bookingId: id },
-      });
-      if (notification.error) {
-        // Assignment is already committed, so notification failure is non-fatal.
-        console.warn('LINE assignment notification was not sent:', notification.error.message);
-      }
-    }
   } else if (patch.status === 'in_progress' && patch.tripLog) {
     result = await supabase.rpc('start_trip', {
       p_booking_id: id,

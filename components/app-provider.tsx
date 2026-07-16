@@ -12,6 +12,7 @@ import {
   persistDriver,
   persistVehicle,
 } from '@/lib/supabase/repository';
+import { resubmitBooking as persistResubmission } from '@/lib/supabase/resubmit';
 
 type Ctx = {
   data: AppData;
@@ -26,6 +27,7 @@ type Ctx = {
   signOut: () => Promise<void>;
   updateBooking: (id: string, patch: Partial<Booking>) => Promise<void>;
   addBooking: (booking: Booking) => Promise<Booking>;
+  resubmitBooking: (booking: Booking) => Promise<void>;
   saveVehicle: (vehicle: Vehicle) => Promise<void>;
   saveDriver: (driver: Driver) => Promise<void>;
   reset: () => void;
@@ -34,6 +36,27 @@ type Ctx = {
 const AppContext = createContext<Ctx | null>(null);
 const DATA_KEY = 'csrs-mvp-data';
 const ROLE_KEY = 'csrs-role';
+const SESSION_BACKUP_KEY = 'tokin-transport-session';
+
+type SessionBackup = { access_token: string; refresh_token: string };
+
+function readSessionBackup(): SessionBackup | null {
+  try {
+    const value = window.localStorage.getItem(SESSION_BACKUP_KEY);
+    if (!value) return null;
+    const parsed = JSON.parse(value) as Partial<SessionBackup>;
+    return parsed.access_token && parsed.refresh_token
+      ? { access_token: parsed.access_token, refresh_token: parsed.refresh_token }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeSessionBackup(session: SessionBackup | null) {
+  if (session) window.localStorage.setItem(SESSION_BACKUP_KEY, JSON.stringify(session));
+  else window.localStorage.removeItem(SESSION_BACKUP_KEY);
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
@@ -70,11 +93,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const hydrate = async () => {
       try {
         setLoading(true);
-        const { data: authData, error: authError } = await supabase.auth.getUser();
+        let { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError || !authData.user) {
+          const backup = readSessionBackup();
+          if (backup) {
+            const { error: restoreError } = await supabase.auth.setSession(backup);
+            if (!restoreError) ({ data: authData, error: authError } = await supabase.auth.getUser());
+            else storeSessionBackup(null);
+          }
+        }
         if (authError || !authData.user) {
           if (active) setAuthenticated(false);
           return;
         }
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session) storeSessionBackup(sessionData.session);
         const [profile, appData] = await Promise.all([
           loadProfile(supabase),
           loadAppData(supabase),
@@ -94,11 +127,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     void hydrate();
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        if (session) storeSessionBackup(session);
         window.setTimeout(() => void hydrate(), 0);
       }
       if (event === 'SIGNED_OUT') {
+        storeSessionBackup(null);
         setAuthenticated(false);
         setLoading(false);
       }
@@ -133,6 +168,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     if (supabase) {
       await supabase.auth.signOut();
+      storeSessionBackup(null);
     }
   };
 
@@ -164,6 +200,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const created = await insertBooking(supabase, booking);
     await refresh();
     return created;
+  };
+
+  const resubmitBooking = async (booking: Booking) => {
+    if (!supabase) {
+      setData(current => ({
+        ...current,
+        bookings: current.bookings.map(item => item.id === booking.id ? { ...booking, status: 'pending_approval', rejectReason: undefined } : item),
+      }));
+      return;
+    }
+    await persistResubmission(supabase, booking);
+    await refresh();
   };
 
   const saveVehicle = async (vehicle: Vehicle) => {
@@ -213,6 +261,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     signOut,
     updateBooking,
     addBooking,
+    resubmitBooking,
     saveVehicle,
     saveDriver,
     reset,
