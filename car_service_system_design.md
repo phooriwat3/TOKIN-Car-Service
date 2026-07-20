@@ -29,7 +29,6 @@ flowchart TB
 
     subgraph External["External"]
         Email["SMTP / Resend\n(Email Notifications)"]
-        LINE["LINE Notify\n(Optional Push)"]
     end
 
     NextApp --> RouteHandlers
@@ -40,7 +39,6 @@ flowchart TB
     DB --> Realtime
     Realtime --> NextApp
     EdgeFn --> Email
-    EdgeFn --> LINE
 ```
 
 ### Key Architectural Decisions
@@ -834,7 +832,6 @@ Mobile (<768px):     Bottom tab bar (Dashboard, Bookings, Notifications, Profile
 ### Near-Term (3–6 months)
 | Feature | Description |
 |---|---|
-| LINE Notify Integration | Push trip notifications to drivers via LINE |
 | QR Code Check-in | Driver scans QR at pickup to start trip |
 | GPS Route Logging | Track actual route via browser Geolocation API |
 | Recurring Bookings | Daily/weekly recurring trip templates |

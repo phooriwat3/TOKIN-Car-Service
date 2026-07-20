@@ -41,8 +41,20 @@ export function AdminAssignmentPanel({ params }: { params: Promise<{ id: string 
     setSaving(true); setMessage('');
     try {
       await updateBooking(id,{ status:'assigned', assignment:{ vehicleId,driverId,notes,accepted:false,assignedAt:new Date().toISOString() } });
-      setMessage('Assignment confirmed.');
-    } catch (cause) { setMessage(cause instanceof Error ? cause.message : 'Unable to confirm assignment.'); }
+      if (!configured) {
+        setMessage('Assignment confirmed.');
+      } else {
+        const supabase = createClient();
+        if (!supabase) throw new Error('Supabase is unavailable.');
+        const { data: notification, error } = await supabase.functions.invoke('notify-requester-assignment', {
+          body: { requestId: id },
+        });
+        if (error) throw error;
+        setMessage(notification?.notificationStatus === 'sent'
+          ? 'Assignment confirmed and emailed to the requester.'
+          : 'Assignment confirmed. Requester email delivery is not configured yet.');
+      }
+    } catch (cause) { setMessage(cause instanceof Error ? cause.message : 'Assignment was saved, but the requester email could not be sent.'); }
     finally { setSaving(false); }
   };
 

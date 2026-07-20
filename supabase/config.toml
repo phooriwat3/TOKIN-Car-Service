@@ -1,8 +1,17 @@
-[functions.line-webhook]
+[functions.search-company-users]
 verify_jwt = false
 
-[functions.line-notify-assignment]
+[functions.public-submit-request]
 verify_jwt = false
 
-[functions.line-driver-api]
+[functions.approval-callback]
+verify_jwt = false
+
+[functions.notify-requester-assignment]
+verify_jwt = false
+
+[functions.public-request-access]
+verify_jwt = false
+
+[functions.public-update-request]
 verify_jwt = false

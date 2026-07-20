@@ -50,8 +50,10 @@ function mapBooking(row: any): Booking {
     id: row.id,
     bookingNo: row.booking_no,
     requesterId: row.requester_id,
-    requesterName: one(row.requester)?.full_name ?? '',
-    department: one(row.department)?.name ?? '',
+    requesterName: row.requester_name ?? one(row.requester)?.full_name ?? '',
+    requesterEmail: row.requester_email ?? '',
+    requesterEmployeeId: row.requester_employee_id ?? '',
+    department: row.requester_department ?? one(row.department)?.name ?? '',
     status: row.status,
     requestType: row.request_type ?? 'outside_company',
     approverId: row.approver_id ?? '',
@@ -92,7 +94,7 @@ function mapBooking(row: any): Booking {
       action: approval.action,
       comments: approval.comments ?? '',
       actedAt: approval.acted_at,
-      approverName: one(approval.approver)?.full_name ?? '',
+      approverName: approval.approver_name ?? one(approval.approver)?.full_name ?? '',
     } : undefined,
     assignment: assignment ? {
       vehicleId: assignment.vehicle_id,
@@ -128,14 +130,14 @@ export async function loadAppData(supabase: SupabaseClient): Promise<AppData> {
       department:departments!bookings_department_id_fkey(name),
       booking_passengers(name,seq),
       overtime_employees(employee_id,employee_name,work_description,work_start,work_end,total_weekly_hours,transport_required,bus_stop,seq),
-      approvals(action,comments,acted_at,approver:profiles!approvals_approver_id_fkey(full_name)),
+      approvals(action,comments,acted_at,approver_name,approver_email,approver:profiles!approvals_approver_id_fkey(full_name)),
       assignment_drafts(vehicle_id,driver_id,notes,planned_at,updated_at),
       vehicle_assignments(vehicle_id,driver_id,assigned_at,notes,driver_accepted),
       trip_logs(actual_time_out,actual_time_in,start_mileage,end_mileage,remarks),
       expenses(fuel_cost,toll_fee,parking_fee)
     `).order('created_at', { ascending: false }),
     supabase.from('vehicles').select('*').order('license_plate'),
-    supabase.from('drivers').select('*,driver_line_accounts(display_name,linked_at,is_active)').order('full_name'),
+    supabase.from('drivers').select('*').order('full_name'),
   ]);
   throwIfError(bookingsResult.error);
   throwIfError(vehiclesResult.error);
@@ -164,10 +166,6 @@ export async function loadAppData(supabase: SupabaseClient): Promise<AppData> {
       licenseNumber: row.license_number,
       licenseExpiry: row.license_expiry,
       active: row.is_active,
-      lineConnection: one(row.driver_line_accounts)?.is_active ? {
-        displayName: one(row.driver_line_accounts)?.display_name ?? null,
-        linkedAt: one(row.driver_line_accounts)?.linked_at,
-      } : undefined,
       notes: row.notes ?? undefined,
     })),
   };
@@ -190,6 +188,10 @@ export async function insertBooking(
   const { data, error } = await supabase.from('bookings').insert({
 
     requester_id: booking.requesterId,
+    requester_name: booking.requesterName,
+    requester_email: booking.requesterEmail ?? authData.user.email ?? '',
+    requester_employee_id: booking.requesterEmployeeId ?? null,
+    requester_department: booking.department,
     department_id: profile.department_id,
     status: booking.status,
     request_type: booking.requestType ?? 'outside_company',
@@ -304,47 +306,6 @@ export async function persistBookingUpdate(
 
 const isUuid = (id: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
-export type LineConnection = {
-  displayName: string | null;
-  linkedAt: string;
-};
-
-export async function loadLineConnection(supabase: SupabaseClient): Promise<LineConnection | null> {
-  const { data, error } = await supabase
-    .from('line_accounts')
-    .select('display_name,linked_at')
-    .eq('is_active', true)
-    .maybeSingle();
-  throwIfError(error);
-  return data ? { displayName: data.display_name, linkedAt: data.linked_at } : null;
-}
-
-export async function createLineLinkCode(supabase: SupabaseClient): Promise<string> {
-  const { data, error } = await supabase.rpc('create_line_link_code');
-  throwIfError(error);
-  if (typeof data !== 'string') throw new Error('LINE link code was not created.');
-  return data;
-}
-
-export async function disconnectLineAccount(supabase: SupabaseClient): Promise<void> {
-  const { error } = await supabase.rpc('disconnect_line_account');
-  throwIfError(error);
-}
-export async function createDriverLineLinkCode(supabase: SupabaseClient, driverId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('create_driver_line_link_code', { p_driver_id: driverId });
-  throwIfError(error);
-  if (typeof data !== 'string') throw new Error('LINE link code was not created.');
-  return data;
-}
-
-export async function disconnectDriverLineAccount(supabase: SupabaseClient, driverId: string): Promise<void> {
-  const { error } = await supabase.rpc('disconnect_driver_line_account', { p_driver_id: driverId });
-  throwIfError(error);
-}
-
-
-
-
 export async function persistVehicle(supabase: SupabaseClient, vehicle: Vehicle) {
   const payload = {
     license_plate: vehicle.licensePlate,

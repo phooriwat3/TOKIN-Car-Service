@@ -21,16 +21,13 @@ export async function updateSession(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  const isLogin = request.nextUrl.pathname === '/login';
-  const isPublic = isLogin || request.nextUrl.pathname.startsWith('/liff/');
+  const isPublic = request.nextUrl.pathname === '/login'
+    || request.nextUrl.pathname === '/admin/login'
+    || request.nextUrl.pathname === '/'
+    || request.nextUrl.pathname.startsWith('/request');
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
-  }
-  if (user && isLogin) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
+    url.pathname = '/admin/login';
     return NextResponse.redirect(url);
   }
   return response;
