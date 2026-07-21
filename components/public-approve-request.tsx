@@ -55,18 +55,18 @@ const responseError = (body: Record<string, unknown>, fallback: string) => {
   return fallback;
 };
 
-export default function PublicApproveRequest({ initialToken }: { initialToken?: string }) {
-  const [request, setRequest] = useState<ApprovalRequest | null>(null);
-  const [state, setState] = useState<'loading' | 'ready' | 'error' | 'complete'>(initialToken ? 'loading' : 'error');
-  const [message, setMessage] = useState(initialToken ? '' : 'Approval link is missing.');
+export default function PublicApproveRequest({ initialToken, initialRequest, initialError }: { initialToken?: string; initialRequest?: ApprovalRequest; initialError?: string }) {
+  const [request, setRequest] = useState<ApprovalRequest | null>(initialRequest ?? null);
+  const [state, setState] = useState<'loading' | 'ready' | 'error' | 'complete'>(initialRequest ? 'ready' : initialError ? 'error' : initialToken ? 'loading' : 'error');
+  const [message, setMessage] = useState(initialError || (initialToken ? '' : 'Approval link is missing.'));
   const [comments, setComments] = useState('');
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState('');
 
   useEffect(() => {
-    if (!initialToken) return;
+    if (!initialToken || initialRequest || initialError) return;
     void load();
-  }, [initialToken]);
+  }, [initialToken, initialRequest, initialError]);
 
   async function load() {
     try {
