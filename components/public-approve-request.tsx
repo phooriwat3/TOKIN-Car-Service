@@ -39,6 +39,21 @@ const apiConfig = () => {
   if (!supabaseUrl || !publishableKey) throw new Error('Approval service is not configured.');
   return { supabaseUrl, publishableKey };
 };
+const readResponse = async (response: Response) => {
+  const text = await response.text();
+  if (!text) return {} as Record<string, unknown>;
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return { error: text } as Record<string, unknown>;
+  }
+};
+
+const responseError = (body: Record<string, unknown>, fallback: string) => {
+  if (typeof body.error === 'string' && body.error) return body.error;
+  if (typeof body.message === 'string' && body.message) return body.message;
+  return fallback;
+};
 
 export default function PublicApproveRequest({ initialToken }: { initialToken?: string }) {
   const [request, setRequest] = useState<ApprovalRequest | null>(null);
@@ -58,12 +73,16 @@ export default function PublicApproveRequest({ initialToken }: { initialToken?: 
       const { supabaseUrl, publishableKey } = apiConfig();
       const response = await fetch(`${supabaseUrl}/functions/v1/public-approval-access`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: publishableKey },
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: publishableKey,
+          Authorization: `Bearer ${publishableKey}`,
+        },
         body: JSON.stringify({ token: initialToken }),
       });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || 'Unable to open approval.');
-      setRequest(body.request);
+      const body = await readResponse(response);
+      if (!response.ok) throw new Error(responseError(body, `Unable to open approval (HTTP ${response.status}).`));
+      setRequest(body.request as ApprovalRequest);
       setState('ready');
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : 'Unable to open approval.');
@@ -83,12 +102,16 @@ export default function PublicApproveRequest({ initialToken }: { initialToken?: 
       const { supabaseUrl, publishableKey } = apiConfig();
       const response = await fetch(`${supabaseUrl}/functions/v1/public-approval-action`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: publishableKey },
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: publishableKey,
+          Authorization: `Bearer ${publishableKey}`,
+        },
         body: JSON.stringify({ token: initialToken, action, comments }),
       });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || 'Unable to record decision.');
-      setResult(body.status);
+      const body = await readResponse(response);
+      if (!response.ok) throw new Error(responseError(body, `Unable to record decision (HTTP ${response.status}).`));
+      setResult(String(body.status || 'updated'));
       setState('complete');
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : 'Unable to record decision.');
