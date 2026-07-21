@@ -38,7 +38,7 @@ export default function PublicRequestForm() {
   const [website, setWebsite] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState<{ requestNo: string; emailStatus: string } | null>(null);
+  const [success, setSuccess] = useState<{ requestNo: string; emailStatus: string; manageUrl?: string } | null>(null);
 
   useEffect(() => {
     if (approverSelected || approverName.trim().length < 2) {
@@ -123,7 +123,7 @@ export default function PublicRequestForm() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Unable to submit request.');
-      setSuccess({ requestNo: result.requestNo, emailStatus: result.approvalEmailStatus });
+      setSuccess({ requestNo: result.requestNo, emailStatus: result.approvalEmailStatus, manageUrl: result.manageUrl });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to submit request.');
     } finally {
@@ -137,6 +137,7 @@ export default function PublicRequestForm() {
       <h1 className="mt-4 text-2xl font-bold">Request submitted</h1>
       <p className="mt-2 text-gray-600">Request number: <strong>{success.requestNo}</strong></p>
       <p className="mt-4 text-sm text-gray-500">The request was sent to {approverEmail}. You will receive another email after Admin assigns the vehicle and driver.</p>
+      {success.manageUrl && <a className="mt-5 inline-flex h-9 items-center justify-center rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-[#194786]" href={success.manageUrl}>Manage this request</a>}
       {success.emailStatus !== 'sent' && <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">The request was saved, but the approval email service is not ready. Admin can still see this request.</p>}
       <Button className="mt-6" onClick={reset}>Create another request</Button>
     </Card>

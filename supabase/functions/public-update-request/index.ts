@@ -16,6 +16,10 @@ type OvertimeEmployee = {
 };
 
 const editableStatuses = ['pending_approval', 'changes_requested'];
+const appBaseUrl = () => {
+  const configured = Deno.env.get('APP_BASE_URL')?.trim().replace(/\/+$/, '');
+  return configured || 'https://tokin-car-service.vercel.app';
+};
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -211,6 +215,20 @@ Deno.serve(async (request) => {
     });
     if (tokenError) throw tokenError;
 
+    const approvalRawToken = randomToken();
+    const approvalTokenHash = await sha256Hex(approvalRawToken);
+    const approvalExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString();
+    const approvalUrl = `${appBaseUrl()}/request/approve?token=${encodeURIComponent(approvalRawToken)}`;
+    const { error: approvalTokenError } = await db.from('request_access_tokens').insert({
+      booking_id: current.id,
+      token_type: 'approval',
+      token_hash: approvalTokenHash,
+      revision_no: nextRevision,
+      subject_email: approverEmail,
+      expires_at: approvalExpiresAt,
+    });
+    if (approvalTokenError) throw approvalTokenError;
+
     const { data: snapshotBooking, error: snapshotError } = await db.from('bookings').select(`
       *, booking_passengers(name,seq),
       overtime_employees(employee_id,employee_name,work_description,work_start,work_end,total_weekly_hours,transport_required,bus_stop,seq)
@@ -228,6 +246,39 @@ Deno.serve(async (request) => {
     });
     if (historyError) throw historyError;
 
+    const manageUrl = `${appBaseUrl()}/request/manage?token=${encodeURIComponent(newRawToken)}`;
+    const approvalFlowUrl = Deno.env.get('POWER_AUTOMATE_APPROVAL_FLOW_URL');
+    let approvalEmailStatus: 'sent' | 'failed' | 'not_configured' = 'not_configured';
+    if (approvalFlowUrl) {
+      try {
+        const response = await fetch(approvalFlowUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requestId: current.id,
+            requestNo: current.booking_no,
+            revisionNo: nextRevision,
+            requestType: payload.requestType,
+            requester: { name: requesterName, email: current.requester_email, department: requesterDepartment },
+            approver: { name: approverName, email: approverEmail },
+            usingDate,
+            startTime,
+            endTime,
+            pickupLocation,
+            destination,
+            purpose,
+            manageUrl,
+            approvalUrl,
+            approvalExpiresAt,
+          }),
+        });
+        approvalEmailStatus = response.ok ? 'sent' : 'failed';
+      } catch {
+        approvalEmailStatus = 'failed';
+      }
+    }
+    await db.from('bookings').update({ approval_email_status: approvalEmailStatus }).eq('id', current.id);
+
     return json({
       ok: true,
       requestId: current.id,
@@ -236,7 +287,9 @@ Deno.serve(async (request) => {
       revisionNo: nextRevision,
       manageToken: newRawToken,
       manageTokenExpiresAt: expiresAt,
-      approvalEmailStatus: 'pending',
+      approvalEmailStatus,
+      approvalUrl,
+      approvalTokenExpiresAt: approvalExpiresAt,
     });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : 'Unable to update request.';

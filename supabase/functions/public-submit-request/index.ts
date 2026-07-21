@@ -1,5 +1,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/http.ts';
+import {
+  bangkokHour, date, email, randomToken, requiredText, sha256Hex, time,
+} from '../_shared/request-access.ts';
 
 type PublicRequest = {
   requestType: 'outside_company' | 'overtime';
@@ -27,30 +30,10 @@ type PublicRequest = {
   website?: string;
 };
 
-const requiredText = (value: unknown, label: string, max = 500) => {
-  const text = typeof value === 'string' ? value.trim() : '';
-  if (!text || text.length > max) throw new Error(`${label} is invalid.`);
-  return text;
+const appBaseUrl = () => {
+  const configured = Deno.env.get('APP_BASE_URL')?.trim().replace(/\/+$/, '');
+  return configured || 'https://tokin-car-service.vercel.app';
 };
-const email = (value: unknown, label: string) => {
-  const text = requiredText(value, label, 240).toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) throw new Error(`${label} is invalid.`);
-  return text;
-};
-const date = (value: unknown) => {
-  const text = requiredText(value, 'Using date', 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new Error('Using date is invalid.');
-  return text;
-};
-const time = (value: unknown, label: string) => {
-  const text = requiredText(value, label, 5);
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(text)) throw new Error(`${label} is invalid.`);
-  return text;
-};
-const bangkokHour = () => Number(new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'Asia/Bangkok', hour: '2-digit', hour12: false,
-}).format(new Date()));
-
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
@@ -153,6 +136,64 @@ Deno.serve(async (request) => {
       if (error) throw error;
     }
 
+    const manageToken = randomToken();
+    const manageTokenHash = await sha256Hex(manageToken);
+    const manageTokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60_000).toISOString();
+    const manageUrl = `${appBaseUrl()}/request/manage?token=${encodeURIComponent(manageToken)}`;
+    const { error: manageTokenError } = await db.from('request_access_tokens').insert({
+      booking_id: booking.id,
+      token_type: 'requester_manage',
+      token_hash: manageTokenHash,
+      revision_no: 1,
+      subject_email: requesterEmail,
+      expires_at: manageTokenExpiresAt,
+    });
+    if (manageTokenError) throw manageTokenError;
+
+    const approvalToken = randomToken();
+    const approvalTokenHash = await sha256Hex(approvalToken);
+    const approvalTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString();
+    const approvalUrl = `${appBaseUrl()}/request/approve?token=${encodeURIComponent(approvalToken)}`;
+    const { error: approvalTokenError } = await db.from('request_access_tokens').insert({
+      booking_id: booking.id,
+      token_type: 'approval',
+      token_hash: approvalTokenHash,
+      revision_no: 1,
+      subject_email: approverEmail,
+      expires_at: approvalTokenExpiresAt,
+    });
+    if (approvalTokenError) throw approvalTokenError;
+
+    const requesterManageFlowUrl = Deno.env.get('POWER_AUTOMATE_REQUESTER_MANAGE_FLOW_URL');
+    let requesterManageEmailStatus: 'sent' | 'failed' | 'not_configured' = 'not_configured';
+    if (requesterManageFlowUrl) {
+      try {
+        const response = await fetch(requesterManageFlowUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'request.manage_link_created',
+            requestId: booking.id,
+            requestNo: booking.booking_no,
+            requestType: payload.requestType,
+            requester: { name: requesterName, email: requesterEmail, department: requesterDepartment },
+            approver: { name: approverName, email: approverEmail },
+            usingDate,
+            startTime,
+            endTime,
+            pickupLocation: payload.pickupLocation,
+            destination: payload.destination,
+            purpose: payload.purpose,
+            manageUrl,
+            expiresAt: manageTokenExpiresAt,
+          }),
+        });
+        requesterManageEmailStatus = response.ok ? 'sent' : 'failed';
+      } catch {
+        requesterManageEmailStatus = 'failed';
+      }
+    }
+
     const approvalFlowUrl = Deno.env.get('POWER_AUTOMATE_APPROVAL_FLOW_URL');
     let approvalEmailStatus: 'sent' | 'failed' | 'not_configured' = 'not_configured';
     if (approvalFlowUrl) {
@@ -172,6 +213,9 @@ Deno.serve(async (request) => {
             pickupLocation: payload.pickupLocation,
             destination: payload.destination,
             purpose: payload.purpose,
+            manageUrl,
+            approvalUrl,
+            approvalExpiresAt: approvalTokenExpiresAt,
             callbackUrl: `${supabaseUrl}/functions/v1/approval-callback`,
           }),
         });
@@ -180,9 +224,21 @@ Deno.serve(async (request) => {
         approvalEmailStatus = 'failed';
       }
     }
-    await db.from('bookings').update({ approval_email_status: approvalEmailStatus }).eq('id', booking.id);
+    await db.from('bookings').update({
+      approval_email_status: approvalEmailStatus,
+      requester_manage_email_status: requesterManageEmailStatus,
+    }).eq('id', booking.id);
 
-    return json({ requestId: booking.id, requestNo: booking.booking_no, approvalEmailStatus }, 201);
+    return json({
+      requestId: booking.id,
+      requestNo: booking.booking_no,
+      approvalEmailStatus,
+      requesterManageEmailStatus,
+      manageUrl,
+      manageTokenExpiresAt,
+      approvalUrl,
+      approvalTokenExpiresAt,
+    }, 201);
   } catch (cause) {
     return json({ error: cause instanceof Error ? cause.message : 'Unable to submit request.' }, 400);
   }
