@@ -19,9 +19,9 @@ Deno.serve(async (request) => {
       .eq('token_hash', tokenHash).eq('token_type', 'approval').maybeSingle();
 
     if (accessError) throw accessError;
-    if (!access || access.used_at || access.revoked_at) {
-      return json({ error: 'This approval link is invalid or has already been used.' }, 401);
-    }
+    if (!access) return json({ error: 'This approval link does not match an active request.' }, 401);
+    if (access.used_at) return json({ error: 'This approval link has already been used.' }, 409);
+    if (access.revoked_at) return json({ error: 'This approval link is no longer active. Please use the latest approval email.' }, 409);
     if (new Date(access.expires_at).getTime() <= Date.now()) {
       return json({ error: 'This approval link has expired.' }, 410);
     }
