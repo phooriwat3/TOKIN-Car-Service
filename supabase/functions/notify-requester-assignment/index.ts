@@ -1,5 +1,11 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/http.ts';
+import { randomToken, sha256Hex } from '../_shared/request-access.ts';
+
+const appBaseUrl = () => {
+  const configured = Deno.env.get('APP_BASE_URL')?.trim().replace(/\/+$/, '');
+  return configured || 'https://tokin-car-service.vercel.app';
+};
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -22,7 +28,7 @@ Deno.serve(async (request) => {
     const body = await request.json();
     const bookingId = typeof body.requestId === 'string' ? body.requestId : '';
     const { data: booking, error } = await db.from('bookings').select(`
-      id,booking_no,requester_name,requester_email,using_date,start_time,end_time,pickup_location,destination,purpose,
+      id,booking_no,revision_no,requester_name,requester_email,using_date,start_time,end_time,pickup_location,destination,purpose,
       vehicle_assignments(
         vehicle_id,driver_id,notes,
         vehicle:vehicles(license_plate,brand,model),
@@ -36,10 +42,32 @@ Deno.serve(async (request) => {
     const driver = Array.isArray(assignment?.driver) ? assignment.driver[0] : assignment?.driver;
     if (!assignment || !vehicle || !driver) return json({ error: 'Assignment is incomplete.' }, 409);
 
+    const documentToken = randomToken();
+    const documentTokenHash = await sha256Hex(documentToken);
+    const documentExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60_000).toISOString();
+    const viewUrl = `${appBaseUrl()}/request/assignment?token=${encodeURIComponent(documentToken)}`;
+    const pdfUrl = `${appBaseUrl()}/api/request/assignment/pdf?token=${encodeURIComponent(documentToken)}`;
+    const now = new Date().toISOString();
+    const { error: revokeError } = await db.from('request_access_tokens').update({ revoked_at: now })
+      .eq('booking_id', booking.id)
+      .eq('token_type', 'assignment_document')
+      .is('used_at', null)
+      .is('revoked_at', null);
+    if (revokeError) throw revokeError;
+    const { error: tokenError } = await db.from('request_access_tokens').insert({
+      booking_id: booking.id,
+      token_type: 'assignment_document',
+      token_hash: documentTokenHash,
+      revision_no: booking.revision_no,
+      subject_email: booking.requester_email,
+      expires_at: documentExpiresAt,
+    });
+    if (tokenError) throw tokenError;
+
     const flowUrl = Deno.env.get('POWER_AUTOMATE_ASSIGNMENT_EMAIL_FLOW_URL');
     if (!flowUrl) {
       await db.from('bookings').update({ requester_notification_status: 'not_configured' }).eq('id', booking.id);
-      return json({ ok: true, notificationStatus: 'not_configured' });
+      return json({ ok: true, notificationStatus: 'not_configured', viewUrl, pdfUrl, expiresAt: documentExpiresAt });
     }
 
     const response = await fetch(flowUrl, {
@@ -58,11 +86,14 @@ Deno.serve(async (request) => {
         vehicle: { licensePlate: vehicle.license_plate, brand: vehicle.brand, model: vehicle.model },
         driver: { name: driver.full_name, phone: driver.phone },
         notes: assignment.notes ?? '',
+        viewUrl,
+        pdfUrl,
+        expiresAt: documentExpiresAt,
       }),
     });
     const notificationStatus = response.ok ? 'sent' : 'failed';
     await db.from('bookings').update({ requester_notification_status: notificationStatus }).eq('id', booking.id);
-    return json({ ok: response.ok, notificationStatus }, response.ok ? 200 : 502);
+    return json({ ok: response.ok, notificationStatus, viewUrl, pdfUrl, expiresAt: documentExpiresAt }, response.ok ? 200 : 502);
   } catch (cause) {
     return json({ error: cause instanceof Error ? cause.message : 'Unable to notify requester.' }, 500);
   }

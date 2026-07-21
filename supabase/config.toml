@@ -21,3 +21,6 @@ verify_jwt = false
 
 [functions.public-approval-action]
 verify_jwt = false
+
+[functions.public-assignment-access]
+verify_jwt = false
