@@ -76,7 +76,11 @@ Deno.serve(async (request) => {
       expiresAt: access.expires_at,
     });
   } catch (cause) {
-    const message = cause instanceof Error ? cause.message : 'Unable to load approval.';
+    const message = cause instanceof Error
+      ? cause.message
+      : cause && typeof cause === 'object' && 'message' in cause
+        ? String(cause.message)
+        : 'Unable to load approval.';
     return json({ error: message }, message.includes('invalid') ? 400 : 500);
   }
 });
