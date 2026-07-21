@@ -73,12 +73,16 @@ function mapBooking(row: any): Booking {
     overtimeEmployees: (row.overtime_employees ?? []).sort((a: any, b: any) => a.seq - b.seq).map((x: any) => ({
       employeeId: x.employee_id,
       employeeName: x.employee_name,
+      employeeEmail: x.employee_email ?? '',
       workDescription: x.work_description,
       workStart: String(x.work_start).slice(0, 5),
       workEnd: String(x.work_end).slice(0, 5),
       totalWeeklyHours: Number(x.total_weekly_hours),
       transportRequired: x.transport_required,
       busStop: x.bus_stop ?? '',
+      assignedVehicleId: x.assigned_vehicle_id ?? undefined,
+      assignedDriverId: x.assigned_driver_id ?? undefined,
+      assignedNotes: x.assigned_notes ?? undefined,
     })),
     meetingPoint: row.meeting_point,
     withStaff: row.with_staff ?? false,
@@ -129,7 +133,7 @@ export async function loadAppData(supabase: SupabaseClient): Promise<AppData> {
       requester:profiles!bookings_requester_id_fkey(full_name),
       department:departments!bookings_department_id_fkey(name),
       booking_passengers(name,seq),
-      overtime_employees(employee_id,employee_name,work_description,work_start,work_end,total_weekly_hours,transport_required,bus_stop,seq),
+      overtime_employees(*),
       approvals(action,comments,acted_at,approver_name,approver_email,approver:profiles!approvals_approver_id_fkey(full_name)),
       assignment_drafts(vehicle_id,driver_id,notes,planned_at,updated_at),
       vehicle_assignments(vehicle_id,driver_id,assigned_at,notes,driver_accepted),
@@ -231,12 +235,16 @@ export async function insertBooking(
         booking_id: data.id,
         employee_id: employee.employeeId,
         employee_name: employee.employeeName,
+        employee_email: employee.employeeEmail ?? null,
         work_description: employee.workDescription,
         work_start: employee.workStart,
         work_end: employee.workEnd,
         total_weekly_hours: employee.totalWeeklyHours,
         transport_required: employee.transportRequired,
         bus_stop: employee.transportRequired ? employee.busStop : null,
+        assigned_vehicle_id: employee.assignedVehicleId ?? null,
+        assigned_driver_id: employee.assignedDriverId ?? null,
+        assigned_notes: employee.assignedNotes ?? null,
         seq,
       })),
     );
@@ -279,6 +287,15 @@ export async function persistBookingUpdate(
       p_driver_id: patch.assignment.driverId,
       p_notes: patch.assignment.notes ?? null,
     });
+    if (patch.overtimeEmployees?.length) {
+      for (const emp of patch.overtimeEmployees) {
+        await supabase.from('overtime_employees').update({
+          assigned_vehicle_id: emp.assignedVehicleId ?? null,
+          assigned_driver_id: emp.assignedDriverId ?? null,
+          assigned_notes: emp.assignedNotes ?? null,
+        }).eq('booking_id', id).eq('employee_id', emp.employeeId);
+      }
+    }
   } else if (patch.status === 'in_progress' && patch.tripLog) {
     result = await supabase.rpc('start_trip', {
       p_booking_id: id,

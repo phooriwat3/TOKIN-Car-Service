@@ -7,13 +7,14 @@ import { useApp } from '@/components/app-provider';
 import { Button, Card, Field, Input, Select, Textarea } from '@/components/ui';
 import { PageHeader } from '@/components/page-header';
 import { GoogleMapLinks } from '@/components/google-map-links';
+import { CompanyUserField } from '@/components/company-user-field';
 import { createClient } from '@/lib/supabase/client';
 import type { Booking, OvertimeEmployee, RequestType, User } from '@/lib/types';
 import { demoUsers } from '@/lib/mock-data';
 import { bangkokTime, isOtRequestWindowOpen } from '@/lib/request-window';
 
 const emptyEmployee = (): OvertimeEmployee => ({
-  employeeId: '', employeeName: '', workDescription: '', workStart: '17:20',
+  employeeId: '', employeeName: '', employeeEmail: '', workDescription: '', workStart: '17:20',
   workEnd: '20:00', totalWeeklyHours: 0, transportRequired: true, busStop: '',
 });
 
@@ -124,7 +125,17 @@ export default function NewEmailRequestForm() {
       </Card>
 
       {requestType === 'overtime' && <Card className="p-5"><div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Employees</h2><p className="text-sm text-gray-500">Add everyone included in this OT transportation request.</p></div><Button type="button" variant="secondary" onClick={() => setEmployees(x => [...x, emptyEmployee()])}><Plus size={16} /> Add employee</Button></div>
-        <div className="space-y-4">{employees.map((employee, index) => <div key={index} className="rounded-lg border border-line bg-gray-50 p-4"><div className="mb-3 flex justify-between"><p className="font-semibold">Employee {index + 1}</p><Button type="button" variant="ghost" disabled={employees.length === 1} onClick={() => setEmployees(x => x.filter((_, i) => i !== index))}><Trash2 size={16} /></Button></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Field label="Employee number"><Input required value={employee.employeeId} onChange={e => updateEmployee(index, 'employeeId', e.target.value)} /></Field><Field label="Employee name"><Input required value={employee.employeeName} onChange={e => updateEmployee(index, 'employeeName', e.target.value)} /></Field><Field label="Work description"><Input required value={employee.workDescription} onChange={e => updateEmployee(index, 'workDescription', e.target.value)} /></Field><Field label="Weekly hours (≤ 60)"><Input required type="number" min="0" max="60" step="0.01" value={employee.totalWeeklyHours} onChange={e => updateEmployee(index, 'totalWeeklyHours', Number(e.target.value))} /></Field><Field label="OT start"><Input required type="time" value={employee.workStart} onChange={e => updateEmployee(index, 'workStart', e.target.value)} /></Field><Field label="OT end"><Input required type="time" value={employee.workEnd} onChange={e => updateEmployee(index, 'workEnd', e.target.value)} /></Field><Field label="Transportation"><Select value={employee.transportRequired ? 'yes' : 'no'} onChange={e => updateEmployee(index, 'transportRequired', e.target.value === 'yes')}><option value="yes">Required</option><option value="no">Not required</option></Select></Field><Field label="Bus stop"><Input required={employee.transportRequired} disabled={!employee.transportRequired} value={employee.busStop} onChange={e => updateEmployee(index, 'busStop', e.target.value)} /></Field></div></div>)}</div>
+        <div className="space-y-4">{employees.map((employee, index) => <div key={index} className="rounded-xl border border-line bg-canvas p-4 shadow-panel"><div className="mb-3 flex justify-between items-center"><p className="font-bold text-ink text-sm">Employee {index + 1}</p><Button type="button" variant="ghost" disabled={employees.length === 1} onClick={() => setEmployees(x => x.filter((_, i) => i !== index))}><Trash2 size={16} /></Button></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <CompanyUserField label="Employee name" required value={employee.employeeName} placeholder="Search name or email..." onChange={val => updateEmployee(index, 'employeeName', val)} onSelectUser={person => { updateEmployee(index, 'employeeName', person.displayName); updateEmployee(index, 'employeeEmail', person.mail); if (person.employeeId) updateEmployee(index, 'employeeId', person.employeeId); }} />
+          <Field label="Employee email"><Input required={employee.transportRequired} type="email" placeholder="name@company.com" value={employee.employeeEmail || ''} onChange={e => updateEmployee(index, 'employeeEmail', e.target.value)} /></Field>
+          <Field label="Employee number"><Input required value={employee.employeeId} onChange={e => updateEmployee(index, 'employeeId', e.target.value)} /></Field>
+          <Field label="Work description"><Input required value={employee.workDescription} onChange={e => updateEmployee(index, 'workDescription', e.target.value)} /></Field>
+          <Field label="Weekly hours (≤ 60)"><Input required type="number" min="0" max="60" step="0.01" value={employee.totalWeeklyHours} onChange={e => updateEmployee(index, 'totalWeeklyHours', Number(e.target.value))} /></Field>
+          <Field label="OT start"><Input required type="time" value={employee.workStart} onChange={e => updateEmployee(index, 'workStart', e.target.value)} /></Field>
+          <Field label="OT end"><Input required type="time" value={employee.workEnd} onChange={e => updateEmployee(index, 'workEnd', e.target.value)} /></Field>
+          <Field label="Transportation"><Select value={employee.transportRequired ? 'yes' : 'no'} onChange={e => updateEmployee(index, 'transportRequired', e.target.value === 'yes')}><option value="yes">Required</option><option value="no">Not required</option></Select></Field>
+          <Field label="Bus stop"><Input required={employee.transportRequired} disabled={!employee.transportRequired} value={employee.busStop} onChange={e => updateEmployee(index, 'busStop', e.target.value)} /></Field>
+        </div></div>)}</div>
       </Card>}
 
       {requestType === 'overtime' && !otWindowOpen && <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">OT request submission is closed. Current Thailand time: {bangkokTime(clock)}. Available from 08:00 to 17:00.</p>}

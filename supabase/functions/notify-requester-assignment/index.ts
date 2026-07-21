@@ -7,7 +7,7 @@ const appBaseUrl = () => {
   return configured || 'https://tokin-car-service.vercel.app';
 };
 
-Deno.serve(async (request) => {
+Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
 
@@ -28,12 +28,13 @@ Deno.serve(async (request) => {
     const body = await request.json();
     const bookingId = typeof body.requestId === 'string' ? body.requestId : '';
     const { data: booking, error } = await db.from('bookings').select(`
-      id,booking_no,revision_no,requester_name,requester_email,using_date,start_time,end_time,pickup_location,destination,purpose,
+      id,booking_no,revision_no,request_type,requester_name,requester_email,using_date,start_time,end_time,pickup_location,destination,purpose,
       vehicle_assignments(
         vehicle_id,driver_id,notes,
         vehicle:vehicles(license_plate,brand,model),
         driver:drivers(full_name,phone)
-      )
+      ),
+      overtime_employees(*)
     `).eq('id', bookingId).single();
     if (error || !booking) return json({ error: 'Request not found.' }, 404);
 
@@ -70,12 +71,33 @@ Deno.serve(async (request) => {
       return json({ ok: true, notificationStatus: 'not_configured', viewUrl, pdfUrl, expiresAt: documentExpiresAt });
     }
 
+    const { data: allVehicles } = await db.from('vehicles').select('id,license_plate,brand,model');
+    const { data: allDrivers } = await db.from('drivers').select('id,full_name,phone');
+    const vehicleMap = new Map((allVehicles ?? []).map((v: any) => [v.id, v]));
+    const driverMap = new Map((allDrivers ?? []).map((d: any) => [d.id, d]));
+
+    const employeeAssignments = (booking.overtime_employees ?? [])
+      .filter((e: any) => e.transport_required && e.employee_email)
+      .map((e: any) => {
+        const eVehicle = vehicleMap.get(e.assigned_vehicle_id) || vehicle;
+        const eDriver = driverMap.get(e.assigned_driver_id) || driver;
+        return {
+          employeeId: e.employee_id,
+          employeeName: e.employee_name,
+          employeeEmail: e.employee_email,
+          busStop: e.bus_stop,
+          vehicle: { licensePlate: eVehicle.license_plate, brand: eVehicle.brand, model: eVehicle.model },
+          driver: { name: eDriver.full_name, phone: eDriver.phone },
+        };
+      });
+
     const response = await fetch(flowUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         requestId: booking.id,
         requestNo: booking.booking_no,
+        requestType: booking.request_type,
         requester: { name: booking.requester_name, email: booking.requester_email },
         usingDate: booking.using_date,
         startTime: String(booking.start_time).slice(0, 5),
@@ -86,6 +108,7 @@ Deno.serve(async (request) => {
         vehicle: { licensePlate: vehicle.license_plate, brand: vehicle.brand, model: vehicle.model },
         driver: { name: driver.full_name, phone: driver.phone },
         notes: assignment.notes ?? '',
+        employeeAssignments,
         viewUrl,
         pdfUrl,
         expiresAt: documentExpiresAt,

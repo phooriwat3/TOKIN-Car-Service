@@ -26,6 +26,7 @@ type PublicRequest = {
     totalWeeklyHours: number;
     transportRequired: boolean;
     busStop?: string;
+    employeeEmail?: string;
   }>;
   website?: string;
 };
@@ -34,7 +35,7 @@ const appBaseUrl = () => {
   const configured = Deno.env.get('APP_BASE_URL')?.trim().replace(/\/+$/, '');
   return configured || 'https://tokin-car-service.vercel.app';
 };
-Deno.serve(async (request) => {
+Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
 
@@ -121,6 +122,7 @@ Deno.serve(async (request) => {
         booking_id: booking.id,
         employee_id: requiredText(employee.employeeId, 'Employee number', 100),
         employee_name: requiredText(employee.employeeName, 'Employee name', 200),
+        employee_email: employee.transportRequired || employee.employeeEmail ? email(employee.employeeEmail, 'Employee email') : null,
         work_description: requiredText(employee.workDescription, 'Work description', 500),
         work_start: time(employee.workStart, 'OT start'),
         work_end: time(employee.workEnd, 'OT end'),

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Loader2, Plus, RefreshCw, Trash2, XCircle } from 'lucide-react';
 import { Badge, Button, Card, Field, Input, Select, Textarea } from '@/components/ui';
 import { GoogleMapLinks } from '@/components/google-map-links';
+import { CompanyUserField } from '@/components/company-user-field';
 import { isOtRequestWindowOpen } from '@/lib/request-window';
 import type { BookingStatus, OvertimeEmployee, RequestType } from '@/lib/types';
 
@@ -34,6 +35,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'saved' | 'cancelled';
 const emptyEmployee = (): OvertimeEmployee => ({
   employeeId: '',
   employeeName: '',
+  employeeEmail: '',
   workDescription: '',
   workStart: '17:20',
   workEnd: '20:00',
@@ -213,17 +215,54 @@ export default function PublicManageRequest({ initialToken }: { initialToken?: s
         {state === 'cancelled' && <Card className="border-l-4 border-l-red-600 p-5"><p className="text-sm font-medium text-red-700">{message}</p></Card>}
         {message && state !== 'saved' && state !== 'cancelled' && <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{message}</p>}
 
-        <Card className="p-5"><h2 className="mb-4 font-bold">Requester information</h2><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Full name"><Input required disabled={disabled} value={request.requester.name} onChange={e => updateRequester('name', e.target.value)} /></Field>
-          <Field label="Company email"><Input required disabled type="email" value={request.requester.email} /></Field>
-          <Field label="Employee number"><Input disabled={disabled} value={request.requester.employeeId ?? ''} onChange={e => updateRequester('employeeId', e.target.value)} /></Field>
-          <Field label="Department"><Input required disabled={disabled} value={request.requester.department} onChange={e => updateRequester('department', e.target.value)} /></Field>
-        </div></Card>
+        <Card className="p-5">
+          <h2 className="mb-4 font-bold">Requester information</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <CompanyUserField
+              label="Full name"
+              required
+              disabled={disabled}
+              value={request.requester.name}
+              onChange={(val) => updateRequester('name', val)}
+              placeholder="Search name or email..."
+              onSelectUser={(person) => {
+                updateRequester('name', person.displayName);
+                if (person.department) updateRequester('department', person.department);
+                if (person.employeeId) updateRequester('employeeId', person.employeeId);
+              }}
+            />
+            <Field label="Company email">
+              <Input required disabled type="email" value={request.requester.email} />
+            </Field>
+            <Field label="Employee number">
+              <Input disabled={disabled} value={request.requester.employeeId ?? ''} onChange={(e) => updateRequester('employeeId', e.target.value)} />
+            </Field>
+            <Field label="Department">
+              <Input required disabled={disabled} value={request.requester.department} onChange={(e) => updateRequester('department', e.target.value)} />
+            </Field>
+          </div>
+        </Card>
 
-        <Card className="p-5"><h2 className="mb-4 font-bold">Approver</h2><div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Approver name"><Input required disabled={disabled} value={request.approver.name} onChange={e => updateApprover('name', e.target.value)} /></Field>
-          <Field label="Approver email"><Input required disabled={disabled} type="email" value={request.approver.email} onChange={e => updateApprover('email', e.target.value)} /></Field>
-        </div></Card>
+        <Card className="p-5">
+          <h2 className="mb-4 font-bold">Approver</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CompanyUserField
+              label="Approver name"
+              required
+              disabled={disabled}
+              value={request.approver.name}
+              onChange={(val) => updateApprover('name', val)}
+              placeholder="Search manager name or email..."
+              onSelectUser={(person) => {
+                updateApprover('name', person.displayName);
+                updateApprover('email', person.mail);
+              }}
+            />
+            <Field label="Approver email">
+              <Input required disabled={disabled} type="email" value={request.approver.email} onChange={(e) => updateApprover('email', e.target.value)} />
+            </Field>
+          </div>
+        </Card>
 
         <Card className="p-5"><h2 className="mb-4 font-bold">Request details</h2><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Request type"><Select disabled={disabled} value={request.requestType} onChange={e => switchRequestType(e.target.value as RequestType)}><option value="outside_company">Outside-company trip</option><option value="overtime">OT transportation</option></Select></Field>
@@ -234,9 +273,142 @@ export default function PublicManageRequest({ initialToken }: { initialToken?: s
         {request.requestType === 'outside_company' && <div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label="Passenger names (one per line)"><Textarea disabled={disabled} value={request.passengers.join('\n')} onChange={e => update('passengers', e.target.value.split('\n').map(item => item.trim()).filter(Boolean))} /></Field><label className="flex items-center gap-3 self-start pt-8 text-sm"><input type="checkbox" disabled={disabled} checked={Boolean(request.withStaff)} onChange={e => update('withStaff', e.target.checked)} className="h-4 w-4 accent-brand" />Travel with GA staff</label></div>}
         </Card>
 
-        {request.requestType === 'overtime' && <Card className="p-5"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-bold">Employees</h2><p className="text-sm text-gray-500">Add everyone included in this OT request.</p></div><Button type="button" variant="secondary" disabled={disabled} onClick={() => update('overtimeEmployees', [...request.overtimeEmployees, emptyEmployee()])}><Plus size={16} /> Add employee</Button></div>{!otWindowOpen && permissions.canEdit && <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-800">OT requests can be edited only from 08:00 to 17:00 Thailand time.</p>}<div className="space-y-4">{request.overtimeEmployees.map((employee, index) => <div key={index} className="rounded-lg border border-line bg-gray-50 p-4"><div className="mb-3 flex justify-between"><p className="font-semibold">Employee {index + 1}</p><Button type="button" variant="ghost" disabled={disabled || request.overtimeEmployees.length === 1} onClick={() => update('overtimeEmployees', request.overtimeEmployees.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={16} /></Button></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Employee number"><Input required disabled={disabled} value={employee.employeeId} onChange={e => updateEmployee(index, 'employeeId', e.target.value)} /></Field><Field label="Employee name"><Input required disabled={disabled} value={employee.employeeName} onChange={e => updateEmployee(index, 'employeeName', e.target.value)} /></Field><Field label="Work description"><Input required disabled={disabled} value={employee.workDescription} onChange={e => updateEmployee(index, 'workDescription', e.target.value)} /></Field><Field label="Weekly hours (max 60)"><Input required disabled={disabled} type="number" min="0" max="60" step="0.01" value={employee.totalWeeklyHours} onChange={e => updateEmployee(index, 'totalWeeklyHours', Number(e.target.value))} /></Field><Field label="OT start"><Input required disabled={disabled} type="time" value={employee.workStart} onChange={e => updateEmployee(index, 'workStart', e.target.value)} /></Field><Field label="OT end"><Input required disabled={disabled} type="time" value={employee.workEnd} onChange={e => updateEmployee(index, 'workEnd', e.target.value)} /></Field><Field label="Transportation"><Select disabled={disabled} value={employee.transportRequired ? 'yes' : 'no'} onChange={e => updateEmployee(index, 'transportRequired', e.target.value === 'yes')}><option value="yes">Required</option><option value="no">Not required</option></Select></Field><Field label="Bus stop"><Input required={employee.transportRequired} disabled={disabled || !employee.transportRequired} value={employee.busStop} onChange={e => updateEmployee(index, 'busStop', e.target.value)} /></Field>
-        </div></div>)}</div></Card>}
+        {request.requestType === 'overtime' && (
+          <Card className="p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-bold">Employees</h2>
+                <p className="text-sm text-gray-500">
+                  Add everyone included in this OT request. Type employee name to search directory.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={disabled}
+                onClick={() => update('overtimeEmployees', [...request.overtimeEmployees, emptyEmployee()])}
+              >
+                <Plus size={16} /> Add employee
+              </Button>
+            </div>
+            {!otWindowOpen && permissions.canEdit && (
+              <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+                OT requests can be edited only from 08:00 to 17:00 Thailand time.
+              </p>
+            )}
+            <div className="space-y-4">
+              {request.overtimeEmployees.map((employee, index) => (
+                <div key={index} className="rounded-xl border border-line bg-canvas p-4 shadow-panel">
+                  <div className="mb-3 flex justify-between items-center">
+                    <p className="font-bold text-ink text-sm">Employee {index + 1}</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={disabled || request.overtimeEmployees.length === 1}
+                      onClick={() =>
+                        update(
+                          'overtimeEmployees',
+                          request.overtimeEmployees.filter((_, itemIndex) => itemIndex !== index),
+                        )
+                      }
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <CompanyUserField
+                      label="Employee name"
+                      required
+                      disabled={disabled}
+                      value={employee.employeeName}
+                      placeholder="Search name or email..."
+                      onChange={(val) => updateEmployee(index, 'employeeName', val)}
+                      onSelectUser={(person) => {
+                        updateEmployee(index, 'employeeName', person.displayName);
+                        updateEmployee(index, 'employeeEmail', person.mail);
+                        if (person.employeeId) updateEmployee(index, 'employeeId', person.employeeId);
+                      }}
+                    />
+                    <Field label="Employee email">
+                      <Input
+                        required={employee.transportRequired}
+                        disabled={disabled}
+                        type="email"
+                        placeholder="name@company.com"
+                        value={employee.employeeEmail || ''}
+                        onChange={(e) => updateEmployee(index, 'employeeEmail', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Employee number">
+                      <Input
+                        required
+                        disabled={disabled}
+                        value={employee.employeeId}
+                        onChange={(e) => updateEmployee(index, 'employeeId', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Work description">
+                      <Input
+                        required
+                        disabled={disabled}
+                        value={employee.workDescription}
+                        onChange={(e) => updateEmployee(index, 'workDescription', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Weekly hours (max 60)">
+                      <Input
+                        required
+                        disabled={disabled}
+                        type="number"
+                        min="0"
+                        max="60"
+                        step="0.01"
+                        value={employee.totalWeeklyHours}
+                        onChange={(e) => updateEmployee(index, 'totalWeeklyHours', Number(e.target.value))}
+                      />
+                    </Field>
+                    <Field label="OT start">
+                      <Input
+                        required
+                        disabled={disabled}
+                        type="time"
+                        value={employee.workStart}
+                        onChange={(e) => updateEmployee(index, 'workStart', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="OT end">
+                      <Input
+                        required
+                        disabled={disabled}
+                        type="time"
+                        value={employee.workEnd}
+                        onChange={(e) => updateEmployee(index, 'workEnd', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Transportation">
+                      <Select
+                        disabled={disabled}
+                        value={employee.transportRequired ? 'yes' : 'no'}
+                        onChange={(e) => updateEmployee(index, 'transportRequired', e.target.value === 'yes')}
+                      >
+                        <option value="yes">Required</option>
+                        <option value="no">Not required</option>
+                      </Select>
+                    </Field>
+                    <Field label="Bus stop">
+                      <Input
+                        required={employee.transportRequired}
+                        disabled={disabled || !employee.transportRequired}
+                        value={employee.busStop}
+                        onChange={(e) => updateEmployee(index, 'busStop', e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Button type="button" variant="secondary" disabled={saving} onClick={() => load()}><RefreshCw size={16} /> Reload</Button>
