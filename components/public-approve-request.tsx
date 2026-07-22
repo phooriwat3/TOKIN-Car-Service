@@ -139,7 +139,7 @@ export default function PublicApproveRequest({ initialToken, initialRequest, ini
       <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
         <Info label="Requester" value={request.requester.name} />
         <Info label="Department" value={request.requester.department} />
-        <Info label="Request type" value={request.requestType === 'overtime' ? 'OT / holiday transport' : 'Outside-company trip'} />
+        <Info label="Request type" value={request.requestType === 'overtime' ? 'OVERTIME / HOLIDAY WORK' : 'CAR SERVICE REQUISITION'} />
         <Info label="Date and time" value={`${request.usingDate} - ${request.startTime} to ${request.endTime}`} />
         <Info label="Route" value={`${request.pickupLocation} to ${request.destination}`} />
         <Info label="Passengers" value={String(request.numPassengers)} />

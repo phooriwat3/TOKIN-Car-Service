@@ -3,6 +3,7 @@ import { corsHeaders, json } from '../_shared/http.ts';
 import {
   bangkokHour, date, email, randomToken, requiredText, sha256Hex, time, token,
 } from '../_shared/request-access.ts';
+import { approvalEmail } from '../_shared/email-template.ts';
 
 type OvertimeEmployee = {
   employeeId: string;
@@ -248,6 +249,11 @@ Deno.serve(async (request) => {
 
     const manageUrl = `${appBaseUrl()}/request/manage?token=${encodeURIComponent(newRawToken)}`;
     const approvalFlowUrl = Deno.env.get('POWER_AUTOMATE_APPROVAL_FLOW_URL');
+    const approverEmailTemplate = approvalEmail({
+      requestNo: current.booking_no, requestType: payload.requestType, requesterName, requesterDepartment,
+      approverName, usingDate, startTime, endTime, pickupLocation, destination, purpose, meetingPoint,
+      withStaff: Boolean(payload.withStaff), passengers, overtimeEmployees, approvalUrl, expiresAt: approvalExpiresAt,
+    });
     let approvalEmailStatus: 'sent' | 'failed' | 'not_configured' = 'not_configured';
     if (approvalFlowUrl) {
       try {
@@ -270,6 +276,9 @@ Deno.serve(async (request) => {
             manageUrl,
             approvalUrl,
             approvalExpiresAt,
+            passengers,
+            overtimeEmployees,
+            ...approverEmailTemplate,
           }),
         });
         approvalEmailStatus = response.ok ? 'sent' : 'failed';

@@ -6,7 +6,8 @@ export type VehicleType = 'van' | 'car' | 'pickup' | 'other';
 export interface User { id:string; employeeId:string; fullName:string; email:string; department:string; role:Role }
 export interface Vehicle { id:string; licensePlate:string; brand:string; model:string; type:VehicleType; capacity:number; color:string; year:number; active:boolean; notes?:string }
 export interface Driver { id:string; userId?:string; employeeId:string; fullName:string; phone:string; licenseNumber:string; licenseExpiry:string; active:boolean; notes?:string }
-export interface Assignment { vehicleId:string; driverId:string; assignedAt:string; notes?:string; accepted:boolean }
+export interface ManualTransportUnit { unitId:string; licensePlate:string; brand:string; vehicleType:string; driverName:string; driverPhone:string; employeeIds:string[] }
+export interface Assignment { vehicleId?:string; driverId?:string; manualTransportUnits?:ManualTransportUnit[]; assignedAt:string; notes?:string; accepted:boolean }
 export interface AssignmentDraft { vehicleId:string; driverId:string; notes?:string; plannedAt:string }
 export interface Approval { action:'approved'|'rejected'|'changes_requested'; comments:string; actedAt:string; approverName:string }
 export interface OvertimeEmployee {

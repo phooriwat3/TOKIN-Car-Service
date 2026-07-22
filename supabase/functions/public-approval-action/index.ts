@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/http.ts';
 import { randomToken, sha256Hex, token } from '../_shared/request-access.ts';
+import { manageEmail } from '../_shared/email-template.ts';
 
 const outcomes: Record<string, 'approved' | 'rejected' | 'changes_requested'> = {
   approve: 'approved',
@@ -98,6 +99,14 @@ Deno.serve(async (request) => {
       requesterNotificationStatus = requesterManageFlowUrl ? 'failed' : 'not_configured';
       if (requesterManageFlowUrl) {
         try {
+          const requesterEmailTemplate = manageEmail({
+            event: 'request.changes_requested', requestNo: booking.booking_no,
+            requestType: booking.request_type, requesterName: booking.requester_name,
+            requesterDepartment: booking.requester_department, approverName: booking.approver_name,
+            usingDate: booking.using_date, startTime: booking.start_time, endTime: booking.end_time,
+            pickupLocation: booking.pickup_location, destination: booking.destination,
+            purpose: booking.purpose, comments, manageUrl, expiresAt: manageTokenExpiresAt,
+          });
           const response = await fetch(requesterManageFlowUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -124,6 +133,7 @@ Deno.serve(async (request) => {
               comments,
               manageUrl,
               expiresAt: manageTokenExpiresAt,
+              ...requesterEmailTemplate,
             }),
           });
           requesterNotificationStatus = response.ok ? 'sent' : 'failed';

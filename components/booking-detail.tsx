@@ -155,7 +155,23 @@ export function BookingDetail({ id, admin = false }: { id: string; admin?: boole
               </Link>
             )}
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          {b.assignment.manualTransportUnits?.length ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {b.assignment.manualTransportUnits.map((unit, index) => (
+                <div key={index} className="rounded-lg border border-line bg-canvas p-4">
+                  <p className="text-xs font-semibold uppercase text-gray-500">Vehicle and driver {index + 1}</p>
+                  <p className="mt-2 font-bold text-ink">{unit.licensePlate} ? {unit.brand} {unit.vehicleType}</p>
+                  <p className="mt-1 text-sm text-gray-700">{unit.driverName}{unit.driverPhone ? ` (${unit.driverPhone})` : ''}</p>
+                  <div className="mt-3 border-t border-line pt-3 text-xs text-gray-600">
+                    <span className="font-semibold">Passengers: </span>
+                    {(unit.employeeIds ?? []).map((employeeId) => b.overtimeEmployees?.find((employee) => employee.employeeId === employeeId)?.employeeName || employeeId).join(', ') || '-'}
+                    <div className="mt-1">Drop-offs: {(unit.employeeIds ?? []).map((employeeId) => b.overtimeEmployees?.find((employee) => employee.employeeId === employeeId)?.busStop || '-').join(', ') || '-'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <div className={`grid gap-4 sm:grid-cols-2 ${b.assignment.manualTransportUnits?.length ? 'hidden' : ''}`}>
             <Rows
               items={[
                 ['Primary Vehicle', vehicle ? `${vehicle.licensePlate} · ${vehicle.brand} ${vehicle.model}` : 'Unknown'],

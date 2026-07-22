@@ -3,6 +3,7 @@ import { corsHeaders, json } from '../_shared/http.ts';
 import {
   bangkokHour, date, email, randomToken, requiredText, sha256Hex, time,
 } from '../_shared/request-access.ts';
+import { approvalEmail, manageEmail } from '../_shared/email-template.ts';
 
 type PublicRequest = {
   requestType: 'outside_company' | 'overtime';
@@ -167,6 +168,15 @@ Deno.serve(async (request: Request) => {
     if (approvalTokenError) throw approvalTokenError;
 
     const requesterManageFlowUrl = Deno.env.get('POWER_AUTOMATE_REQUESTER_MANAGE_FLOW_URL');
+    const emailRequest = {
+      requestNo: booking.booking_no, requestType: payload.requestType, requesterName, requesterDepartment,
+      approverName, usingDate, startTime, endTime, pickupLocation: payload.pickupLocation,
+      destination: payload.destination, purpose: payload.purpose, meetingPoint: payload.meetingPoint,
+      withStaff: payload.withStaff, passengers, overtimeEmployees,
+    };
+    const requesterEmailTemplate = manageEmail({
+      ...emailRequest, event: 'request.manage_link_created', manageUrl, expiresAt: manageTokenExpiresAt,
+    });
     let requesterManageEmailStatus: 'sent' | 'failed' | 'not_configured' = 'not_configured';
     if (requesterManageFlowUrl) {
       try {
@@ -188,6 +198,7 @@ Deno.serve(async (request: Request) => {
             purpose: payload.purpose,
             manageUrl,
             expiresAt: manageTokenExpiresAt,
+            ...requesterEmailTemplate,
           }),
         });
         requesterManageEmailStatus = response.ok ? 'sent' : 'failed';
@@ -199,6 +210,9 @@ Deno.serve(async (request: Request) => {
     const approvalFlowUrl = Deno.env.get('POWER_AUTOMATE_APPROVAL_FLOW_URL');
     let approvalEmailStatus: 'sent' | 'failed' | 'not_configured' = 'not_configured';
     if (approvalFlowUrl) {
+    const approverEmailTemplate = approvalEmail({
+      ...emailRequest, approvalUrl, expiresAt: approvalTokenExpiresAt,
+    });
       try {
         const response = await fetch(approvalFlowUrl, {
           method: 'POST',
@@ -219,6 +233,9 @@ Deno.serve(async (request: Request) => {
             approvalUrl,
             approvalExpiresAt: approvalTokenExpiresAt,
             callbackUrl: `${supabaseUrl}/functions/v1/approval-callback`,
+            passengers,
+            overtimeEmployees,
+            ...approverEmailTemplate,
           }),
         });
         approvalEmailStatus = response.ok ? 'sent' : 'failed';

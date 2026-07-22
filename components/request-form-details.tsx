@@ -10,7 +10,7 @@ export function RequestFormDetails({ id }: { id: string }) {
   return <Card className="p-5">
     <h2 className="font-bold">Email approval information</h2>
     <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
-      <Info label="Request type" value={booking.requestType === 'overtime' ? 'OT transportation' : 'Outside-company trip'} />
+      <Info label="Request type" value={booking.requestType === 'overtime' ? 'OVERTIME / HOLIDAY WORK' : 'CAR SERVICE REQUISITION'} />
       <Info label="Selected approver" value={booking.approverName || '-'} />
       <Info label="Approver email" value={booking.approverEmail || '-'} />
     </dl>

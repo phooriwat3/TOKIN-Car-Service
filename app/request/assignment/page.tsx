@@ -43,19 +43,51 @@ export default async function AssignmentPage({
       <div className="mt-5 border-t border-line pt-5"><Info label="Purpose" value={assignment.purpose} /></div>
     </Card>
 
-    <div className="mt-5 grid gap-5 md:grid-cols-2">
-      <Card className="border-l-4 border-l-brand p-6">
-        <div className="flex items-center gap-2 text-brand"><Car size={20} /><h2 className="font-bold">Vehicle</h2></div>
-        <p className="mt-4 text-xl font-bold">{assignment.vehicle.licensePlate}</p>
-        <p className="mt-1 text-sm text-gray-600">{assignment.vehicle.brand} {assignment.vehicle.model}</p>
-        {assignment.vehicle.color && <p className="mt-3 text-xs text-gray-500">Color: {assignment.vehicle.color}</p>}
-      </Card>
-      <Card className="border-l-4 border-l-accent p-6">
-        <div className="flex items-center gap-2 text-brand"><UserRound size={20} /><h2 className="font-bold">Driver</h2></div>
-        <p className="mt-4 text-xl font-bold">{assignment.driver.name}</p>
-        <p className="mt-2 flex items-center gap-2 text-sm text-gray-600"><Phone size={15} />{assignment.driver.phone || '-'}</p>
-      </Card>
-    </div>
+    {assignment.transportUnits?.length ? (
+      <div className="mt-5 space-y-4">
+        <h2 className="font-bold">Vehicles and drivers ({assignment.transportUnits.length})</h2>
+        {assignment.transportUnits.map((unit, index) => (
+          <div key={index} className="grid gap-5 md:grid-cols-2">
+            <Card className="border-l-4 border-l-brand p-6">
+              <div className="flex items-center gap-2 text-brand"><Car size={20} /><h3 className="font-bold">Vehicle {index + 1}</h3></div>
+              <p className="mt-4 text-xl font-bold">{unit.licensePlate}</p>
+              <p className="mt-1 text-sm text-gray-600">{unit.brand} {unit.vehicleType}</p>
+            </Card>
+            <Card className="border-l-4 border-l-accent p-6">
+              <div className="flex items-center gap-2 text-brand"><UserRound size={20} /><h3 className="font-bold">Driver {index + 1}</h3></div>
+              <p className="mt-4 text-xl font-bold">{unit.driverName}</p>
+              <p className="mt-2 flex items-center gap-2 text-sm text-gray-600"><Phone size={15} />{unit.driverPhone || '-'}</p>
+            </Card>
+            <Card className="p-6 md:col-span-2">
+              <div className="flex items-center gap-2 text-brand"><UserRound size={20} /><h3 className="font-bold">Passengers ({unit.employeeIds?.length || 0})</h3></div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {(unit.employeeIds ?? []).map((employeeId) => {
+                  const employee = assignment.overtimeEmployees.find((item) => item.employee_id === employeeId);
+                  return <div key={employeeId} className="rounded-lg bg-blue-50 p-3 text-sm">
+                    <p className="font-semibold">{employee?.employee_name || employeeId}</p>
+                    <p className="mt-1 text-xs text-gray-600">Drop-off: {employee?.bus_stop || '-'}</p>
+                  </div>;
+                })}
+              </div>
+            </Card>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
+        <Card className="border-l-4 border-l-brand p-6">
+          <div className="flex items-center gap-2 text-brand"><Car size={20} /><h2 className="font-bold">Vehicle</h2></div>
+          <p className="mt-4 text-xl font-bold">{assignment.vehicle.licensePlate}</p>
+          <p className="mt-1 text-sm text-gray-600">{assignment.vehicle.brand} {assignment.vehicle.model}</p>
+          {assignment.vehicle.color && <p className="mt-3 text-xs text-gray-500">Color: {assignment.vehicle.color}</p>}
+        </Card>
+        <Card className="border-l-4 border-l-accent p-6">
+          <div className="flex items-center gap-2 text-brand"><UserRound size={20} /><h2 className="font-bold">Driver</h2></div>
+          <p className="mt-4 text-xl font-bold">{assignment.driver.name}</p>
+          <p className="mt-2 flex items-center gap-2 text-sm text-gray-600"><Phone size={15} />{assignment.driver.phone || '-'}</p>
+        </Card>
+      </div>
+    )}
 
     {assignment.notes && <Card className="mt-5 bg-amber-50 p-6"><h2 className="font-bold text-amber-900">Assignment notes</h2><p className="mt-2 whitespace-pre-wrap text-sm text-amber-950">{assignment.notes}</p></Card>}
 

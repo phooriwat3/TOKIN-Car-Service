@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/http.ts';
 import { randomToken, sha256Hex } from '../_shared/request-access.ts';
+import { assignmentEmail } from '../_shared/email-template.ts';
 
 const appBaseUrl = () => {
   const configured = Deno.env.get('APP_BASE_URL')?.trim().replace(/\/+$/, '');
@@ -30,7 +31,7 @@ Deno.serve(async (request: Request) => {
     const { data: booking, error } = await db.from('bookings').select(`
       id,booking_no,revision_no,request_type,requester_name,requester_email,using_date,start_time,end_time,pickup_location,destination,purpose,
       vehicle_assignments(
-        vehicle_id,driver_id,notes,
+        vehicle_id,driver_id,notes,manual_transport_units,
         vehicle:vehicles(license_plate,brand,model),
         driver:drivers(full_name,phone)
       ),
@@ -41,7 +42,15 @@ Deno.serve(async (request: Request) => {
     const assignment = Array.isArray(booking.vehicle_assignments) ? booking.vehicle_assignments[0] : booking.vehicle_assignments;
     const vehicle = Array.isArray(assignment?.vehicle) ? assignment.vehicle[0] : assignment?.vehicle;
     const driver = Array.isArray(assignment?.driver) ? assignment.driver[0] : assignment?.driver;
-    if (!assignment || !vehicle || !driver) return json({ error: 'Assignment is incomplete.' }, 409);
+    const transportUnits = Array.isArray(assignment?.manual_transport_units) ? assignment.manual_transport_units : [];
+    const primaryManualUnit = transportUnits[0];
+    if (!assignment || (!primaryManualUnit && (!vehicle || !driver))) return json({ error: 'Assignment is incomplete.' }, 409);
+    const emailVehicle = primaryManualUnit
+      ? { licensePlate: primaryManualUnit.licensePlate, brand: primaryManualUnit.brand, model: primaryManualUnit.vehicleType }
+      : { licensePlate: vehicle.license_plate, brand: vehicle.brand, model: vehicle.model };
+    const emailDriver = primaryManualUnit
+      ? { name: primaryManualUnit.driverName, phone: primaryManualUnit.driverPhone ?? '' }
+      : { name: driver.full_name, phone: driver.phone };
 
     const documentToken = randomToken();
     const documentTokenHash = await sha256Hex(documentToken);
@@ -79,6 +88,7 @@ Deno.serve(async (request: Request) => {
     const employeeAssignments = (booking.overtime_employees ?? [])
       .filter((e: any) => e.transport_required && e.employee_email)
       .map((e: any) => {
+        const manualUnit = transportUnits.find((unit: any) => Array.isArray(unit.employeeIds) && unit.employeeIds.includes(e.employee_id));
         const eVehicle = vehicleMap.get(e.assigned_vehicle_id) || vehicle;
         const eDriver = driverMap.get(e.assigned_driver_id) || driver;
         return {
@@ -86,10 +96,34 @@ Deno.serve(async (request: Request) => {
           employeeName: e.employee_name,
           employeeEmail: e.employee_email,
           busStop: e.bus_stop,
-          vehicle: { licensePlate: eVehicle.license_plate, brand: eVehicle.brand, model: eVehicle.model },
-          driver: { name: eDriver.full_name, phone: eDriver.phone },
+          vehicle: manualUnit
+            ? { licensePlate: manualUnit.licensePlate, brand: manualUnit.brand, model: manualUnit.vehicleType }
+            : { licensePlate: eVehicle?.license_plate ?? '', brand: eVehicle?.brand ?? '', model: eVehicle?.model ?? '' },
+          driver: manualUnit
+            ? { name: manualUnit.driverName, phone: manualUnit.driverPhone ?? '' }
+            : { name: eDriver?.full_name ?? '', phone: eDriver?.phone ?? '' },
         };
       });
+    const assignmentEmailTemplate = assignmentEmail({
+      requestNo: booking.booking_no, requestType: booking.request_type,
+      requesterName: booking.requester_name, usingDate: booking.using_date,
+      startTime: String(booking.start_time).slice(0, 5), endTime: String(booking.end_time).slice(0, 5),
+      pickupLocation: booking.pickup_location, destination: booking.destination, purpose: booking.purpose,
+      vehicle: emailVehicle,
+      driver: emailDriver, transportUnits, notes: assignment.notes ?? '',
+      overtimeEmployees: (booking.overtime_employees ?? []).map((employee: any) => ({
+        employeeId: employee.employee_id,
+        employeeName: employee.employee_name,
+        workDescription: employee.work_description,
+        workStart: employee.work_start,
+        workEnd: employee.work_end,
+        totalWeeklyHours: employee.total_weekly_hours,
+        transportRequired: employee.transport_required,
+        busStop: employee.bus_stop,
+      })),
+      viewUrl, pdfUrl, expiresAt: documentExpiresAt,
+    });
+
 
     const response = await fetch(flowUrl, {
       method: 'POST',
@@ -105,13 +139,15 @@ Deno.serve(async (request: Request) => {
         pickupLocation: booking.pickup_location,
         destination: booking.destination,
         purpose: booking.purpose,
-        vehicle: { licensePlate: vehicle.license_plate, brand: vehicle.brand, model: vehicle.model },
-        driver: { name: driver.full_name, phone: driver.phone },
+        vehicle: emailVehicle,
+        driver: emailDriver,
+        transportUnits,
         notes: assignment.notes ?? '',
         employeeAssignments,
         viewUrl,
         pdfUrl,
         expiresAt: documentExpiresAt,
+        ...assignmentEmailTemplate,
       }),
     });
     const notificationStatus = response.ok ? 'sent' : 'failed';

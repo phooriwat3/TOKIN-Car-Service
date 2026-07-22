@@ -150,15 +150,15 @@ export default function PublicRequestForm() {
         <p className="mt-2 text-base text-gray-500">No account required. Select the type of request below to get started.</p>
       </div>
       <div className="grid gap-5 md:grid-cols-2">
-        <Choice icon={<Clock3 />} title="OT Transportation" body="Transportation for employees working overtime or on a public holiday." onClick={() => setRequestType('overtime')} />
-        <Choice icon={<Car />} title="Outside-Company Trip" body="Vehicle request for business travel outside the company premises." onClick={() => setRequestType('outside_company')} />
+        <Choice icon={<Clock3 />} title="OVERTIME / HOLIDAY WORK" body="Transportation for employees working overtime or on a public holiday." onClick={() => setRequestType('overtime')} />
+        <Choice icon={<Car />} title="CAR SERVICE REQUISITION" body="Vehicle request for business travel outside the company premises." onClick={() => setRequestType('outside_company')} />
       </div>
     </div>
   </PublicFrame>;
 
   return <PublicFrame>
     <form onSubmit={submit} className="mx-auto max-w-6xl space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-sm font-semibold uppercase text-brand">TOKIN Transport</p><h1 className="text-2xl font-bold">{requestType === 'overtime' ? 'OT transportation request' : 'Outside-company car request'}</h1></div><Button type="button" variant="secondary" onClick={() => setRequestType(null)}>Change request type</Button></div>
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-sm font-semibold uppercase text-brand">TOKIN Transport</p><h1 className="text-2xl font-bold">{requestType === 'overtime' ? 'OVERTIME / HOLIDAY WORK' : 'CAR SERVICE REQUISITION'}</h1></div><Button type="button" variant="secondary" onClick={() => setRequestType(null)}>Change request type</Button></div>
 
       <Card className="p-5">
         <h2 className="mb-1 font-bold">Requester information</h2>

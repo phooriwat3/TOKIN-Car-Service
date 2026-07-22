@@ -102,13 +102,13 @@ export default function NewEmailRequestForm() {
   if (!requestType) return <>
     <PageHeader title="Create car request" description="Choose the form that matches the transportation request." />
     <div className="grid gap-5 md:grid-cols-2">
-      <Choice icon={<Clock3 />} title="OT transportation" body="Request transport for multiple employees working overtime or on a holiday." onClick={() => setRequestType('overtime')} />
-      <Choice icon={<Car />} title="Outside-company trip" body="Request a vehicle for a business trip outside the company." onClick={() => setRequestType('outside_company')} />
+      <Choice icon={<Clock3 />} title="OVERTIME / HOLIDAY WORK" body="Request transport for multiple employees working overtime or on a holiday." onClick={() => setRequestType('overtime')} />
+      <Choice icon={<Car />} title="CAR SERVICE REQUISITION" body="Request a vehicle for a business trip outside the company." onClick={() => setRequestType('outside_company')} />
     </div>
   </>;
 
   return <>
-    <PageHeader title={requestType === 'overtime' ? 'OT transportation request' : 'Outside-company car request'} description="The selected approver will receive this request by email after the Power Automate integration is enabled." />
+    <PageHeader title={requestType === 'overtime' ? 'OVERTIME / HOLIDAY WORK' : 'CAR SERVICE REQUISITION'} description="The selected approver will receive this request by email after the Power Automate integration is enabled." />
     <form onSubmit={submit} className="space-y-5">
       <Card className="p-5">
         <div className="mb-5 flex items-center justify-between"><h2 className="font-bold">Request information</h2><Button type="button" variant="ghost" onClick={() => setRequestType(null)}>Change form</Button></div>
@@ -124,7 +124,7 @@ export default function NewEmailRequestForm() {
         {requestType === 'outside_company' && <div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label="Passenger names (one per line)"><Textarea value={passengers} onChange={e => setPassengers(e.target.value)} /></Field><label className="flex items-center gap-3 self-start pt-8 text-sm"><input type="checkbox" checked={withStaff} onChange={e => setWithStaff(e.target.checked)} className="h-4 w-4 accent-brand" />Travel with GA staff</label></div>}
       </Card>
 
-      {requestType === 'overtime' && <Card className="p-5"><div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Employees</h2><p className="text-sm text-gray-500">Add everyone included in this OT transportation request.</p></div><Button type="button" variant="secondary" onClick={() => setEmployees(x => [...x, emptyEmployee()])}><Plus size={16} /> Add employee</Button></div>
+      {requestType === 'overtime' && <Card className="p-5"><div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Employees</h2><p className="text-sm text-gray-500">Add everyone included in this OVERTIME / HOLIDAY WORK request.</p></div><Button type="button" variant="secondary" onClick={() => setEmployees(x => [...x, emptyEmployee()])}><Plus size={16} /> Add employee</Button></div>
         <div className="space-y-4">{employees.map((employee, index) => <div key={index} className="rounded-xl border border-line bg-canvas p-4 shadow-panel"><div className="mb-3 flex justify-between items-center"><p className="font-bold text-ink text-sm">Employee {index + 1}</p><Button type="button" variant="ghost" disabled={employees.length === 1} onClick={() => setEmployees(x => x.filter((_, i) => i !== index))}><Trash2 size={16} /></Button></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <CompanyUserField label="Employee name" required value={employee.employeeName} placeholder="Search name or email..." onChange={val => updateEmployee(index, 'employeeName', val)} onSelectUser={person => { updateEmployee(index, 'employeeName', person.displayName); updateEmployee(index, 'employeeEmail', person.mail); if (person.employeeId) updateEmployee(index, 'employeeId', person.employeeId); }} />
           <Field label="Employee email"><Input required={employee.transportRequired} type="email" placeholder="name@company.com" value={employee.employeeEmail || ''} onChange={e => updateEmployee(index, 'employeeEmail', e.target.value)} /></Field>

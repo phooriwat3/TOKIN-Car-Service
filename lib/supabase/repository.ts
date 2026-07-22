@@ -103,6 +103,7 @@ function mapBooking(row: any): Booking {
     assignment: assignment ? {
       vehicleId: assignment.vehicle_id,
       driverId: assignment.driver_id,
+      manualTransportUnits: Array.isArray(assignment.manual_transport_units) ? assignment.manual_transport_units : [],
       assignedAt: assignment.assigned_at,
       notes: assignment.notes ?? undefined,
       accepted: Boolean(assignment.driver_accepted),
@@ -136,7 +137,7 @@ export async function loadAppData(supabase: SupabaseClient): Promise<AppData> {
       overtime_employees(*),
       approvals(action,comments,acted_at,approver_name,approver_email,approver:profiles!approvals_approver_id_fkey(full_name)),
       assignment_drafts(vehicle_id,driver_id,notes,planned_at,updated_at),
-      vehicle_assignments(vehicle_id,driver_id,assigned_at,notes,driver_accepted),
+      vehicle_assignments(vehicle_id,driver_id,manual_transport_units,assigned_at,notes,driver_accepted),
       trip_logs(actual_time_out,actual_time_in,start_mileage,end_mileage,remarks),
       expenses(fuel_cost,toll_fee,parking_fee)
     `).order('created_at', { ascending: false }),
@@ -281,12 +282,18 @@ export async function persistBookingUpdate(
   } else if (patch.assignment && patch.assignment.accepted) {
     result = await supabase.rpc('accept_assignment', { p_booking_id: id });
   } else if (patch.assignment) {
-    result = await supabase.rpc('assign_booking', {
-      p_booking_id: id,
-      p_vehicle_id: patch.assignment.vehicleId,
-      p_driver_id: patch.assignment.driverId,
-      p_notes: patch.assignment.notes ?? null,
-    });
+    result = patch.assignment.manualTransportUnits?.length
+      ? await supabase.rpc('assign_overtime_booking_manual', {
+          p_booking_id: id,
+          p_transport_units: patch.assignment.manualTransportUnits,
+          p_notes: patch.assignment.notes ?? null,
+        })
+      : await supabase.rpc('assign_booking', {
+          p_booking_id: id,
+          p_vehicle_id: patch.assignment.vehicleId,
+          p_driver_id: patch.assignment.driverId,
+          p_notes: patch.assignment.notes ?? null,
+        });
     if (patch.overtimeEmployees?.length) {
       for (const emp of patch.overtimeEmployees) {
         await supabase.from('overtime_employees').update({

@@ -33,7 +33,7 @@ Deno.serve(async (request) => {
       booking_passengers(name,seq),
       overtime_employees(employee_id,employee_name,bus_stop,transport_required,seq),
       vehicle_assignments(
-        assigned_at,notes,
+        assigned_at,notes,manual_transport_units,
         vehicle:vehicles(license_plate,brand,model,color,capacity),
         driver:drivers(full_name,phone)
       )
@@ -52,7 +52,15 @@ Deno.serve(async (request) => {
       : booking.vehicle_assignments;
     const vehicle = Array.isArray(assignment?.vehicle) ? assignment.vehicle[0] : assignment?.vehicle;
     const driver = Array.isArray(assignment?.driver) ? assignment.driver[0] : assignment?.driver;
-    if (!assignment || !vehicle || !driver) return json({ error: 'Assignment details are incomplete.' }, 409);
+    const transportUnits = Array.isArray(assignment?.manual_transport_units) ? assignment.manual_transport_units : [];
+    const primaryManualUnit = transportUnits[0];
+    if (!assignment || (!primaryManualUnit && (!vehicle || !driver))) return json({ error: 'Assignment details are incomplete.' }, 409);
+    const publicVehicle = primaryManualUnit
+      ? { licensePlate: primaryManualUnit.licensePlate, brand: primaryManualUnit.brand, model: primaryManualUnit.vehicleType, color: '', capacity: 0 }
+      : { licensePlate: vehicle.license_plate, brand: vehicle.brand, model: vehicle.model, color: vehicle.color ?? '', capacity: vehicle.capacity };
+    const publicDriver = primaryManualUnit
+      ? { name: primaryManualUnit.driverName, phone: primaryManualUnit.driverPhone ?? '' }
+      : { name: driver.full_name, phone: driver.phone ?? '' };
 
     await db.from('request_access_tokens')
       .update({ last_accessed_at: new Date().toISOString() })
@@ -81,14 +89,9 @@ Deno.serve(async (request) => {
         numPassengers: booking.num_passengers,
         passengers: booking.booking_passengers ?? [],
         overtimeEmployees: booking.overtime_employees ?? [],
-        vehicle: {
-          licensePlate: vehicle.license_plate,
-          brand: vehicle.brand,
-          model: vehicle.model,
-          color: vehicle.color ?? '',
-          capacity: vehicle.capacity,
-        },
-        driver: { name: driver.full_name, phone: driver.phone ?? '' },
+        vehicle: publicVehicle,
+        driver: publicDriver,
+        transportUnits,
         notes: assignment.notes ?? '',
         assignedAt: assignment.assigned_at,
         createdAt: booking.created_at,

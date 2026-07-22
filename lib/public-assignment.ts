@@ -23,6 +23,15 @@ export type PublicAssignment = {
   }>;
   vehicle: { licensePlate: string; brand: string; model: string; color: string; capacity: number };
   driver: { name: string; phone: string };
+  transportUnits?: Array<{
+    licensePlate: string;
+    unitId: string;
+    employeeIds: string[];
+    brand: string;
+    vehicleType: string;
+    driverName: string;
+    driverPhone: string;
+  }>;
   notes: string;
   assignedAt: string;
   createdAt: string;
