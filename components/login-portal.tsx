@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -47,11 +47,11 @@ export function LoginPortal({ admin = false }: { admin?: boolean }) {
       style={{ background: 'linear-gradient(135deg, #001F3F 0%, #00498E 50%, #0074D9 100%)' }}
     >
       <div
-        className="pointer-events-none absolute -top-32 -right-32 h-[500px] w-[500px] rounded-full opacity-20"
+        className="pointer-events-none absolute -top-32 -right-32 h-[500px] w-[500px] opacity-20"
         style={{ background: 'radial-gradient(circle, #0074D9, transparent 70%)' }}
       />
       <div
-        className="pointer-events-none absolute -bottom-40 -left-40 h-[600px] w-[600px] rounded-full opacity-15"
+        className="pointer-events-none absolute -bottom-40 -left-40 h-[600px] w-[600px] opacity-15"
         style={{ background: 'radial-gradient(circle, #00C6FF, transparent 70%)' }}
       />
       <div
@@ -65,7 +65,7 @@ export function LoginPortal({ admin = false }: { admin?: boolean }) {
       <div className="relative z-10 w-full max-w-md animate-scale-in">
         <div className="mb-8 flex flex-col items-center gap-3 text-white">
           <div
-            className="flex h-16 w-16 items-center justify-center rounded-2xl ring-1 ring-white/20"
+            className="flex h-16 w-16 items-center justify-center ring-1 ring-white/20"
             style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)' }}
           >
             <CarFront size={30} className="text-white" />
@@ -79,7 +79,7 @@ export function LoginPortal({ admin = false }: { admin?: boolean }) {
         </div>
 
         <div
-          className="rounded-2xl border border-white/10 p-8 shadow-modal"
+          className="border border-white/10 p-8 shadow-modal"
           style={{ background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(20px)' }}
         >
           <div className="mb-6">
@@ -133,7 +133,7 @@ export function LoginPortal({ admin = false }: { admin?: boolean }) {
                 </div>
               </Field>
               {error && (
-                <div className="flex items-center gap-2 rounded-lg border border-danger/20 bg-danger-light px-3 py-2.5 text-sm text-danger">
+                <div className="flex items-center gap-2 border-l-2 border-danger bg-danger-light px-3 py-2.5 text-sm text-danger">
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
                     <path d="M7 0a7 7 0 1 0 0 14A7 7 0 0 0 7 0Zm.7 10.5h-1.4v-1.4h1.4v1.4Zm0-2.8h-1.4V3.5h1.4v4.2Z" />
                   </svg>
@@ -143,7 +143,7 @@ export function LoginPortal({ admin = false }: { admin?: boolean }) {
               <Button size="lg" className="w-full mt-2" disabled={submitting || loading}>
                 {submitting ? (
                   <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span className="h-4 w-4 animate-spin border-2 border-white/30 border-t-white" />
                     Signing in...
                   </span>
                 ) : (
@@ -180,7 +180,7 @@ export function LoginPortal({ admin = false }: { admin?: boolean }) {
         </div>
 
         <p className="mt-6 text-center text-xs text-white/40">
-          2025 TOKIN Industrial. All rights reserved.
+          2026 TOKIN Industrial. All rights reserved.
         </p>
       </div>
     </main>

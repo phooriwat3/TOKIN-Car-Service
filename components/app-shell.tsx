@@ -1,11 +1,11 @@
-﻿'use client';
+'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart3, CalendarDays, Car, CarFront, ChevronRight, ClipboardCheck,
   ClipboardList, LayoutDashboard, LogOut, Menu, Plus, Users, X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from './app-provider';
 import { Button } from './ui';
 import { cn } from '@/lib/utils';
@@ -56,7 +56,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  if (path === '/login' || path === '/admin/login' || path.startsWith('/request')) return <>{children}</>;
+  useEffect(() => {
+    if (configured && !loading && !authenticated) {
+      if (path !== '/' && path !== '/login' && path !== '/admin/login' && !path.startsWith('/request')) {
+        router.replace(path.startsWith('/admin') ? '/admin/login' : '/login');
+      }
+    }
+  }, [configured, loading, authenticated, path, router]);
+
+  if (path === '/' || path === '/login' || path === '/admin/login' || path.startsWith('/request')) return <>{children}</>;
   const loginPath = role === 'requester' ? '/login' : '/admin/login';
 
   if (configured && loading)
@@ -73,7 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="grid min-h-screen place-items-center bg-canvas p-6">
         <div className="max-w-lg text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-danger-light text-danger">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center bg-danger-light text-danger">
             <X size={24} />
           </div>
           <h1 className="text-xl font-bold">Unable to load workspace</h1>
@@ -114,7 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-3 px-5 border-b border-white/10">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
+        <div className="flex h-9 w-9 items-center justify-center bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
           <CarFront size={18} className="text-white" />
         </div>
         <div>
@@ -135,7 +143,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href={x.href}
               onClick={() => setOpen(false)}
               className={cn(
-                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                'group flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-150',
                 isActive
                   ? 'bg-white text-brand shadow-md'
                   : 'text-blue-100/80 hover:bg-white/10 hover:text-white',
@@ -150,7 +158,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
       <div className="border-t border-white/10 p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white ring-2 ring-white/30">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center bg-white/20 text-xs font-bold text-white ring-2 ring-white/30">
             {getInitials(user.fullName)}
           </div>
           <div className="min-w-0 flex-1">
@@ -179,7 +187,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <SidebarContent />
             <button
-              className="absolute right-3 top-4 flex h-8 w-8 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white transition"
+              className="absolute right-3 top-4 flex h-8 w-8 items-center justify-center text-white/70 hover:bg-white/10 hover:text-white transition"
               onClick={() => setOpen(false)}
             >
               <X size={18} />
@@ -212,7 +220,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     setRole(e.target.value as Role);
                     router.push('/dashboard');
                   }}
-                  className="h-8 rounded-lg border border-line bg-white px-2.5 text-xs font-semibold capitalize text-ink focus:outline-none focus:border-brand"
+                  className="h-8 border border-line bg-white px-2.5 text-xs font-semibold capitalize text-ink focus:outline-none focus:border-brand"
                 >
                   {(['requester', 'approver', 'admin', 'driver'] as Role[]).map((r) => (
                     <option key={r}>{r}</option>

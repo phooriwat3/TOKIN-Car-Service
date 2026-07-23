@@ -24,6 +24,14 @@ export interface OvertimeEmployee {
   assignedDriverId?: string;
   assignedNotes?: string;
 }
+export type ApproverPosition = 'Chief' | 'Supervisor' | 'Sect.Manager' | 'Dept.Manager' | 'AGM.up';
+
+export interface ApproverItem {
+  position: ApproverPosition;
+  name: string;
+  email: string;
+}
+
 export interface TripLog { actualTimeOut?:string; actualTimeIn?:string; startMileage?:number; endMileage?:number; fuelCost:number; tollFee:number; parkingFee:number; remarks?:string }
-export interface Booking { id:string; bookingNo:string; requesterId:string; requesterName:string; requesterEmail?:string; requesterEmployeeId?:string; department:string; status:BookingStatus; requestType?:RequestType; approverId?:string; approverName?:string; approverEmail?:string; category:Category; usingDate:string; startTime:string; endTime:string; pickupLocation:string; destination:string; purpose:string; numPassengers:number; passengerList:string[]; overtimeEmployees?:OvertimeEmployee[]; meetingPoint:'front_area'|'loading_area'; withStaff?:boolean; vehicleTypePref:VehicleType|'any'; driverRequired:boolean; urgent:boolean; urgentReason?:string; afterHours:boolean; overtimeTransport:boolean; createdAt:string; rejectReason?:string; approval?:Approval; assignment?:Assignment; assignmentDraft?:AssignmentDraft; tripLog?:TripLog }
+export interface Booking { id:string; bookingNo:string; requesterId:string; requesterName:string; requesterEmail?:string; requesterEmployeeId?:string; department:string; status:BookingStatus; requestType?:RequestType; approverId?:string; approverName?:string; approverEmail?:string; approversList?:ApproverItem[]; category:Category; usingDate:string; startTime:string; endTime:string; pickupLocation:string; destination:string; purpose:string; numPassengers:number; passengerList:string[]; overtimeEmployees?:OvertimeEmployee[]; meetingPoint:'front_area'|'loading_area'; withStaff?:boolean; vehicleTypePref:VehicleType|'any'; driverRequired:boolean; urgent:boolean; urgentReason?:string; afterHours:boolean; overtimeTransport:boolean; createdAt:string; rejectReason?:string; approval?:Approval; assignment?:Assignment; assignmentDraft?:AssignmentDraft; tripLog?:TripLog }
 export interface AppData { bookings:Booking[]; vehicles:Vehicle[]; drivers:Driver[]; approvers?:User[] }

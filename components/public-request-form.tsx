@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Car, CheckCircle2, Clock3, Plus, Trash2 } from 'lucide-react';
-import { Button, Card, Field, Input, Select, Textarea } from '@/components/ui';
+import { Button, Card, Field, Input, Select, Textarea, WeeklyHoursInput } from '@/components/ui';
 import { GoogleMapLinks } from '@/components/google-map-links';
 import { CompanyUserField, type CompanyUser } from '@/components/company-user-field';
-import type { OvertimeEmployee, RequestType } from '@/lib/types';
+import type { ApproverItem, ApproverPosition, OvertimeEmployee, RequestType } from '@/lib/types';
 import { isOtRequestWindowOpen } from '@/lib/request-window';
 
 const emptyEmployee = (): OvertimeEmployee => ({
@@ -13,6 +13,13 @@ const emptyEmployee = (): OvertimeEmployee => ({
   workEnd: '20:00', totalWeeklyHours: 0, transportRequired: true, busStop: '',
 });
 
+const APPROVER_POSITIONS: { value: ApproverPosition; label: string }[] = [
+  { value: 'Supervisor', label: 'Supervisor' },
+  { value: 'Sect.Manager', label: 'Sect.Manager' },
+  { value: 'Dept.Manager', label: 'Dept.Manager' },
+  { value: 'Chief', label: 'Chief' },
+  { value: 'AGM.up', label: 'AGM.up (When necessary)' },
+];
 
 export default function PublicRequestForm() {
   const [requestType, setRequestType] = useState<RequestType | null>(null);
@@ -20,11 +27,9 @@ export default function PublicRequestForm() {
   const [requesterEmail, setRequesterEmail] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [department, setDepartment] = useState('');
-  const [approverName, setApproverName] = useState('');
-  const [approverEmail, setApproverEmail] = useState('');
-  const [approverResults, setApproverResults] = useState<CompanyUser[]>([]);
-  const [approverSearching, setApproverSearching] = useState(false);
-  const [approverSelected, setApproverSelected] = useState(false);
+  const [approvers, setApprovers] = useState<ApproverItem[]>([
+    { position: 'Supervisor', name: '', email: '' },
+  ]);
   const [usingDate, setUsingDate] = useState('');
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('17:00');
@@ -40,39 +45,11 @@ export default function PublicRequestForm() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<{ requestNo: string; emailStatus: string; manageUrl?: string } | null>(null);
 
-  useEffect(() => {
-    if (approverSelected || approverName.trim().length < 2) {
-      setApproverResults([]);
-      return;
-    }
-    const timer = window.setTimeout(async () => {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-      if (!supabaseUrl || !publishableKey) return;
-      setApproverSearching(true);
-      try {
-        const response = await fetch(`${supabaseUrl}/functions/v1/search-company-users`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', apikey: publishableKey },
-          body: JSON.stringify({ query: approverName.trim() }),
-        });
-        const result = await response.json();
-        setApproverResults(response.ok && Array.isArray(result.users) ? result.users : []);
-      } catch {
-        setApproverResults([]);
-      } finally {
-        setApproverSearching(false);
-      }
-    }, 350);
-    return () => window.clearTimeout(timer);
-  }, [approverName, approverSelected]);
+  const updateApprover = <K extends keyof ApproverItem>(index: number, key: K, value: ApproverItem[K]) =>
+    setApprovers(current => current.map((item, i) => i === index ? { ...item, [key]: value } : item));
 
-  const chooseApprover = (person: CompanyUser) => {
-    setApproverName(person.displayName);
-    setApproverEmail(person.mail);
-    setApproverResults([]);
-    setApproverSelected(true);
-  };
+  const addApprover = () => setApprovers(current => [...current, { position: 'Sect.Manager', name: '', email: '' }]);
+  const removeApprover = (index: number) => setApprovers(current => current.filter((_, i) => i !== index));
 
   const updateEmployee = <K extends keyof OvertimeEmployee>(index: number, key: K, value: OvertimeEmployee[K]) =>
     setEmployees(current => current.map((item, i) => i === index ? { ...item, [key]: value } : item));
@@ -80,6 +57,7 @@ export default function PublicRequestForm() {
   const reset = () => {
     setRequestType(null);
     setUsingDate(''); setDestination(''); setPurpose(''); setPassengers('');
+    setApprovers([{ position: 'Supervisor', name: '', email: '' }]);
     setEmployees([emptyEmployee()]); setSuccess(null); setError('');
   };
 
@@ -90,6 +68,10 @@ export default function PublicRequestForm() {
     if (requestType === 'overtime' && !isOtRequestWindowOpen()) {
       return setError('OT requests can be submitted only from 08:00 to 17:00 (Thailand time).');
     }
+    if (approvers.some(a => !a.name.trim() || !a.email.trim())) {
+      return setError('Please complete the name and email for every assigned approver.');
+    }
+    if (requestType === 'outside_company' && !purpose.trim()) return setError('Purpose is required.');
     if (requestType === 'overtime' && employees.some(item =>
       !item.employeeId || !item.employeeName || !item.workDescription || (item.transportRequired && (!item.employeeEmail || !item.busStop)))) {
       return setError('Complete every OT employee row, including employee email and bus stop when transportation is required.');
@@ -107,7 +89,8 @@ export default function PublicRequestForm() {
         body: JSON.stringify({
           requestType,
           requester: { name: requesterName, email: requesterEmail, employeeId, department },
-          approver: { name: approverName, email: approverEmail },
+          approver: { name: approvers[0].name, email: approvers[0].email },
+          approversList: approvers,
           usingDate,
           startTime: requestType === 'overtime' ? employees[0].workStart : startTime,
           endTime: requestType === 'overtime' ? employees[0].workEnd : endTime,
@@ -136,7 +119,7 @@ export default function PublicRequestForm() {
       <CheckCircle2 className="mx-auto h-14 w-14 text-green-600" />
       <h1 className="mt-4 text-2xl font-bold">Request submitted</h1>
       <p className="mt-2 text-gray-600">Request number: <strong>{success.requestNo}</strong></p>
-      <p className="mt-4 text-sm text-gray-500">The request was sent to {approverEmail}. You will receive another email after Admin assigns the vehicle and driver.</p>
+      <p className="mt-4 text-sm text-gray-500">The request was sent to {approvers.map(a => a.email).filter(Boolean).join(', ')}. You will receive another email after Admin assigns the vehicle and driver.</p>
       {success.manageUrl && <a className="mt-5 inline-flex h-9 items-center justify-center rounded-md bg-brand px-4 text-sm font-semibold text-white hover:bg-[#194786]" href={success.manageUrl}>Manage this request</a>}
       {success.emailStatus !== 'sent' && <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">The request was saved, but the approval email service is not ready. Admin can still see this request.</p>}
       <Button className="mt-6" onClick={reset}>Create another request</Button>
@@ -190,49 +173,102 @@ export default function PublicRequestForm() {
       </Card>
 
       <Card className="p-5">
-        <h2 className="mb-1 font-bold">Approver</h2>
-        <p className="mb-4 text-sm text-gray-500">Search name or email for the manager who should approve this request.</p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <CompanyUserField
-            label="Approver name"
-            required
-            value={approverName}
-            onChange={(val) => {
-              setApproverName(val);
-              setApproverEmail('');
-              setApproverSelected(false);
-            }}
-            placeholder="Search manager name or email..."
-            onSelectUser={(person) => {
-              setApproverName(person.displayName);
-              setApproverEmail(person.mail);
-              setApproverSelected(true);
-            }}
-          />
-          <Field label="Approver email">
-            <Input
-              required
-              type="email"
-              value={approverEmail}
-              onChange={(e) => setApproverEmail(e.target.value)}
-              placeholder="Manager email address"
-            />
-          </Field>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-ink">Approved by</h2>
+            <p className="text-xs text-gray-500">
+              Select position levels and search manager names or emails for approval.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={addApprover}
+          >
+            <Plus size={15} /> Add approver
+          </Button>
         </div>
-        {approverSelected && (
-          <p className="mt-3 text-xs font-semibold text-success flex items-center gap-1">
-            ✓ Selected: {approverName} ({approverEmail})
-          </p>
+
+        {requestType === 'overtime' && (
+          <div className="mb-4 max-w-xs border-b border-line pb-4">
+            <Field label="Using date (วันที่ใช้งาน)">
+              <Input required type="date" value={usingDate} onChange={(e) => setUsingDate(e.target.value)} />
+            </Field>
+          </div>
         )}
+
+        <div className="space-y-3">
+          {approvers.map((item, index) => (
+            <div key={index} className="flex flex-col gap-3 border border-line bg-canvas p-3 sm:flex-row sm:items-end">
+              <div className="w-full sm:w-52 flex-shrink-0">
+                <Field label="Position (ตำแหน่ง)">
+                  <Select
+                    value={item.position}
+                    onChange={(e) => updateApprover(index, 'position', e.target.value as ApproverPosition)}
+                  >
+                    {APPROVER_POSITIONS.map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
+              <div className="flex-1">
+                <CompanyUserField
+                  label="Approver name"
+                  required
+                  value={item.name}
+                  onChange={(val) => updateApprover(index, 'name', val)}
+                  placeholder="Search name or email..."
+                  onSelectUser={(person) => {
+                    updateApprover(index, 'name', person.displayName);
+                    updateApprover(index, 'email', person.mail);
+                  }}
+                />
+              </div>
+              <div className="flex-1">
+                <Field label="Approver email">
+                  <Input
+                    required
+                    type="email"
+                    value={item.email}
+                    onChange={(e) => updateApprover(index, 'email', e.target.value)}
+                    placeholder="manager@company.com"
+                  />
+                </Field>
+              </div>
+              {approvers.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="self-end text-gray-400 hover:text-danger"
+                  onClick={() => removeApprover(index)}
+                  title="Remove approver"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
       </Card>
 
-      <Card className="p-5"><h2 className="mb-4 font-bold">Request details</h2><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Field label="Using date"><Input required type="date" value={usingDate} onChange={e => setUsingDate(e.target.value)} /></Field>
-        {requestType === 'outside_company' && <><Field label="Start time"><Input required type="time" value={startTime} onChange={e => setStartTime(e.target.value)} /></Field><Field label="End time"><Input required type="time" value={endTime} onChange={e => setEndTime(e.target.value)} /></Field><Field label="Pickup location"><Input required value={pickupLocation} onChange={e => setPickupLocation(e.target.value)} /></Field><Field label="Destination"><Input required value={destination} onChange={e => setDestination(e.target.value)} /></Field><Field label="Meeting point"><Select value={meetingPoint} onChange={e => setMeetingPoint(e.target.value as 'front_area' | 'loading_area')}><option value="front_area">Front area</option><option value="loading_area">Loading area</option></Select></Field></>}
-      </div><div className="mt-4"><Field label="Purpose / work summary"><Textarea required value={purpose} onChange={e => setPurpose(e.target.value)} /></Field></div>
-      {requestType === 'outside_company' && destination.trim() && <div className="mt-4"><GoogleMapLinks origin={pickupLocation} destination={destination} /></div>}
-      {requestType === 'outside_company' && <div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label="Passenger names (one per line)"><Textarea value={passengers} onChange={e => setPassengers(e.target.value)} /></Field><label className="flex items-center gap-3 self-start pt-8 text-sm"><input type="checkbox" checked={withStaff} onChange={e => setWithStaff(e.target.checked)} className="h-4 w-4 accent-brand" />Travel with GA staff</label></div>}
-      </Card>
+      {requestType === 'outside_company' && (
+        <Card className="p-5">
+          <h2 className="mb-4 font-bold">Request details</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label="Using date"><Input required type="date" value={usingDate} onChange={e => setUsingDate(e.target.value)} /></Field>
+            <Field label="Start time"><Input required type="time" value={startTime} onChange={e => setStartTime(e.target.value)} /></Field>
+            <Field label="End time"><Input required type="time" value={endTime} onChange={e => setEndTime(e.target.value)} /></Field>
+            <Field label="Pickup location"><Input required value={pickupLocation} onChange={e => setPickupLocation(e.target.value)} /></Field>
+            <Field label="Destination"><Input required value={destination} onChange={e => setDestination(e.target.value)} /></Field>
+            <Field label="Meeting point"><Select value={meetingPoint} onChange={e => setMeetingPoint(e.target.value as 'front_area' | 'loading_area')}><option value="front_area">Front area</option><option value="loading_area">Loading area</option></Select></Field>
+          </div>
+          <div className="mt-4"><Field label="Purpose / work summary"><Textarea required value={purpose} onChange={e => setPurpose(e.target.value)} /></Field></div>
+          {destination.trim() && <div className="mt-4"><GoogleMapLinks origin={pickupLocation} destination={destination} /></div>}
+          <div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label="Passenger names (one per line)"><Textarea value={passengers} onChange={e => setPassengers(e.target.value)} /></Field><label className="flex items-center gap-3 self-start pt-8 text-sm"><input type="checkbox" checked={withStaff} onChange={e => setWithStaff(e.target.checked)} className="h-4 w-4 accent-brand" />Travel with GA staff</label></div>
+        </Card>
+      )}
 
       {requestType === 'overtime' && (
         <Card className="p-5">
@@ -253,7 +289,7 @@ export default function PublicRequestForm() {
           </div>
           <div className="space-y-4">
             {employees.map((employee, index) => (
-              <div key={index} className="rounded-xl border border-line bg-canvas p-4 shadow-panel">
+              <div key={index} className="border border-line bg-canvas p-4 shadow-panel">
                 <div className="mb-3 flex justify-between items-center">
                   <p className="font-bold text-ink text-sm">Employee {index + 1}</p>
                   <Button
@@ -265,7 +301,7 @@ export default function PublicRequestForm() {
                     <Trash2 size={16} />
                   </Button>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-3 sm:grid-cols-3">
                   <CompanyUserField
                     label="Employee name"
                     required
@@ -294,22 +330,24 @@ export default function PublicRequestForm() {
                       onChange={(e) => updateEmployee(index, 'employeeId', e.target.value)}
                     />
                   </Field>
-                  <Field label="Work description">
-                    <Input
+                </div>
+                <div className="mt-3">
+                  <Field label="Description of work">
+                    <Textarea
                       required
+                      className="min-h-[80px]"
                       value={employee.workDescription}
+                      placeholder="Describe the work this employee will be performing during overtime..."
                       onChange={(e) => updateEmployee(index, 'workDescription', e.target.value)}
                     />
                   </Field>
+                </div>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <Field label="Weekly hours (max 60)">
-                    <Input
+                    <WeeklyHoursInput
                       required
-                      type="number"
-                      min="0"
-                      max="60"
-                      step="0.01"
                       value={employee.totalWeeklyHours}
-                      onChange={(e) => updateEmployee(index, 'totalWeeklyHours', Number(e.target.value))}
+                      onChange={(val) => updateEmployee(index, 'totalWeeklyHours', val)}
                     />
                   </Field>
                   <Field label="OT start">
@@ -353,7 +391,7 @@ export default function PublicRequestForm() {
       )}
 
       <div className="hidden" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)} /></label></div>
-      {error && <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="border-l-2 border-danger bg-danger-light p-3 pl-4 text-sm text-danger">{error}</p>}
       <div className="flex justify-end"><Button disabled={submitting}>{submitting ? 'Submitting...' : 'Submit request'}</Button></div>
     </form>
   </PublicFrame>;
@@ -368,7 +406,7 @@ function PublicFrame({ children }: { children: React.ReactNode }) {
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 ring-1 ring-white/20">
+            <div className="flex h-9 w-9 items-center justify-center bg-white/15 ring-1 ring-white/20">
               <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" className="text-white">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 17H5a2 2 0 01-2-2v-4l3-7h10l3 7v4a2 2 0 01-2 2h-3m-6 0a1 1 0 002 0m0 0a1 1 0 002 0M8 17h6" />
               </svg>

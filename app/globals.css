@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -23,7 +23,7 @@ html {
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
   color: #1A2332;
   background: #F5F7FA;
   -webkit-font-smoothing: antialiased;
@@ -78,5 +78,5 @@ table {
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #DDE3EC; border-radius: 99px; }
+::-webkit-scrollbar-thumb { background: #DDE3EC; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: #b0bac8; }

@@ -19,7 +19,7 @@ export default {
         'danger-light': '#FDECEA',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['IBM Plex Sans', 'system-ui', '-apple-system', 'sans-serif'],
       },
       boxShadow: {
         panel: '0 1px 3px rgba(0,73,142,.07), 0 1px 2px rgba(0,0,0,.04)',
@@ -31,10 +31,13 @@ export default {
         btn: '0 1px 3px rgba(0,73,142,.25)',
       },
       borderRadius: {
-        DEFAULT: '0.5rem',
-        lg: '0.75rem',
-        xl: '1rem',
-        '2xl': '1.25rem',
+        DEFAULT: '2px',
+        sm: '2px',
+        md: '2px',
+        lg: '3px',
+        xl: '4px',
+        '2xl': '4px',
+        full: '2px',
       },
       transitionDuration: {
         DEFAULT: '200ms',

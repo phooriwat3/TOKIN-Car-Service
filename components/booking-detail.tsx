@@ -19,44 +19,49 @@ export function BookingDetail({ id, admin = false }: { id: string; admin?: boole
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-brand">{b.bookingNo}</p>
+          <p className="font-mono text-xs font-bold uppercase tracking-wider text-brand">{b.bookingNo}</p>
           <h1 className="text-2xl font-bold text-ink">{b.destination}</h1>
         </div>
         <Badge status={b.status}>{statusLabel(b.status)}</Badge>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Card className="p-5 lg:col-span-2">
+      <div className="grid gap-5">
+        <Card className="p-5">
           <h2 className="mb-4 font-bold text-ink">Trip request</h2>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Info icon={<CalendarDays />} label="Date" value={b.usingDate} />
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <Info icon={<CalendarDays />} label="Using date" value={b.usingDate} />
             <Info icon={<Clock />} label="Time" value={`${b.startTime} - ${b.endTime}`} />
-            <Info icon={<MapPin />} label="Route" value={`${b.pickupLocation} to ${b.destination}`} />
+            <Info icon={<MapPin />} label="Route" value={`${b.pickupLocation} → ${b.destination}`} />
             <Info icon={<Users />} label="Passengers" value={String(b.numPassengers)} />
           </div>
           <div className="mt-5 border-t border-line pt-5">
             <p className="text-xs font-semibold uppercase text-gray-500">Purpose</p>
             <p className="mt-1 text-sm text-ink">{b.purpose}</p>
           </div>
+          <div className="mt-4 grid gap-x-8 gap-y-3 border-t border-line pt-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-xs text-gray-500">Requester</p>
+              <p className="text-sm font-medium text-ink">{b.requesterName}</p>
+              {b.requesterEmail && <p className="text-xs text-gray-400">{b.requesterEmail}</p>}
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Department</p>
+              <p className="text-sm font-medium text-ink">{b.department}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Meeting point</p>
+              <p className="text-sm font-medium text-ink">{statusLabel(b.meetingPoint)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Category</p>
+              <p className="text-sm font-medium text-ink">{statusLabel(b.category)}</p>
+            </div>
+          </div>
           {b.urgent && (
-            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <div className="mt-4 border-l-2 border-amber-400 bg-amber-50 p-3 pl-4 text-sm text-amber-900">
               <strong>Urgent:</strong> {b.urgentReason}
             </div>
           )}
-        </Card>
-
-        <Card className="p-5">
-          <h2 className="mb-4 font-bold text-ink">Request details</h2>
-          <Rows
-            items={[
-              ['Requester', b.requesterName],
-              ['Requester Email', b.requesterEmail || '-'],
-              ['Department', b.department],
-              ['Category', statusLabel(b.category)],
-              ['Vehicle preference', statusLabel(b.vehicleTypePref)],
-              ['Meeting point', statusLabel(b.meetingPoint)],
-            ]}
-          />
         </Card>
       </div>
 
@@ -105,7 +110,7 @@ export function BookingDetail({ id, admin = false }: { id: string; admin?: boole
                       </td>
                       <td className="px-3 py-3">
                         {emp.transportRequired ? (
-                          <span className="rounded bg-brand-light px-2 py-1 text-xs font-semibold text-brand">
+                          <span className="bg-brand-light px-2 py-1 text-xs font-semibold text-brand">
                             {emp.busStop}
                           </span>
                         ) : (
@@ -129,6 +134,24 @@ export function BookingDetail({ id, admin = false }: { id: string; admin?: boole
                 })}
               </tbody>
             </table>
+          </div>
+        </Card>
+      )}
+
+      {b.approversList && b.approversList.length > 0 && (
+        <Card className="p-5">
+          <h2 className="mb-3 font-bold text-ink flex items-center gap-2">
+            <Users className="text-brand" size={18} />
+            Approved by
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {b.approversList.map((appr, idx) => (
+              <div key={idx} className="border border-line bg-canvas p-3">
+                <p className="text-xs font-bold uppercase text-brand">{appr.position}</p>
+                <p className="mt-1 text-sm font-semibold text-ink">{appr.name}</p>
+                <p className="text-xs text-gray-500">{appr.email}</p>
+              </div>
+            ))}
           </div>
         </Card>
       )}
@@ -158,7 +181,7 @@ export function BookingDetail({ id, admin = false }: { id: string; admin?: boole
           {b.assignment.manualTransportUnits?.length ? (
             <div className="grid gap-3 md:grid-cols-2">
               {b.assignment.manualTransportUnits.map((unit, index) => (
-                <div key={index} className="rounded-lg border border-line bg-canvas p-4">
+                <div key={index} className="border border-line bg-canvas p-4">
                   <p className="text-xs font-semibold uppercase text-gray-500">Vehicle and driver {index + 1}</p>
                   <p className="mt-2 font-bold text-ink">{unit.licensePlate} ? {unit.brand} {unit.vehicleType}</p>
                   <p className="mt-1 text-sm text-gray-700">{unit.driverName}{unit.driverPhone ? ` (${unit.driverPhone})` : ''}</p>

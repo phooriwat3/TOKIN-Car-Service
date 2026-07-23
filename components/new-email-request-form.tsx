@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Car, Clock3, Plus, Trash2, Users } from 'lucide-react';
 import { useApp } from '@/components/app-provider';
-import { Button, Card, Field, Input, Select, Textarea } from '@/components/ui';
+import { Button, Card, Field, Input, Select, Textarea, WeeklyHoursInput } from '@/components/ui';
 import { PageHeader } from '@/components/page-header';
 import { GoogleMapLinks } from '@/components/google-map-links';
 import { CompanyUserField } from '@/components/company-user-field';
@@ -70,7 +70,7 @@ export default function NewEmailRequestForm() {
     setError('');
     if (!requestType || !selectedApprover) return setError('Please select the request type and approver.');
     if (requestType === 'overtime' && !isOtRequestWindowOpen()) return setError('OT requests can be submitted only from 08:00 to 17:00 (Thailand time).');
-    if (!usingDate || !purpose.trim()) return setError('Date and purpose are required.');
+    if (!usingDate || (requestType !== 'overtime' && !purpose.trim())) return setError('Date and purpose are required.');
     if (requestType === 'outside_company' && !destination.trim()) return setError('Destination is required.');
     if (requestType === 'overtime' && employees.some(x => !x.employeeId || !x.employeeName || !x.workDescription || (x.transportRequired && !x.busStop))) {
       return setError('Complete every OT employee row, including the bus stop when transport is required.');
@@ -119,18 +119,18 @@ export default function NewEmailRequestForm() {
           <Field label="Approver"><Select required value={approverId} onChange={e => setApproverId(e.target.value)}><option value="">Search / select approver</option>{approvers.map(x => <option key={x.id} value={x.id}>{x.fullName} · {x.email}</option>)}</Select></Field>
           {requestType === 'outside_company' && <><Field label="Start time"><Input required type="time" value={startTime} onChange={e => setStartTime(e.target.value)} /></Field><Field label="End time"><Input required type="time" value={endTime} onChange={e => setEndTime(e.target.value)} /></Field><Field label="Pickup location"><Input required value={pickupLocation} onChange={e => setPickupLocation(e.target.value)} /></Field><Field label="Destination"><Input required value={destination} onChange={e => setDestination(e.target.value)} /></Field><Field label="Meeting point"><Select value={meetingPoint} onChange={e => setMeetingPoint(e.target.value as any)}><option value="front_area">Front area</option><option value="loading_area">Loading area</option></Select></Field></>}
         </div>
-        <div className="mt-4"><Field label="Purpose / work summary"><Textarea required value={purpose} onChange={e => setPurpose(e.target.value)} /></Field></div>
+        {requestType === 'outside_company' && <div className="mt-4"><Field label="Purpose / work summary"><Textarea required value={purpose} onChange={e => setPurpose(e.target.value)} /></Field></div>}
         {requestType === 'outside_company' && destination.trim() && <div className="mt-4"><GoogleMapLinks origin={pickupLocation} destination={destination} /></div>}
         {requestType === 'outside_company' && <div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label="Passenger names (one per line)"><Textarea value={passengers} onChange={e => setPassengers(e.target.value)} /></Field><label className="flex items-center gap-3 self-start pt-8 text-sm"><input type="checkbox" checked={withStaff} onChange={e => setWithStaff(e.target.checked)} className="h-4 w-4 accent-brand" />Travel with GA staff</label></div>}
       </Card>
 
       {requestType === 'overtime' && <Card className="p-5"><div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Employees</h2><p className="text-sm text-gray-500">Add everyone included in this OVERTIME / HOLIDAY WORK request.</p></div><Button type="button" variant="secondary" onClick={() => setEmployees(x => [...x, emptyEmployee()])}><Plus size={16} /> Add employee</Button></div>
-        <div className="space-y-4">{employees.map((employee, index) => <div key={index} className="rounded-xl border border-line bg-canvas p-4 shadow-panel"><div className="mb-3 flex justify-between items-center"><p className="font-bold text-ink text-sm">Employee {index + 1}</p><Button type="button" variant="ghost" disabled={employees.length === 1} onClick={() => setEmployees(x => x.filter((_, i) => i !== index))}><Trash2 size={16} /></Button></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-4">{employees.map((employee, index) => <div key={index} className="border border-line bg-canvas p-4 shadow-panel"><div className="mb-3 flex justify-between items-center"><p className="font-bold text-ink text-sm">Employee {index + 1}</p><Button type="button" variant="ghost" disabled={employees.length === 1} onClick={() => setEmployees(x => x.filter((_, i) => i !== index))}><Trash2 size={16} /></Button></div><div className="grid gap-3 sm:grid-cols-3">
           <CompanyUserField label="Employee name" required value={employee.employeeName} placeholder="Search name or email..." onChange={val => updateEmployee(index, 'employeeName', val)} onSelectUser={person => { updateEmployee(index, 'employeeName', person.displayName); updateEmployee(index, 'employeeEmail', person.mail); if (person.employeeId) updateEmployee(index, 'employeeId', person.employeeId); }} />
-          <Field label="Employee email"><Input required={employee.transportRequired} type="email" placeholder="name@company.com" value={employee.employeeEmail || ''} onChange={e => updateEmployee(index, 'employeeEmail', e.target.value)} /></Field>
+          <Field label="Employee email"><Input required={employee.transportRequired} type="email" placeholder="name@yageo.com" value={employee.employeeEmail || ''} onChange={e => updateEmployee(index, 'employeeEmail', e.target.value)} /></Field>
           <Field label="Employee number"><Input required value={employee.employeeId} onChange={e => updateEmployee(index, 'employeeId', e.target.value)} /></Field>
-          <Field label="Work description"><Input required value={employee.workDescription} onChange={e => updateEmployee(index, 'workDescription', e.target.value)} /></Field>
-          <Field label="Weekly hours (≤ 60)"><Input required type="number" min="0" max="60" step="0.01" value={employee.totalWeeklyHours} onChange={e => updateEmployee(index, 'totalWeeklyHours', Number(e.target.value))} /></Field>
+          </div><div className="mt-3"><Field label="Description of work"><Textarea required className="min-h-[80px]" value={employee.workDescription} onChange={e => updateEmployee(index, 'workDescription', e.target.value)} placeholder="Describe the work this employee will be performing during overtime..." /></Field></div><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label="Weekly hours (≤ 60)"><WeeklyHoursInput required value={employee.totalWeeklyHours} onChange={val => updateEmployee(index, 'totalWeeklyHours', val)} /></Field>
           <Field label="OT start"><Input required type="time" value={employee.workStart} onChange={e => updateEmployee(index, 'workStart', e.target.value)} /></Field>
           <Field label="OT end"><Input required type="time" value={employee.workEnd} onChange={e => updateEmployee(index, 'workEnd', e.target.value)} /></Field>
           <Field label="Transportation"><Select value={employee.transportRequired ? 'yes' : 'no'} onChange={e => updateEmployee(index, 'transportRequired', e.target.value === 'yes')}><option value="yes">Required</option><option value="no">Not required</option></Select></Field>

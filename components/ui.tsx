@@ -157,7 +157,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold',
+        'inline-flex items-center border px-2 py-0.5 text-xs font-semibold tracking-wide',
         cls,
       )}
     >
@@ -170,7 +170,7 @@ export function Badge({
 export function Empty({ title, body }: { title: string; body: string }) {
   return (
     <div className="py-16 text-center">
-      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-light">
+      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center bg-brand-light">
         <svg
           className="text-brand"
           width="22"
@@ -194,14 +194,126 @@ export function Empty({ title, body }: { title: string; body: string }) {
 }
 
 /* ─── Divider ─── */
-export function Divider({ label }: { label?: string }) {
-  if (!label) return <hr className="border-line" />;
+/* ─── Weekly Hours Mask Input (00.00, Max 60.00) ─── */
+/* ─── Weekly Hours Mask Input (00.00, Max 60.00) ─── */
+/* ─── Weekly Hours Mask Input (00.00, Max 60.00) ─── */
+export function WeeklyHoursInput({
+  value,
+  onChange,
+  disabled,
+  required,
+  className,
+}: {
+  value: number;
+  onChange: (val: number) => void;
+  disabled?: boolean;
+  required?: boolean;
+  className?: string;
+}) {
+  const getPartsFromNum = (num: number): [string, string] => {
+    if (!num || isNaN(num) || num <= 0) return ['00', '00'];
+    const clamped = Math.min(60, Math.max(0, num));
+    const [h, m] = clamped.toFixed(2).split('.');
+    return [h.padStart(2, '0'), m.padStart(2, '0')];
+  };
+
+  const [hh, setHh] = React.useState<string>(() => getPartsFromNum(value)[0]);
+  const [mm, setMm] = React.useState<string>(() => getPartsFromNum(value)[1]);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    const [h, m] = getPartsFromNum(value);
+    setHh(h);
+    setMm(m);
+  }, [value]);
+
+  const displayString = `${hh}.${mm}`;
+
+  const setCursorPos = (pos: number) => {
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.setSelectionRange(pos, pos);
+      }
+    }, 0);
+  };
+
+  const updateVal = (newH: string, newM: string, targetCursorPos?: number) => {
+    setHh(newH);
+    setMm(newM);
+    const num = parseFloat(`${newH}.${newM}`);
+    onChange(isNaN(num) ? 0 : num);
+    if (targetCursorPos !== undefined) {
+      setCursorPos(targetCursorPos);
+    }
+  };
+
+  const handleFocus = () => {
+    if (mm === '00') {
+      setCursorPos(2);
+    } else {
+      setCursorPos(5);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault();
+      if (mm !== '00') {
+        updateVal(hh, '00', 2);
+      } else if (hh !== '00') {
+        updateVal('00', '00', 2);
+      } else {
+        setCursorPos(2);
+      }
+      return;
+    }
+
+    if (/^[0-9]$/.test(e.key)) {
+      e.preventDefault();
+      const digit = e.key;
+
+      if (hh === '00' && mm === '00') {
+        const newH = `0${digit}`;
+        if (parseInt(newH, 10) > 60) {
+          updateVal('60', '00', 2);
+        } else {
+          updateVal(newH, '00', 2);
+        }
+      } else if (hh !== '00' && hh.startsWith('0') && mm === '00' && parseInt(hh, 10) < 10) {
+        const combined = `${hh[1]}${digit}`;
+        const valNum = parseInt(combined, 10);
+        if (valNum > 60) {
+          updateVal('60', '00', 5);
+        } else {
+          updateVal(combined.padStart(2, '0'), '00', 5);
+        }
+      } else if (mm === '00') {
+        const newM = `${digit}0`;
+        updateVal(hh, newM, 5);
+      } else if (mm.endsWith('0')) {
+        const newM = `${mm[0]}${digit}`;
+        updateVal(hh, newM, 5);
+      } else {
+        const newM = `${mm[1]}${digit}`;
+        updateVal(hh, newM, 5);
+      }
+    }
+  };
+
   return (
-    <div className="flex items-center gap-3">
-      <hr className="flex-1 border-line" />
-      <span className="text-xs font-medium text-gray-400">{label}</span>
-      <hr className="flex-1 border-line" />
-    </div>
+    <Input
+      ref={inputRef}
+      type="text"
+      inputMode="numeric"
+      maxLength={5}
+      required={required}
+      disabled={disabled}
+      className={cn(className)}
+      value={displayString}
+      onFocus={handleFocus}
+      onKeyDown={handleKeyDown}
+      onChange={() => {}}
+    />
   );
 }
 

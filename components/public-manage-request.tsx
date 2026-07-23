@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Loader2, Plus, RefreshCw, Trash2, XCircle } from 'lucide-react';
-import { Badge, Button, Card, Field, Input, Select, Textarea } from '@/components/ui';
+import { Badge, Button, Card, Field, Input, Select, Textarea, WeeklyHoursInput } from '@/components/ui';
 import { GoogleMapLinks } from '@/components/google-map-links';
 import { CompanyUserField } from '@/components/company-user-field';
 import { isOtRequestWindowOpen } from '@/lib/request-window';
@@ -356,15 +356,11 @@ export default function PublicManageRequest({ initialToken }: { initialToken?: s
                       />
                     </Field>
                     <Field label="Weekly hours (max 60)">
-                      <Input
+                      <WeeklyHoursInput
                         required
                         disabled={disabled}
-                        type="number"
-                        min="0"
-                        max="60"
-                        step="0.01"
                         value={employee.totalWeeklyHours}
-                        onChange={(e) => updateEmployee(index, 'totalWeeklyHours', Number(e.target.value))}
+                        onChange={(val) => updateEmployee(index, 'totalWeeklyHours', val)}
                       />
                     </Field>
                     <Field label="OT start">
