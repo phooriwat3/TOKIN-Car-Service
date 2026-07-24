@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Loader2, Plus, RefreshCw, Trash2, XCircle } from 'lucide-react';
-import { Badge, Button, Card, Field, Input, Select, Textarea, WeeklyHoursInput } from '@/components/ui';
+import { AlertTriangle, CheckCircle2, Loader2, Plus, RefreshCw, Trash2, XCircle, Clock3 } from 'lucide-react';
+import { Badge, Button, Card, Field, Input, Select, Textarea, WeeklyHoursInput, TimeMaskInput } from '@/components/ui';
 import { GoogleMapLinks } from '@/components/google-map-links';
 import { CompanyUserField } from '@/components/company-user-field';
 import { isOtRequestWindowOpen } from '@/lib/request-window';
@@ -37,8 +37,8 @@ const emptyEmployee = (): OvertimeEmployee => ({
   employeeName: '',
   employeeEmail: '',
   workDescription: '',
-  workStart: '17:20',
-  workEnd: '20:00',
+  workStart: '',
+  workEnd: '',
   totalWeeklyHours: 0,
   transportRequired: true,
   busStop: '',
@@ -116,10 +116,17 @@ export default function PublicManageRequest({ initialToken }: { initialToken?: s
     setMessage('');
     try {
       const { supabaseUrl, publishableKey } = apiConfig();
+      const payloadRequest = {
+        ...request,
+        overtimeEmployees: request.requestType === 'overtime' ? request.overtimeEmployees.map(emp => ({
+          ...emp,
+          workDescription: emp.workDescription.trim() || 'Overtime Work'
+        })) : []
+      };
       const response = await fetch(`${supabaseUrl}/functions/v1/public-update-request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: publishableKey },
-        body: JSON.stringify({ token, action: 'update', request }),
+        body: JSON.stringify({ token, action: 'update', request: payloadRequest }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Unable to save request.');
@@ -274,6 +281,77 @@ export default function PublicManageRequest({ initialToken }: { initialToken?: s
         </Card>
 
         {request.requestType === 'overtime' && (
+          <Card className="p-5 border-amber-200 bg-amber-50/30 mb-5">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-lg bg-amber-100 p-2 text-amber-700">
+                <Clock3 size={20} />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-sm font-bold text-amber-900 mb-1">คำแนะนำการคำนวณและหมายเหตุ (OT Guidelines & Notes)</h2>
+                <p className="text-xs text-amber-800/80 mb-4">
+                  โปรดใช้ตารางอ้างอิงนี้เพื่อกรอกจำนวนชั่วโมงทำงานรายสัปดาห์ (Weekly hours) และตรวจสอบกฎระเบียบของทางบริษัทฯ
+                </p>
+
+                {/* Reference Table */}
+                <div className="overflow-x-auto rounded-lg border border-amber-200 bg-white">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-amber-100/50 text-amber-900 font-semibold border-b border-amber-200">
+                      <tr>
+                        <th className="px-3 py-2">การนับเวลาทำงาน (Work Period)</th>
+                        <th className="px-3 py-2 text-center">Day (Hrs.)</th>
+                        <th className="px-3 py-2 text-center">OT (Hrs.)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-amber-100 text-gray-700">
+                      <tr className="hover:bg-amber-50/20">
+                        <td className="px-3 py-2 font-mono">17:20 - 19:00</td>
+                        <td className="px-3 py-2 text-center">-</td>
+                        <td className="px-3 py-2 text-center font-semibold text-amber-700">1.67</td>
+                      </tr>
+                      <tr className="hover:bg-amber-50/20">
+                        <td className="px-3 py-2 font-mono">17:20 - 20:00</td>
+                        <td className="px-3 py-2 text-center">-</td>
+                        <td className="px-3 py-2 text-center font-semibold text-amber-700">2.67</td>
+                      </tr>
+                      <tr className="hover:bg-amber-50/20">
+                        <td className="px-3 py-2 font-mono">08:00 - 16:45</td>
+                        <td className="px-3 py-2 text-center font-semibold text-gray-800">8.00</td>
+                        <td className="px-3 py-2 text-center">0.00</td>
+                      </tr>
+                      <tr className="hover:bg-amber-50/20">
+                        <td className="px-3 py-2 font-mono">08:00 - 19:00</td>
+                        <td className="px-3 py-2 text-center font-semibold text-gray-800">8.00</td>
+                        <td className="px-3 py-2 text-center font-semibold text-amber-700">1.67</td>
+                      </tr>
+                      <tr className="hover:bg-amber-50/20">
+                        <td className="px-3 py-2 font-mono">08:00 - 20:00</td>
+                        <td className="px-3 py-2 text-center font-semibold text-gray-800">8.00</td>
+                        <td className="px-3 py-2 text-center font-semibold text-amber-700">2.67</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Notes List */}
+                <div className="mt-4 space-y-2 text-xs text-amber-900/90 leading-relaxed">
+                  <p className="font-bold border-b border-amber-200/60 pb-1">หมายเหตุสำคัญ (Important Notes):</p>
+                  <ul className="list-disc pl-4 space-y-1.5">
+                    <li>
+                      ในกรณีที่พนักงานได้มาทำงานล่วงเวลาหรือทำงานในวันหยุดโดยมิได้รับคำสั่งหรือมิได้รับอนุมัติจากบริษัทฯให้ถูกต้องก่อน ทางบริษัทฯ จะไม่จ่ายค่าล่วงเวลาหรือค่าทำงานในวันหยุดให้
+                    </li>
+                    <li>
+                      บริษัทฯ จะไม่จ่ายค่าทำงานล่วงเวลาและค่าทำงานในวันหยุดซึ่งเกินจากที่ได้รับอนุมัติ
+                    </li>
+                    <li className="text-danger font-bold">
+                      ชั่วโมงการทำงานต้องไม่เกิน 60 ชั่วโมง / สัปดาห์
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+        {request.requestType === 'overtime' && (
           <Card className="p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -349,7 +427,6 @@ export default function PublicManageRequest({ initialToken }: { initialToken?: s
                     </Field>
                     <Field label="Work description">
                       <Input
-                        required
                         disabled={disabled}
                         value={employee.workDescription}
                         onChange={(e) => updateEmployee(index, 'workDescription', e.target.value)}
@@ -364,21 +441,21 @@ export default function PublicManageRequest({ initialToken }: { initialToken?: s
                       />
                     </Field>
                     <Field label="OT start">
-                      <Input
+                      <TimeMaskInput
                         required
                         disabled={disabled}
-                        type="time"
                         value={employee.workStart}
-                        onChange={(e) => updateEmployee(index, 'workStart', e.target.value)}
+                        onChange={(val) => updateEmployee(index, 'workStart', val)}
+                        quickTimes={['17:20']}
                       />
                     </Field>
                     <Field label="OT end">
-                      <Input
+                      <TimeMaskInput
                         required
                         disabled={disabled}
-                        type="time"
                         value={employee.workEnd}
-                        onChange={(e) => updateEmployee(index, 'workEnd', e.target.value)}
+                        onChange={(val) => updateEmployee(index, 'workEnd', val)}
+                        quickTimes={['19:00', '20:00']}
                       />
                     </Field>
                     <Field label="Transportation">
@@ -437,7 +514,7 @@ function validate(request: ManagedRequest) {
   }
   if (request.requestType === 'overtime') {
     if (!request.overtimeEmployees.length) return 'At least one OT employee is required.';
-    const incomplete = request.overtimeEmployees.some(item => !item.employeeId.trim() || !item.employeeName.trim() || !item.workDescription.trim() || item.workEnd <= item.workStart || !Number.isFinite(item.totalWeeklyHours) || item.totalWeeklyHours < 0 || item.totalWeeklyHours > 60 || (item.transportRequired && !item.busStop.trim()));
+    const incomplete = request.overtimeEmployees.some(item => !item.employeeId.trim() || !item.employeeName.trim() || item.workEnd <= item.workStart || !Number.isFinite(item.totalWeeklyHours) || item.totalWeeklyHours < 0 || item.totalWeeklyHours > 60 || (item.transportRequired && !item.busStop.trim()));
     if (incomplete) return 'Complete every OT employee row, including valid time, weekly hours, and bus stop when transportation is required.';
   }
   return '';

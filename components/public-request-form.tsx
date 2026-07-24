@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Car, CheckCircle2, Clock3, Plus, Trash2 } from 'lucide-react';
-import { Button, Card, Field, Input, Select, Textarea, WeeklyHoursInput } from '@/components/ui';
+import { Button, Card, Field, Input, Select, Textarea, WeeklyHoursInput, TimeMaskInput } from '@/components/ui';
 import { GoogleMapLinks } from '@/components/google-map-links';
 import { CompanyUserField, type CompanyUser } from '@/components/company-user-field';
 import type { ApproverItem, ApproverPosition, OvertimeEmployee, RequestType } from '@/lib/types';
@@ -21,6 +21,14 @@ const APPROVER_POSITIONS: { value: ApproverPosition; label: string }[] = [
   { value: 'AGM.up', label: 'AGM.up (When necessary)' },
 ];
 
+const getTodayString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const date = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+};
+
 export default function PublicRequestForm() {
   const [requestType, setRequestType] = useState<RequestType | null>(null);
   const [requesterName, setRequesterName] = useState('');
@@ -30,7 +38,7 @@ export default function PublicRequestForm() {
   const [approvers, setApprovers] = useState<ApproverItem[]>([
     { position: 'Supervisor', name: '', email: '' },
   ]);
-  const [usingDate, setUsingDate] = useState('');
+  const [usingDate, setUsingDate] = useState(getTodayString);
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('17:00');
   const [pickupLocation, setPickupLocation] = useState('TOKIN Main Office');
@@ -56,9 +64,28 @@ export default function PublicRequestForm() {
 
   const reset = () => {
     setRequestType(null);
-    setUsingDate(''); setDestination(''); setPurpose(''); setPassengers('');
+    setUsingDate(getTodayString()); setDestination(''); setPurpose(''); setPassengers('');
     setApprovers([{ position: 'Supervisor', name: '', email: '' }]);
     setEmployees([emptyEmployee()]); setSuccess(null); setError('');
+  };
+
+  const handleReset = () => {
+    setUsingDate(getTodayString());
+    setRequesterName('');
+    setRequesterEmail('');
+    setEmployeeId('');
+    setDepartment('');
+    setApprovers([{ position: 'Supervisor', name: '', email: '' }]);
+    setStartTime('08:00');
+    setEndTime('17:00');
+    setPickupLocation('Tokin factory');
+    setDestination('');
+    setMeetingPoint('front_area');
+    setPurpose('');
+    setPassengers('');
+    setWithStaff(false);
+    setEmployees([emptyEmployee()]);
+    setError('');
   };
 
   const submit = async (event: React.FormEvent) => {
@@ -73,7 +100,7 @@ export default function PublicRequestForm() {
     }
     if (requestType === 'outside_company' && !purpose.trim()) return setError('Purpose is required.');
     if (requestType === 'overtime' && employees.some(item =>
-      !item.employeeId || !item.employeeName || !item.workDescription || (item.transportRequired && (!item.employeeEmail || !item.busStop)))) {
+      !item.employeeId || !item.employeeName || (item.transportRequired && (!item.employeeEmail || !item.busStop)))) {
       return setError('Complete every OT employee row, including employee email and bus stop when transportation is required.');
     }
 
@@ -96,11 +123,11 @@ export default function PublicRequestForm() {
           endTime: requestType === 'overtime' ? employees[0].workEnd : endTime,
           pickupLocation,
           destination: requestType === 'overtime' ? 'Employee bus stops' : destination,
-          purpose,
+          purpose: requestType === 'overtime' ? ('Overtime / Holiday Work: ' + employees.map(e => e.workDescription.trim()).filter(Boolean).join(', ')).slice(0, 2000) : purpose,
           meetingPoint,
           withStaff,
           passengers: requestType === 'outside_company' ? passengerList : [],
-          overtimeEmployees: requestType === 'overtime' ? employees : [],
+          overtimeEmployees: requestType === 'overtime' ? employees.map(emp => ({ ...emp, workDescription: emp.workDescription.trim() || 'Overtime Work' })) : [],
           website,
         }),
       });
@@ -140,8 +167,20 @@ export default function PublicRequestForm() {
   </PublicFrame>;
 
   return <PublicFrame>
-    <form onSubmit={submit} className="mx-auto max-w-6xl space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-sm font-semibold uppercase text-brand">TOKIN Transport</p><h1 className="text-2xl font-bold">{requestType === 'overtime' ? 'OVERTIME / HOLIDAY WORK' : 'CAR SERVICE REQUISITION'}</h1></div><Button type="button" variant="secondary" onClick={() => setRequestType(null)}>Change request type</Button></div>
+    <div className="relative mx-auto max-w-4xl">
+      <form onSubmit={submit} className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-3">
+        <div>
+          <p className="text-sm font-semibold uppercase text-brand">TOKIN Transport</p>
+          <h1 className="text-2xl font-bold">{requestType === 'overtime' ? 'OVERTIME / HOLIDAY WORK' : 'CAR SERVICE REQUISITION'}</h1>
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-40">
+            <Input required type="date" min={getTodayString()} className="h-9" value={usingDate} onChange={(e) => setUsingDate(e.target.value)} />
+          </div>
+          <Button type="button" variant="secondary" className="h-9" onClick={() => setRequestType(null)}>Change request type</Button>
+        </div>
+      </div>
 
       <Card className="p-5">
         <h2 className="mb-1 font-bold">Requester information</h2>
@@ -173,36 +212,18 @@ export default function PublicRequestForm() {
       </Card>
 
       <Card className="p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="font-bold text-ink">Approved by</h2>
-            <p className="text-xs text-gray-500">
-              Select position levels and search manager names or emails for approval.
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={addApprover}
-          >
-            <Plus size={15} /> Add approver
-          </Button>
+        <div className="mb-4">
+          <h2 className="font-bold text-ink">Approved by</h2>
+          <p className="text-xs text-gray-500">
+            Select position levels and search manager names or emails for approval.
+          </p>
         </div>
-
-        {requestType === 'overtime' && (
-          <div className="mb-4 max-w-xs border-b border-line pb-4">
-            <Field label="Using date (วันที่ใช้งาน)">
-              <Input required type="date" value={usingDate} onChange={(e) => setUsingDate(e.target.value)} />
-            </Field>
-          </div>
-        )}
 
         <div className="space-y-3">
           {approvers.map((item, index) => (
             <div key={index} className="flex flex-col gap-3 border border-line bg-canvas p-3 sm:flex-row sm:items-end">
               <div className="w-full sm:w-52 flex-shrink-0">
-                <Field label="Position (ตำแหน่ง)">
+                <Field label="Position">
                   <Select
                     value={item.position}
                     onChange={(e) => updateApprover(index, 'position', e.target.value as ApproverPosition)}
@@ -218,8 +239,8 @@ export default function PublicRequestForm() {
                   label="Approver name"
                   required
                   value={item.name}
+                  placeholder="Type name or email..."
                   onChange={(val) => updateApprover(index, 'name', val)}
-                  placeholder="Search name or email..."
                   onSelectUser={(person) => {
                     updateApprover(index, 'name', person.displayName);
                     updateApprover(index, 'email', person.mail);
@@ -232,8 +253,8 @@ export default function PublicRequestForm() {
                     required
                     type="email"
                     value={item.email}
+                    placeholder="name@company.com"
                     onChange={(e) => updateApprover(index, 'email', e.target.value)}
-                    placeholder="manager@company.com"
                   />
                 </Field>
               </div>
@@ -241,8 +262,8 @@ export default function PublicRequestForm() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="self-end text-gray-400 hover:text-danger"
                   onClick={() => removeApprover(index)}
+                  className="self-end"
                   title="Remove approver"
                 >
                   <Trash2 size={16} />
@@ -251,13 +272,22 @@ export default function PublicRequestForm() {
             </div>
           ))}
         </div>
+        <div className="mt-4 flex justify-start">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={addApprover}
+          >
+            <Plus size={15} /> Add approver
+          </Button>
+        </div>
       </Card>
 
       {requestType === 'outside_company' && (
         <Card className="p-5">
           <h2 className="mb-4 font-bold">Request details</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Using date"><Input required type="date" value={usingDate} onChange={e => setUsingDate(e.target.value)} /></Field>
             <Field label="Start time"><Input required type="time" value={startTime} onChange={e => setStartTime(e.target.value)} /></Field>
             <Field label="End time"><Input required type="time" value={endTime} onChange={e => setEndTime(e.target.value)} /></Field>
             <Field label="Pickup location"><Input required value={pickupLocation} onChange={e => setPickupLocation(e.target.value)} /></Field>
@@ -271,21 +301,103 @@ export default function PublicRequestForm() {
       )}
 
       {requestType === 'overtime' && (
-        <Card className="p-5">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="xl:hidden">
+          <Card className="p-6 border-2 border-amber-300 bg-amber-50/50 shadow-lg rounded-2xl">
+          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-amber-200">
+            <span className="rounded-lg bg-amber-500 p-2 text-white">
+              <Clock3 size={20} className="animate-pulse" />
+            </span>
             <div>
-              <h2 className="font-bold">Employees</h2>
-              <p className="text-sm text-gray-500">
-                Add everyone included in this OT request. Type employee name to search directory.
-              </p>
+              <h2 className="text-sm font-bold text-amber-900 leading-tight">คำแนะนำการคำนวณและหมายเหตุ</h2>
+              <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">OT Guidelines & Notes</p>
             </div>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setEmployees((current) => [...current, emptyEmployee()])}
-            >
-              <Plus size={16} /> Add employee
-            </Button>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Reference Table Section */}
+            <div>
+              <p className="text-xs font-bold text-amber-950 mb-2 flex items-center gap-1.5">
+                📊 ตารางคำนวณชั่วโมงทำงานอ้างอิง
+              </p>
+              <div className="overflow-hidden rounded-xl border border-amber-200 bg-white shadow-sm">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-amber-100/60 text-amber-950 font-bold border-b border-amber-200">
+                    <tr>
+                      <th className="px-3 py-2.5">ช่วงเวลาทำงาน</th>
+                      <th className="px-3 py-2.5 text-center">Day (Hrs.)</th>
+                      <th className="px-3 py-2.5 text-center">OT (Hrs.)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-100 text-gray-700">
+                    <tr className="hover:bg-amber-50/10">
+                      <td className="px-3 py-2 font-mono font-medium">17:20 - 19:00</td>
+                      <td className="px-3 py-2 text-center text-gray-400">-</td>
+                      <td className="px-3 py-2 text-center font-bold text-amber-600 bg-amber-50/30">1.67</td>
+                    </tr>
+                    <tr className="hover:bg-amber-50/10">
+                      <td className="px-3 py-2 font-mono font-medium">17:20 - 20:00</td>
+                      <td className="px-3 py-2 text-center text-gray-400">-</td>
+                      <td className="px-3 py-2 text-center font-bold text-amber-600 bg-amber-50/30">2.67</td>
+                    </tr>
+                    <tr className="hover:bg-amber-50/10 border-t-2 border-amber-200/50">
+                      <td className="px-3 py-2 font-mono font-medium">08:00 - 16:45</td>
+                      <td className="px-3 py-2 text-center font-bold text-blue-700 bg-blue-50/10">8.00</td>
+                      <td className="px-3 py-2 text-center text-gray-400">0.00</td>
+                    </tr>
+                    <tr className="hover:bg-amber-50/10">
+                      <td className="px-3 py-2 font-mono font-medium">08:00 - 19:00</td>
+                      <td className="px-3 py-2 text-center font-bold text-blue-700 bg-blue-50/10">8.00</td>
+                      <td className="px-3 py-2 text-center font-bold text-amber-600 bg-amber-50/30">1.67</td>
+                    </tr>
+                    <tr className="hover:bg-amber-50/10">
+                      <td className="px-3 py-2 font-mono font-medium">08:00 - 20:00</td>
+                      <td className="px-3 py-2 text-center font-bold text-blue-700 bg-blue-50/10">8.00</td>
+                      <td className="px-3 py-2 text-center font-bold text-amber-600 bg-amber-50/30">2.67</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Rules Section */}
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-amber-950 flex items-center gap-1.5 border-b border-amber-200 pb-1.5">
+                ⚠️ กฎระเบียบและข้อกำหนด
+              </p>
+              <div className="space-y-2.5 text-xs text-amber-900/90 leading-relaxed">
+                <div className="flex gap-2">
+                  <span className="text-amber-500 mt-0.5">•</span>
+                  <p>
+                    ในกรณีที่พนักงานได้มาทำงานล่วงเวลาหรือทำงานในวันหยุดโดยมิได้รับคำสั่งหรือมิได้รับอนุมัติจากบริษัทฯ ให้ถูกต้องก่อน 
+                    <strong className="text-amber-950 font-bold block mt-0.5">ทางบริษัทฯ จะไม่จ่ายค่าล่วงเวลาหรือค่าทำงานในวันหยุดให้</strong>
+                  </p>
+                </div>
+                <div className="flex gap-2 border-t border-amber-200/40 pt-2.5">
+                  <span className="text-amber-500 mt-0.5">•</span>
+                  <p>
+                    บริษัทฯ จะไม่จ่ายค่าทำงานล่วงเวลาและค่าทำงานในวันหยุดซึ่งเกินจากที่ได้รับอนุมัติ
+                  </p>
+                </div>
+                <div className="rounded-lg bg-red-50 border border-red-200 p-2.5 text-red-800 font-semibold flex gap-2">
+                  <span className="text-red-500 font-bold">🚫</span>
+                  <p className="text-xs">
+                    ชั่วโมงการทำงานต้อง <span className="text-red-600 text-sm font-black underline">ไม่เกิน 60 ชั่วโมง / สัปดาห์</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          </Card>
+        </div>
+      )}
+
+      {requestType === 'overtime' && (
+        <Card className="p-5">
+          <div className="mb-4">
+            <h2 className="font-bold">Employees</h2>
+            <p className="text-sm text-gray-500">
+              Add everyone included in this OT request. Type employee name to search directory.
+            </p>
           </div>
           <div className="space-y-4">
             {employees.map((employee, index) => (
@@ -314,7 +426,7 @@ export default function PublicRequestForm() {
                       if (person.employeeId) updateEmployee(index, 'employeeId', person.employeeId);
                     }}
                   />
-                  <Field label="Employee email">
+                  <Field label="Company email">
                     <Input
                       required={employee.transportRequired}
                       type="email"
@@ -334,7 +446,6 @@ export default function PublicRequestForm() {
                 <div className="mt-3">
                   <Field label="Description of work">
                     <Textarea
-                      required
                       className="min-h-[80px]"
                       value={employee.workDescription}
                       placeholder="Describe the work this employee will be performing during overtime..."
@@ -351,19 +462,19 @@ export default function PublicRequestForm() {
                     />
                   </Field>
                   <Field label="OT start">
-                    <Input
+                    <TimeMaskInput
                       required
-                      type="time"
                       value={employee.workStart}
-                      onChange={(e) => updateEmployee(index, 'workStart', e.target.value)}
+                      onChange={(val) => updateEmployee(index, 'workStart', val)}
+                      quickTimes={['17:20']}
                     />
                   </Field>
                   <Field label="OT end">
-                    <Input
+                    <TimeMaskInput
                       required
-                      type="time"
                       value={employee.workEnd}
-                      onChange={(e) => updateEmployee(index, 'workEnd', e.target.value)}
+                      onChange={(val) => updateEmployee(index, 'workEnd', val)}
+                      quickTimes={['19:00', '20:00']}
                     />
                   </Field>
                   <Field label="Transportation">
@@ -387,14 +498,126 @@ export default function PublicRequestForm() {
               </div>
             ))}
           </div>
+          <div className="mt-4 flex justify-start">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setEmployees((current) => [...current, emptyEmployee()])}
+            >
+              <Plus size={16} /> Add employee
+            </Button>
+          </div>
         </Card>
       )}
 
+      {error && <p className="border-l-2 border-danger bg-danger-light p-3 pl-4 text-sm text-danger mt-4">{error}</p>}
+      <div className="flex justify-end gap-3 pt-3">
+        <Button type="button" variant="secondary" onClick={handleReset} disabled={submitting}>
+          Reset
+        </Button>
+        <Button disabled={submitting}>
+          {submitting ? 'Submitting...' : 'Submit request'}
+        </Button>
+      </div>
+
       <div className="hidden" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)} /></label></div>
-      {error && <p className="border-l-2 border-danger bg-danger-light p-3 pl-4 text-sm text-danger">{error}</p>}
-      <div className="flex justify-end"><Button disabled={submitting}>{submitting ? 'Submitting...' : 'Submit request'}</Button></div>
     </form>
-  </PublicFrame>;
+
+    {/* Floating guidelines card on the far right (desktop only) */}
+    {requestType === 'overtime' && (
+      <div className="hidden xl:block absolute left-[920px] top-[70px] w-80 h-[calc(100%-70px)]">
+        <div className="sticky top-5">
+          <Card className="p-6 border-2 border-amber-300 bg-amber-50/50 shadow-lg rounded-2xl">
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-amber-200">
+              <span className="rounded-lg bg-amber-500 p-2 text-white">
+                <Clock3 size={20} className="animate-pulse" />
+              </span>
+              <div>
+                <h2 className="text-sm font-bold text-amber-900 leading-tight">คำแนะนำการคำนวณและหมายเหตุ</h2>
+                <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">OT Guidelines & Notes</p>
+              </div>
+            </div>
+
+            <div className="grid gap-6 grid-cols-1">
+              {/* Reference Table Section */}
+              <div>
+                <p className="text-xs font-bold text-amber-950 mb-2 flex items-center gap-1.5">
+                  📊 ตารางคำนวณชั่วโมงทำงานอ้างอิง
+                </p>
+                <div className="overflow-hidden rounded-xl border border-amber-200 bg-white shadow-sm">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-amber-100/60 text-amber-950 font-bold border-b border-amber-200">
+                      <tr>
+                        <th className="px-3 py-2.5">ช่วงเวลาทำงาน</th>
+                        <th className="px-3 py-2.5 text-center">Day (Hrs.)</th>
+                        <th className="px-3 py-2.5 text-center">OT (Hrs.)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-amber-100 text-gray-700">
+                      <tr className="hover:bg-amber-50/10">
+                        <td className="px-3 py-2 font-mono font-medium">17:20 - 19:00</td>
+                        <td className="px-3 py-2 text-center text-gray-400">-</td>
+                        <td className="px-3 py-2 text-center font-bold text-amber-600 bg-amber-50/30">1.67</td>
+                      </tr>
+                      <tr className="hover:bg-amber-50/10">
+                        <td className="px-3 py-2 font-mono font-medium">17:20 - 20:00</td>
+                        <td className="px-3 py-2 text-center text-gray-400">-</td>
+                        <td className="px-3 py-2 text-center font-bold text-amber-600 bg-amber-50/30">2.67</td>
+                      </tr>
+                      <tr className="hover:bg-amber-50/10 border-t-2 border-amber-200/50">
+                        <td className="px-3 py-2 font-mono font-medium">08:00 - 16:45</td>
+                        <td className="px-3 py-2 text-center font-bold text-blue-700 bg-blue-50/10">8.00</td>
+                        <td className="px-3 py-2 text-center text-gray-400">0.00</td>
+                      </tr>
+                      <tr className="hover:bg-amber-50/10">
+                        <td className="px-3 py-2 font-mono font-medium">08:00 - 19:00</td>
+                        <td className="px-3 py-2 text-center font-bold text-blue-700 bg-blue-50/10">8.00</td>
+                        <td className="px-3 py-2 text-center font-bold text-amber-600 bg-amber-50/30">1.67</td>
+                      </tr>
+                      <tr className="hover:bg-amber-50/10">
+                        <td className="px-3 py-2 font-mono font-medium">08:00 - 20:00</td>
+                        <td className="px-3 py-2 text-center font-bold text-blue-700 bg-blue-50/10">8.00</td>
+                        <td className="px-3 py-2 text-center font-bold text-amber-600 bg-amber-50/30">2.67</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Rules Section */}
+              <div className="space-y-3">
+                <p className="text-xs font-bold text-amber-950 flex items-center gap-1.5 border-b border-amber-200 pb-1.5">
+                  ⚠️ กฎระเบียบและข้อกำหนด
+                </p>
+                <div className="space-y-2.5 text-xs text-amber-900/90 leading-relaxed">
+                  <div className="flex gap-2">
+                    <span className="text-amber-500 mt-0.5">•</span>
+                    <p>
+                      ในกรณีที่พนักงานได้มาทำงานล่วงเวลาหรือทำงานในวันหยุดโดยมิได้รับคำสั่งหรือมิได้รับอนุมัติจากบริษัทฯ ให้ถูกต้องก่อน 
+                      <strong className="text-amber-950 font-bold block mt-0.5">ทางบริษัทฯ จะไม่จ่ายค่าล่วงเวลาหรือค่าทำงานในวันหยุดให้</strong>
+                    </p>
+                  </div>
+                  <div className="flex gap-2 border-t border-amber-200/40 pt-2.5">
+                    <span className="text-amber-500 mt-0.5">•</span>
+                    <p>
+                      บริษัทฯ จะไม่จ่ายค่าทำงานล่วงเวลาและค่าทำงานในวันหยุดซึ่งเกินจากที่ได้รับอนุมัติ
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-red-50 border border-red-200 p-2.5 text-red-800 font-semibold flex gap-2">
+                    <span className="text-red-500 font-bold">🚫</span>
+                    <p className="text-xs">
+                      ชั่วโมงการทำงานต้อง <span className="text-red-600 text-sm font-black underline">ไม่เกิน 60 ชั่วโมง / สัปดาห์</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    )}
+  </div>
+</PublicFrame>;
 }
 
 function PublicFrame({ children }: { children: React.ReactNode }) {

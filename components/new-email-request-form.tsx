@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Car, Clock3, Plus, Trash2, Users } from 'lucide-react';
 import { useApp } from '@/components/app-provider';
-import { Button, Card, Field, Input, Select, Textarea, WeeklyHoursInput } from '@/components/ui';
+import { Button, Card, Field, Input, Select, Textarea, WeeklyHoursInput, TimeMaskInput } from '@/components/ui';
 import { PageHeader } from '@/components/page-header';
 import { GoogleMapLinks } from '@/components/google-map-links';
 import { CompanyUserField } from '@/components/company-user-field';
@@ -14,8 +14,8 @@ import { demoUsers } from '@/lib/mock-data';
 import { bangkokTime, isOtRequestWindowOpen } from '@/lib/request-window';
 
 const emptyEmployee = (): OvertimeEmployee => ({
-  employeeId: '', employeeName: '', employeeEmail: '', workDescription: '', workStart: '17:20',
-  workEnd: '20:00', totalWeeklyHours: 0, transportRequired: true, busStop: '',
+  employeeId: '', employeeName: '', employeeEmail: '', workDescription: '', workStart: '',
+  workEnd: '', totalWeeklyHours: 0, transportRequired: true, busStop: '',
 });
 
 export default function NewEmailRequestForm() {
@@ -72,7 +72,7 @@ export default function NewEmailRequestForm() {
     if (requestType === 'overtime' && !isOtRequestWindowOpen()) return setError('OT requests can be submitted only from 08:00 to 17:00 (Thailand time).');
     if (!usingDate || (requestType !== 'overtime' && !purpose.trim())) return setError('Date and purpose are required.');
     if (requestType === 'outside_company' && !destination.trim()) return setError('Destination is required.');
-    if (requestType === 'overtime' && employees.some(x => !x.employeeId || !x.employeeName || !x.workDescription || (x.transportRequired && !x.busStop))) {
+    if (requestType === 'overtime' && employees.some(x => !x.employeeId || !x.employeeName || (x.transportRequired && !x.busStop))) {
       return setError('Complete every OT employee row, including the bus stop when transport is required.');
     }
     setSubmitting(true);
@@ -87,8 +87,9 @@ export default function NewEmailRequestForm() {
         usingDate, startTime: requestType === 'overtime' ? employees[0].workStart : startTime,
         endTime: requestType === 'overtime' ? employees[0].workEnd : endTime,
         pickupLocation, destination: requestType === 'overtime' ? 'Employee bus stops' : destination,
-        purpose, numPassengers: requestType === 'overtime' ? employees.filter(x => x.transportRequired).length : Math.max(1, passengerList.length),
-        passengerList, overtimeEmployees: requestType === 'overtime' ? employees : [], meetingPoint,
+        purpose: requestType === 'overtime' ? ('Overtime / Holiday Work: ' + employees.map(e => e.workDescription.trim()).filter(Boolean).join(', ')).slice(0, 2000) : purpose,
+        numPassengers: requestType === 'overtime' ? employees.filter(x => x.transportRequired).length : Math.max(1, passengerList.length),
+        passengerList, overtimeEmployees: requestType === 'overtime' ? employees.map(emp => ({ ...emp, workDescription: emp.workDescription.trim() || 'Overtime Work' })) : [], meetingPoint,
         withStaff, vehicleTypePref: 'any', driverRequired: true, urgent: false,
         afterHours: requestType === 'overtime', overtimeTransport: requestType === 'overtime', createdAt: new Date().toISOString(),
       };
@@ -124,15 +125,87 @@ export default function NewEmailRequestForm() {
         {requestType === 'outside_company' && <div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label="Passenger names (one per line)"><Textarea value={passengers} onChange={e => setPassengers(e.target.value)} /></Field><label className="flex items-center gap-3 self-start pt-8 text-sm"><input type="checkbox" checked={withStaff} onChange={e => setWithStaff(e.target.checked)} className="h-4 w-4 accent-brand" />Travel with GA staff</label></div>}
       </Card>
 
+      {requestType === 'overtime' && (
+        <Card className="p-5 border-amber-200 bg-amber-50/30 mb-5">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-amber-100 p-2 text-amber-700">
+              <Clock3 size={20} />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-sm font-bold text-amber-900 mb-1">คำแนะนำการคำนวณและหมายเหตุ (OT Guidelines & Notes)</h2>
+              <p className="text-xs text-amber-800/80 mb-4">
+                โปรดใช้ตารางอ้างอิงนี้เพื่อกรอกจำนวนชั่วโมงทำงานรายสัปดาห์ (Weekly hours) และตรวจสอบกฎระเบียบของทางบริษัทฯ
+              </p>
+
+              {/* Reference Table */}
+              <div className="overflow-x-auto rounded-lg border border-amber-200 bg-white">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-amber-100/50 text-amber-900 font-semibold border-b border-amber-200">
+                    <tr>
+                      <th className="px-3 py-2">การนับเวลาทำงาน (Work Period)</th>
+                      <th className="px-3 py-2 text-center">Day (Hrs.)</th>
+                      <th className="px-3 py-2 text-center">OT (Hrs.)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-100 text-gray-700">
+                    <tr className="hover:bg-amber-50/20">
+                      <td className="px-3 py-2 font-mono">17:20 - 19:00</td>
+                      <td className="px-3 py-2 text-center">-</td>
+                      <td className="px-3 py-2 text-center font-semibold text-amber-700">1.67</td>
+                    </tr>
+                    <tr className="hover:bg-amber-50/20">
+                      <td className="px-3 py-2 font-mono">17:20 - 20:00</td>
+                      <td className="px-3 py-2 text-center">-</td>
+                      <td className="px-3 py-2 text-center font-semibold text-amber-700">2.67</td>
+                    </tr>
+                    <tr className="hover:bg-amber-50/20">
+                      <td className="px-3 py-2 font-mono">08:00 - 16:45</td>
+                      <td className="px-3 py-2 text-center font-semibold text-gray-800">8.00</td>
+                      <td className="px-3 py-2 text-center">0.00</td>
+                    </tr>
+                    <tr className="hover:bg-amber-50/20">
+                      <td className="px-3 py-2 font-mono">08:00 - 19:00</td>
+                      <td className="px-3 py-2 text-center font-semibold text-gray-800">8.00</td>
+                      <td className="px-3 py-2 text-center font-semibold text-amber-700">1.67</td>
+                    </tr>
+                    <tr className="hover:bg-amber-50/20">
+                      <td className="px-3 py-2 font-mono">08:00 - 20:00</td>
+                      <td className="px-3 py-2 text-center font-semibold text-gray-800">8.00</td>
+                      <td className="px-3 py-2 text-center font-semibold text-amber-700">2.67</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Notes List */}
+              <div className="mt-4 space-y-2 text-xs text-amber-900/90 leading-relaxed">
+                <p className="font-bold border-b border-amber-200/60 pb-1">หมายเหตุสำคัญ (Important Notes):</p>
+                <ul className="list-disc pl-4 space-y-1.5">
+                  <li>
+                    ในกรณีที่พนักงานได้มาทำงานล่วงเวลาหรือทำงานในวันหยุดโดยมิได้รับคำสั่งหรือมิได้รับอนุมัติจากบริษัทฯให้ถูกต้องก่อน ทางบริษัทฯ จะไม่จ่ายค่าล่วงเวลาหรือค่าทำงานในวันหยุดให้
+                  </li>
+                  <li>
+                    บริษัทฯ จะไม่จ่ายค่าทำงานล่วงเวลาและค่าทำงานในวันหยุดซึ่งเกินจากที่ได้รับอนุมัติ
+                  </li>
+                  <li className="text-danger font-bold">
+                    ชั่วโมงการทำงานต้องไม่เกิน 60 ชั่วโมง / สัปดาห์
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {requestType === 'overtime' && <Card className="p-5"><div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Employees</h2><p className="text-sm text-gray-500">Add everyone included in this OVERTIME / HOLIDAY WORK request.</p></div><Button type="button" variant="secondary" onClick={() => setEmployees(x => [...x, emptyEmployee()])}><Plus size={16} /> Add employee</Button></div>
         <div className="space-y-4">{employees.map((employee, index) => <div key={index} className="border border-line bg-canvas p-4 shadow-panel"><div className="mb-3 flex justify-between items-center"><p className="font-bold text-ink text-sm">Employee {index + 1}</p><Button type="button" variant="ghost" disabled={employees.length === 1} onClick={() => setEmployees(x => x.filter((_, i) => i !== index))}><Trash2 size={16} /></Button></div><div className="grid gap-3 sm:grid-cols-3">
           <CompanyUserField label="Employee name" required value={employee.employeeName} placeholder="Search name or email..." onChange={val => updateEmployee(index, 'employeeName', val)} onSelectUser={person => { updateEmployee(index, 'employeeName', person.displayName); updateEmployee(index, 'employeeEmail', person.mail); if (person.employeeId) updateEmployee(index, 'employeeId', person.employeeId); }} />
           <Field label="Employee email"><Input required={employee.transportRequired} type="email" placeholder="name@yageo.com" value={employee.employeeEmail || ''} onChange={e => updateEmployee(index, 'employeeEmail', e.target.value)} /></Field>
           <Field label="Employee number"><Input required value={employee.employeeId} onChange={e => updateEmployee(index, 'employeeId', e.target.value)} /></Field>
-          </div><div className="mt-3"><Field label="Description of work"><Textarea required className="min-h-[80px]" value={employee.workDescription} onChange={e => updateEmployee(index, 'workDescription', e.target.value)} placeholder="Describe the work this employee will be performing during overtime..." /></Field></div><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          </div><div className="mt-3"><Field label="Description of work"><Textarea className="min-h-[80px]" value={employee.workDescription} onChange={e => updateEmployee(index, 'workDescription', e.target.value)} placeholder="Describe the work this employee will be performing during overtime..." /></Field></div><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Weekly hours (≤ 60)"><WeeklyHoursInput required value={employee.totalWeeklyHours} onChange={val => updateEmployee(index, 'totalWeeklyHours', val)} /></Field>
-          <Field label="OT start"><Input required type="time" value={employee.workStart} onChange={e => updateEmployee(index, 'workStart', e.target.value)} /></Field>
-          <Field label="OT end"><Input required type="time" value={employee.workEnd} onChange={e => updateEmployee(index, 'workEnd', e.target.value)} /></Field>
+          <Field label="OT start"><TimeMaskInput required value={employee.workStart} onChange={val => updateEmployee(index, 'workStart', val)} quickTimes={['17:20']} /></Field>
+          <Field label="OT end"><TimeMaskInput required value={employee.workEnd} onChange={val => updateEmployee(index, 'workEnd', val)} quickTimes={['19:00', '20:00']} /></Field>
           <Field label="Transportation"><Select value={employee.transportRequired ? 'yes' : 'no'} onChange={e => updateEmployee(index, 'transportRequired', e.target.value === 'yes')}><option value="yes">Required</option><option value="no">Not required</option></Select></Field>
           <Field label="Bus stop"><Input required={employee.transportRequired} disabled={!employee.transportRequired} value={employee.busStop} onChange={e => updateEmployee(index, 'busStop', e.target.value)} /></Field>
         </div></div>)}</div>
