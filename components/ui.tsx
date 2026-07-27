@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
 /* ─── Button ─── */
@@ -193,10 +194,14 @@ export function Empty({ title, body }: { title: string; body: string }) {
   );
 }
 
-/* ─── Divider ─── */
-/* ─── Weekly Hours Mask Input (00.00, Max 60.00) ─── */
-/* ─── Weekly Hours Mask Input (00.00, Max 60.00) ─── */
-/* ─── Weekly Hours Mask Input (00.00, Max 60.00) ─── */
+/* ─── Weekly Hours Input – left-to-right positional masked entry (Max 60.00) ─── */
+/*
+ * Positions:  [0][1].[2][3]  →  display "XX.XX"
+ * Pressing a digit fills the current position then advances cursor.
+ * Example:  3 → "30.00"  then  4 → "34.00"  then  6 → "34.60"  then  7 → "34.67"
+ * Focus resets cursor to position 0 so user can re-enter the value.
+ * Backspace moves cursor back one position and clears it.
+ */
 export function WeeklyHoursInput({
   value,
   onChange,
@@ -210,224 +215,129 @@ export function WeeklyHoursInput({
   required?: boolean;
   className?: string;
 }) {
-  const getPartsFromNum = (num: number): [string, string] => {
-    if (!num || isNaN(num) || num <= 0) return ['--', '--'];
-    const clamped = Math.min(60, Math.max(0, num));
-    const [h, m] = clamped.toFixed(2).split('.');
-    return [h.padStart(2, '0'), m.padStart(2, '0')];
+  type Digits = [number, number, number, number];
+
+  const valueToDigits = (v: number): Digits => {
+    const h = Math.min(6000, Math.max(0, Math.round((Number.isFinite(v) ? v : 0) * 100)));
+    return [Math.floor(h / 1000), Math.floor(h / 100) % 10, Math.floor(h / 10) % 10, h % 10];
   };
+  const digitsToH = (d: Digits) => d[0] * 1000 + d[1] * 100 + d[2] * 10 + d[3];
 
-  const [hh, setHh] = React.useState<string>(() => getPartsFromNum(value)[0]);
-  const [mm, setMm] = React.useState<string>(() => getPartsFromNum(value)[1]);
-  const [activeSegment, setActiveSegment] = React.useState<'hh' | 'mm'>('hh');
-  const [digitCount, setDigitCount] = React.useState<number>(0);
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [digits, setDigits] = React.useState<Digits>(() => valueToDigits(value));
+  // cursor = which position will be filled next (0-3); 4 = "full / not editing"
+  const [cursor, setCursor] = React.useState(4);
+  const lastExternal = React.useRef(value);
 
+  // Sync when parent resets value externally (e.g. form reset)
   React.useEffect(() => {
-    const floatVal = (hh === '--' || mm === '--') ? 0 : parseFloat(`${hh}.${mm}`);
-    if (value !== floatVal) {
-      const [h, m] = getPartsFromNum(value);
-      setHh(h);
-      setMm(m);
+    if (lastExternal.current !== value) {
+      lastExternal.current = value;
+      setDigits(valueToDigits(value));
+      setCursor(4);
     }
   }, [value]);
 
-  React.useEffect(() => {
-    if (inputRef.current) {
-      const isComplete = hh !== '--' && mm !== '--';
-      if (required && !isComplete) {
-        inputRef.current.setCustomValidity('Please fill out this field.');
-      } else {
-        inputRef.current.setCustomValidity('');
-      }
-    }
-  }, [hh, mm, required]);
-
-  const displayString = `${hh}:${mm} Hrs`;
-
-  const selectSegment = (segment: 'hh' | 'mm') => {
-    setTimeout(() => {
-      if (inputRef.current) {
-        if (segment === 'hh') {
-          inputRef.current.setSelectionRange(0, 2);
-        } else {
-          inputRef.current.setSelectionRange(3, 5);
-        }
-      }
-    }, 0);
+  const commit = (d: Digits, newCursor: number) => {
+    const h = digitsToH(d);
+    setDigits(d);
+    setCursor(newCursor);
+    lastExternal.current = h / 100;
+    onChange(h / 100);
   };
 
-  const updateVal = (newHh: string, newMm: string) => {
-    setHh(newHh);
-    setMm(newMm);
-    const hasDashes = newHh === '--' || newMm === '--';
-    const floatVal = hasDashes ? 0 : parseFloat(`${newHh}.${newMm}`);
-    onChange(isNaN(floatVal) ? 0 : floatVal);
-  };
-
-  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    const target = e.currentTarget;
-    setTimeout(() => {
-      setActiveSegment('hh');
-      setDigitCount(0);
-      target.setSelectionRange(0, 2);
-    }, 0);
-  };
-
-  const handleMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
-    const target = e.currentTarget;
-    const start = target.selectionStart ?? 0;
-    if (start <= 2) {
-      setActiveSegment('hh');
-      setDigitCount(0);
-      target.setSelectionRange(0, 2);
-    } else {
-      setActiveSegment('mm');
-      setDigitCount(0);
-      target.setSelectionRange(3, 5);
-    }
+  const handleFocus = () => {
+    // Reset cursor to start so user overwrites from position 0
+    setCursor(0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (
-      e.key === 'Tab' ||
-      e.key === 'Shift' ||
-      e.key === 'Control' ||
-      e.key === 'Alt' ||
-      e.key === 'Meta' ||
-      e.key === 'Enter' ||
-      e.key === 'Escape'
-    ) {
-      return;
-    }
-
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      setActiveSegment('hh');
-      setDigitCount(0);
-      selectSegment('hh');
-      return;
-    }
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      setActiveSegment('mm');
-      setDigitCount(0);
-      selectSegment('mm');
-      return;
-    }
-
-    if (e.key === 'Backspace' || e.key === 'Delete') {
-      e.preventDefault();
-      if (activeSegment === 'hh') {
-        updateVal('--', mm);
-        setDigitCount(0);
-        selectSegment('hh');
-      } else {
-        if (mm !== '--') {
-          updateVal(hh, '--');
-          setDigitCount(0);
-          setActiveSegment('hh');
-          selectSegment('hh');
-        } else {
-          setActiveSegment('hh');
-          setDigitCount(0);
-          selectSegment('hh');
-        }
-      }
-      return;
-    }
+    if (disabled) return;
 
     if (/^[0-9]$/.test(e.key)) {
       e.preventDefault();
-      const digit = e.key;
+      if (cursor >= 4) return; // already full — Tab out & back to re-enter
+      const digit = parseInt(e.key, 10);
+      const d = [...digits] as Digits;
 
-      if (activeSegment === 'hh') {
-        if (digitCount === 0 || hh === '--') {
-          const valNum = parseInt(digit, 10);
-          if (valNum >= 7) {
-            const newHh = `0${digit}`;
-            const newMm = mm === '--' ? '00' : mm;
-            updateVal(newHh, newMm);
-            setActiveSegment('mm');
-            setDigitCount(0);
-            selectSegment('mm');
-          } else {
-            const newHh = `0${digit}`;
-            updateVal(newHh, mm);
-            setDigitCount(1);
-            selectSegment('hh');
-          }
-        } else {
-          const firstDigit = hh[1];
-          const combined = firstDigit + digit;
-          let newHh = combined;
-          let newMm = mm;
-          if (parseInt(combined, 10) > 60) {
-            newHh = '60';
-            newMm = '00';
-          } else if (newHh === '60') {
-            newMm = '00';
-          } else if (newMm === '--') {
-            newMm = '00';
-          }
-          updateVal(newHh, newMm);
-          setActiveSegment('mm');
-          setDigitCount(0);
-          selectSegment('mm');
-        }
-      } else {
-        if (hh === '--') {
-          const newHh = '00';
-          if (digitCount === 0 || mm === '--') {
-            const newMm = `0${digit}`;
-            updateVal(newHh, newMm);
-            setDigitCount(1);
-            selectSegment('mm');
-          } else {
-            const firstDigit = mm[1];
-            const combined = firstDigit + digit;
-            updateVal(newHh, combined);
-            setDigitCount(0);
-            selectSegment('mm');
-          }
-          return;
-        }
-        if (hh === '60') {
-          return;
-        }
-        if (digitCount === 0 || mm === '--') {
-          const newMm = `0${digit}`;
-          updateVal(hh, newMm);
-          setDigitCount(1);
-          selectSegment('mm');
-        } else {
-          const firstDigit = mm[1];
-          const combined = firstDigit + digit;
-          updateVal(hh, combined);
-          setDigitCount(0);
-          selectSegment('mm');
-        }
+      if (cursor === 0 && digit === 6) {
+        // Special case: first digit is 6 → auto-fill rest with 0 = exactly 60.00
+        commit([6, 0, 0, 0], 4);
+        return;
       }
+
+      d[cursor] = digit;
+      const h = digitsToH(d);
+      if (h > 6000) return; // would exceed 60.00 — reject
+      commit(d, Math.min(4, cursor + 1));
+    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault();
+      // Special case: locked at 60.00 → one backspace wipes everything back to 00.00
+      if (digitsToH(digits) === 6000) {
+        commit([0, 0, 0, 0], 0);
+        return;
+      }
+      if (cursor === 0) return;
+      const newCursor = cursor - 1;
+      const d = [...digits] as Digits;
+      d[newCursor] = 0;
+      commit(d, newCursor);
     }
+    // Tab / Shift+Tab / arrows bubble naturally
   };
 
+  const h = digitsToH(digits);
+  const display = `${digits[0]}${digits[1]}.${digits[2]}${digits[3]}`;
+  const isMax = h >= 6000;       // exactly 60.00 → red border
+  const isWarning = h >= 5500 && h < 6000; // approaching limit → amber
+
+
   return (
-    <Input
-      ref={inputRef}
-      type="text"
-      inputMode="numeric"
-      maxLength={9}
-      required={required}
-      disabled={disabled}
-      className={cn(className)}
-      value={displayString}
-      onFocus={handleFocus}
-      onMouseUp={handleMouseUp}
-      onKeyDown={handleKeyDown}
-      onChange={() => {}}
-    />
+    <div className={cn('relative', className)}>
+      {/* Hidden number for native required validation */}
+      {required && (
+        <input
+          type="number"
+          aria-hidden="true"
+          tabIndex={-1}
+          className="sr-only"
+          value={h === 0 ? '' : h}
+          required
+          onChange={() => {}}
+        />
+      )}
+      <input
+        type="text"
+        inputMode="numeric"
+        readOnly
+        value={display}
+        disabled={disabled}
+        aria-label="Total weekly hours (XX.XX)"
+        onFocus={handleFocus}
+        onKeyDown={handleKeyDown}
+        onChange={() => {}}
+        className={cn(
+          'h-10 w-full rounded-lg border border-line bg-white px-3 pr-12 text-sm text-ink',
+          'outline-none transition-all duration-150 tabular-nums cursor-text select-none',
+          'focus:border-brand focus:ring-2 focus:ring-brand/15',
+          'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400',
+          isMax && 'border-red-400 bg-red-50 text-red-700 focus:border-red-500 focus:ring-red-500/15',
+          isWarning && 'border-amber-400 bg-amber-50 text-amber-800 focus:border-amber-500 focus:ring-amber-500/15',
+        )}
+      />
+      <span
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-medium',
+          isMax ? 'text-red-400' : isWarning ? 'text-amber-500' : 'text-gray-400',
+        )}
+      >
+        hrs
+      </span>
+    </div>
   );
 }
+
+
 
 /* ─── 12-Hour Time Helpers ─── */
 const convert24to12 = (time24: string): [string, string, string] => {
@@ -471,6 +381,28 @@ export function TimeMaskInput({
   const [showPicker, setShowPicker] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const pickerRef = React.useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = React.useState({ top: 0, left: 0 });
+
+  React.useEffect(() => {
+    const updatePosition = () => {
+      if (showPicker && inputRef.current) {
+        const rect = inputRef.current.getBoundingClientRect();
+        setCoords({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+        });
+      }
+    };
+    if (showPicker) {
+      updatePosition();
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+    }
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [showPicker]);
 
   React.useEffect(() => {
     const current24 = convert12to24(hh, mm, ampm);
@@ -810,10 +742,15 @@ export function TimeMaskInput({
         </svg>
       </button>
 
-      {showPicker && (
+      {showPicker && typeof document !== 'undefined' && createPortal(
         <div
           ref={pickerRef}
-          className="absolute left-0 mt-1 w-64 rounded-xl border border-line bg-white p-3 shadow-xl z-50 animate-scale-in"
+          style={{
+            position: 'absolute',
+            top: `${coords.top}px`,
+            left: `${coords.left}px`,
+          }}
+          className="w-64 rounded-xl border border-line bg-white p-3 shadow-xl z-[9999] animate-scale-in"
         >
           <div className="mb-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Quick OT Times</p>
@@ -907,9 +844,9 @@ export function TimeMaskInput({
               Done
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
 }
-

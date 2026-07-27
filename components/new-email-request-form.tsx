@@ -203,9 +203,9 @@ export default function NewEmailRequestForm() {
           <Field label="Employee email"><Input required={employee.transportRequired} type="email" placeholder="name@yageo.com" value={employee.employeeEmail || ''} onChange={e => updateEmployee(index, 'employeeEmail', e.target.value)} /></Field>
           <Field label="Employee number"><Input required value={employee.employeeId} onChange={e => updateEmployee(index, 'employeeId', e.target.value)} /></Field>
           </div><div className="mt-3"><Field label="Description of work"><Textarea className="min-h-[80px]" value={employee.workDescription} onChange={e => updateEmployee(index, 'workDescription', e.target.value)} placeholder="Describe the work this employee will be performing during overtime..." /></Field></div><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label="OT start"><TimeMaskInput required value={employee.workStart} onChange={val => updateEmployee(index, 'workStart', val)} quickTimes={['08:00', '17:20']} /></Field>
+          <Field label="OT end"><TimeMaskInput required value={employee.workEnd} onChange={val => updateEmployee(index, 'workEnd', val)} quickTimes={['16:45', '19:00', '20:00']} /></Field>
           <Field label="Weekly hours (≤ 60)"><WeeklyHoursInput required value={employee.totalWeeklyHours} onChange={val => updateEmployee(index, 'totalWeeklyHours', val)} /></Field>
-          <Field label="OT start"><TimeMaskInput required value={employee.workStart} onChange={val => updateEmployee(index, 'workStart', val)} quickTimes={['17:20']} /></Field>
-          <Field label="OT end"><TimeMaskInput required value={employee.workEnd} onChange={val => updateEmployee(index, 'workEnd', val)} quickTimes={['19:00', '20:00']} /></Field>
           <Field label="Transportation"><Select value={employee.transportRequired ? 'yes' : 'no'} onChange={e => updateEmployee(index, 'transportRequired', e.target.value === 'yes')}><option value="yes">Required</option><option value="no">Not required</option></Select></Field>
           <Field label="Bus stop"><Input required={employee.transportRequired} disabled={!employee.transportRequired} value={employee.busStop} onChange={e => updateEmployee(index, 'busStop', e.target.value)} /></Field>
         </div></div>)}</div>

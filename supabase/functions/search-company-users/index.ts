@@ -17,6 +17,30 @@ type CompanyUser = {
   jobTitle?: unknown;
 };
 
+function computeSearchScore(displayName: string, mail: string, query: string): number {
+  const q = query.toLowerCase().trim();
+  const name = displayName.toLowerCase();
+  const email = mail.toLowerCase();
+
+  if (name === q) return 1000;
+  if (email === q || email.split('@')[0] === q) return 900;
+
+  if (name.startsWith(q)) return 500;
+  if (email.startsWith(q)) return 400;
+
+  const nameWords = name.split(/\s+/);
+  if (nameWords.some((word) => word.startsWith(q))) return 300;
+
+  const emailPrefix = email.split('@')[0];
+  const emailParts = emailPrefix.split(/[\._\-]/);
+  if (emailParts.some((part) => part.startsWith(q))) return 200;
+
+  if (name.includes(q)) return 100;
+  if (email.includes(q)) return 50;
+
+  return 0;
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
@@ -50,7 +74,8 @@ Deno.serve(async (request) => {
     if (!response.ok) return json({ users: [] });
     const result = await response.json();
     const source: CompanyUser[] = Array.isArray(result) ? result : Array.isArray(result?.users) ? result.users : [];
-    const users = source.slice(0, 8).flatMap((item) => {
+    
+    const mappedUsers = source.flatMap((item) => {
       const displayName = typeof item.displayName === 'string' ? item.displayName.trim() : '';
       const mail = typeof item.mail === 'string' ? item.mail.trim().toLowerCase() : '';
       if (!displayName || !mail || !mail.includes('@')) return [];
@@ -61,6 +86,15 @@ Deno.serve(async (request) => {
         jobTitle: typeof item.jobTitle === 'string' ? item.jobTitle.trim() : '',
       }];
     });
+
+    const queryStr = query.toLowerCase();
+    const sortedUsers = mappedUsers.sort((a, b) => {
+      const scoreA = computeSearchScore(a.displayName, a.mail, queryStr);
+      const scoreB = computeSearchScore(b.displayName, b.mail, queryStr);
+      return scoreB - scoreA;
+    });
+
+    const users = sortedUsers.slice(0, 8);
     return json({ users });
   } catch {
     return json({ users: [] });

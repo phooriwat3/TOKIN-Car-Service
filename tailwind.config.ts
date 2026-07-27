@@ -19,7 +19,7 @@ export default {
         'danger-light': '#FDECEA',
       },
       fontFamily: {
-        sans: ['IBM Plex Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Noto Sans Thai', 'IBM Plex Sans', 'system-ui', '-apple-system', 'sans-serif'],
       },
       boxShadow: {
         panel: '0 1px 3px rgba(0,73,142,.07), 0 1px 2px rgba(0,0,0,.04)',

@@ -7,7 +7,7 @@ import { approvalEmail, manageEmail } from '../_shared/email-template.ts';
 
 type PublicRequest = {
   requestType: 'outside_company' | 'overtime';
-  requester: { name: string; email: string; employeeId?: string; department: string };
+  requester: { name: string; email: string; employeeId: string; department: string };
   approver: { name: string; email: string };
   usingDate: string;
   startTime: string;
@@ -66,6 +66,7 @@ Deno.serve(async (request: Request) => {
 
     const requesterName = requiredText(payload.requester?.name, 'Requester name', 200);
     const requesterEmail = email(payload.requester?.email, 'Requester email');
+    const requesterEmployeeId = requiredText(payload.requester?.employeeId, 'Requester employee number', 100);
     const requesterDepartment = requiredText(payload.requester?.department, 'Requester department', 200);
     const approverName = requiredText(payload.approver?.name, 'Approver name', 200);
     const approverEmail = email(payload.approver?.email, 'Approver email');
@@ -86,7 +87,7 @@ Deno.serve(async (request: Request) => {
       requester_id: null,
       requester_name: requesterName,
       requester_email: requesterEmail,
-      requester_employee_id: typeof payload.requester.employeeId === 'string' ? payload.requester.employeeId.trim().slice(0, 100) : null,
+      requester_employee_id: requesterEmployeeId,
       requester_department: requesterDepartment,
       department_id: unassigned.id,
       status: 'pending_approval',

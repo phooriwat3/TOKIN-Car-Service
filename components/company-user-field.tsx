@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Field, Input } from './ui';
 import { Loader2 } from 'lucide-react';
 
@@ -11,6 +12,30 @@ export type CompanyUser = {
   jobTitle: string;
   employeeId?: string;
 };
+
+function computeSearchScore(displayName: string, mail: string, query: string): number {
+  const q = query.toLowerCase().trim();
+  const name = displayName.toLowerCase();
+  const email = mail.toLowerCase();
+
+  if (name === q) return 1000;
+  if (email === q || email.split('@')[0] === q) return 900;
+
+  if (name.startsWith(q)) return 500;
+  if (email.startsWith(q)) return 400;
+
+  const nameWords = name.split(/\s+/);
+  if (nameWords.some((word) => word.startsWith(q))) return 300;
+
+  const emailPrefix = email.split('@')[0];
+  const emailParts = emailPrefix.split(/[\._\-]/);
+  if (emailParts.some((part) => part.startsWith(q))) return 200;
+
+  if (name.includes(q)) return 100;
+  if (email.includes(q)) return 50;
+
+  return 0;
+}
 
 export function CompanyUserField({
   label,
@@ -33,13 +58,46 @@ export function CompanyUserField({
   const [searching, setSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const selectedUserNameRef = useRef<string | null>(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+
+  useEffect(() => {
+    const updatePosition = () => {
+      if (showDropdown && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setCoords({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+    };
+    if (showDropdown) {
+      updatePosition();
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+    }
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [showDropdown]);
 
   useEffect(() => {
     if (disabled || value.trim().length < 2) {
       setResults([]);
       setShowDropdown(false);
+      setSearching(false);
       return;
     }
+
+    // Skip searching if the value exactly matches the name we just selected
+    if (selectedUserNameRef.current === value.trim()) {
+      setSearching(false);
+      return;
+    }
+
     const timer = window.setTimeout(async () => {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -53,8 +111,14 @@ export function CompanyUserField({
         });
         const result = await response.json();
         if (response.ok && Array.isArray(result.users)) {
-          setResults(result.users);
-          setShowDropdown(result.users.length > 0);
+          const queryStr = value.trim().toLowerCase();
+          const sorted = [...result.users].sort((a, b) => {
+            const scoreA = computeSearchScore(a.displayName, a.mail, queryStr);
+            const scoreB = computeSearchScore(b.displayName, b.mail, queryStr);
+            return scoreB - scoreA;
+          });
+          setResults(sorted);
+          setShowDropdown(sorted.length > 0);
         } else {
           setResults([]);
           setShowDropdown(false);
@@ -66,12 +130,22 @@ export function CompanyUserField({
         setSearching(false);
       }
     }, 350);
-    return () => window.clearTimeout(timer);
+
+    return () => {
+      window.clearTimeout(timer);
+      setSearching(false);
+    };
   }, [value, disabled]);
+
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        !dropdownRef.current?.contains(target)
+      ) {
         setShowDropdown(false);
       }
     };
@@ -79,39 +153,55 @@ export function CompanyUserField({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const inputContent = (
+    <div className="relative">
+      <Input
+        required={required}
+        disabled={disabled}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => {
+          selectedUserNameRef.current = null; // Clear lock when user types
+          onChange(e.target.value);
+          setShowDropdown(true);
+        }}
+        onFocus={() => {
+          if (results.length > 0) setShowDropdown(true);
+        }}
+      />
+      {searching && (
+        <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+          <Loader2 className="h-4 w-4 animate-spin text-brand" />
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div ref={containerRef} className="relative">
-      <Field label={label}>
-        <div className="relative">
-          <Input
-            required={required}
-            disabled={disabled}
-            value={value}
-            placeholder={placeholder}
-            onChange={(e) => {
-              onChange(e.target.value);
-              setShowDropdown(true);
-            }}
-            onFocus={() => {
-              if (results.length > 0) setShowDropdown(true);
-            }}
-          />
-          {searching && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-brand" />
-          )}
-        </div>
-      </Field>
+      {label ? <Field label={label}>{inputContent}</Field> : inputContent}
 
-      {showDropdown && results.length > 0 && (
-        <div className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-lg border border-line bg-white shadow-modal animate-fade-in">
+      {showDropdown && results.length > 0 && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{
+            position: 'absolute',
+            top: `${coords.top}px`,
+            left: `${coords.left}px`,
+            minWidth: `${coords.width}px`,
+          }}
+          className="z-[9999] w-max max-h-60 max-w-[calc(100vw-2rem)] sm:max-w-[480px] overflow-y-auto rounded-lg border border-line bg-white shadow-modal animate-fade-in"
+        >
           {results.map((person) => (
             <button
               type="button"
               key={person.mail}
               onClick={() => {
+                selectedUserNameRef.current = person.displayName.trim();
                 onSelectUser(person);
                 setShowDropdown(false);
                 setResults([]);
+                setSearching(false);
               }}
               className="block w-full border-b border-line px-4 py-3 text-left last:border-0 hover:bg-brand-light transition"
             >
@@ -128,7 +218,8 @@ export function CompanyUserField({
               </span>
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
