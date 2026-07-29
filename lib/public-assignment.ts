@@ -3,7 +3,12 @@ export type PublicAssignment = {
   requestNo: string;
   status: string;
   requestType: string;
-  requester: { name: string; email: string; employeeId: string; department: string };
+  requester: {
+    name: string;
+    email: string;
+    employeeId: string;
+    department: string;
+  };
   usingDate: string;
   startTime: string;
   endTime: string;
@@ -21,7 +26,13 @@ export type PublicAssignment = {
     transport_required: boolean;
     seq: number;
   }>;
-  vehicle: { licensePlate: string; brand: string; model: string; color: string; capacity: number };
+  vehicle: {
+    licensePlate: string;
+    brand: string;
+    model: string;
+    color: string;
+    capacity: number;
+  };
   driver: { name: string; phone: string };
   transportUnits?: Array<{
     licensePlate: string;
@@ -44,27 +55,40 @@ type AssignmentResult = {
   error?: string;
 };
 
-export async function loadPublicAssignment(token?: string): Promise<AssignmentResult> {
-  if (!token) return { error: 'Assignment link is missing.' };
+export async function loadPublicAssignment(
+  token?: string,
+): Promise<AssignmentResult> {
+  if (!token) return { error: "Assignment link is missing." };
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!supabaseUrl || !publishableKey) return { error: 'Assignment service is not configured.' };
+  if (!supabaseUrl || !publishableKey)
+    return { error: "Assignment service is not configured." };
 
   try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/public-assignment-access`, {
-      method: 'POST',
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: publishableKey,
-        Authorization: `Bearer ${publishableKey}`,
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/public-assignment-access`,
+      {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: publishableKey,
+          Authorization: `Bearer ${publishableKey}`,
+        },
+        body: JSON.stringify({ token }),
       },
-      body: JSON.stringify({ token }),
-    });
+    );
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) return { error: body.error || `Unable to open assignment (HTTP ${response.status}).` };
+    if (!response.ok)
+      return {
+        error:
+          body.error || `Unable to open assignment (HTTP ${response.status}).`,
+      };
     return { assignment: body.assignment, expiresAt: body.expiresAt };
   } catch (cause) {
-    return { error: cause instanceof Error ? cause.message : 'Unable to load assignment.' };
+    return {
+      error:
+        cause instanceof Error ? cause.message : "Unable to load assignment.",
+    };
   }
 }

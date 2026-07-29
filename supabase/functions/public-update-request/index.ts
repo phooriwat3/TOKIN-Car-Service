@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/http.ts';
 import {
-  bangkokHour, date, email, randomToken, requiredText, sha256Hex, time, token,
+  bangkokMinutes, date, email, randomToken, requiredText, sha256Hex, time, token,
 } from '../_shared/request-access.ts';
 import { approvalEmail } from '../_shared/email-template.ts';
 
@@ -96,17 +96,31 @@ Deno.serve(async (request) => {
     if (!['outside_company', 'overtime'].includes(payload.requestType)) {
       throw new Error('Request type is invalid.');
     }
-    if (payload.requestType === 'overtime') {
-      const hour = bangkokHour();
-      if (hour < 8 || hour >= 17) {
-        throw new Error('OT requests can be edited only from 08:00 to 17:00 (Thailand time).');
-      }
+    const submittedAtBangkokMinutes = bangkokMinutes();
+    const isLateOt = payload.requestType === 'overtime' && submittedAtBangkokMinutes >= 15 * 60 + 30;
+    if (payload.requestType === 'overtime' &&
+        (submittedAtBangkokMinutes < 8 * 60 || submittedAtBangkokMinutes >= 16 * 60)) {
+      throw new Error('OT requests can be edited only from 08:00 to 16:00 (Thailand time).');
     }
 
     const requesterName = requiredText(payload.requester?.name, 'Requester name', 200);
     const requesterDepartment = requiredText(payload.requester?.department, 'Requester department', 200);
-    const approverName = requiredText(payload.approver?.name, 'Approver name', 200);
-    const approverEmail = email(payload.approver?.email, 'Approver email');
+    const departmentCode = requesterDepartment.trim().toUpperCase().replace(/\s+/g, ' ');
+    const { data: department, error: departmentError } = await db.from('departments')
+      .select('id,name,code').eq('code', departmentCode).eq('is_active', true).single();
+    if (departmentError || !department) {
+      throw new Error('Selected department is unavailable. Please contact Admin.');
+    }
+    const { data: departmentApprovers, error: approversError } = await db.from('profiles')
+      .select('id,full_name,email').eq('department_id', department.id)
+      .eq('role', 'approver').eq('is_active', true).order('full_name');
+    if (approversError) throw approversError;
+    const selectedApprover = departmentApprovers?.[0];
+    if (!selectedApprover) {
+      throw new Error(`No active approver is configured for ${department.code}. Please contact Admin.`);
+    }
+    const approverName = selectedApprover.full_name;
+    const approverEmail = email(selectedApprover.email, 'Approver email');
     const usingDate = date(payload.usingDate);
     const startTime = time(payload.startTime, 'Start time');
     const endTime = time(payload.endTime, 'End time');
@@ -156,7 +170,9 @@ Deno.serve(async (request) => {
       requester_name: requesterName,
       requester_employee_id: typeof payload.requester?.employeeId === 'string'
         ? payload.requester.employeeId.trim().slice(0, 100) : null,
-      requester_department: requesterDepartment,
+      requester_department: department.name,
+      department_id: department.id,
+      approver_id: selectedApprover.id,
       approver_name: approverName,
       approver_email: approverEmail,
       request_type: payload.requestType,
@@ -174,7 +190,9 @@ Deno.serve(async (request) => {
       overtime_transport: payload.requestType === 'overtime',
       status: 'pending_approval',
       reject_reason: null,
-      approval_email_status: 'pending',
+      approval_email_status: payload.requestType === 'overtime' && !isLateOt ? 'queued' : 'pending',
+      urgent: isLateOt,
+      urgent_reason: isLateOt ? 'Submitted after the 15:30 OT approval batch cutoff.' : null,
       revision_no: nextRevision,
       last_submitted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -254,8 +272,9 @@ Deno.serve(async (request) => {
       approverName, usingDate, startTime, endTime, pickupLocation, destination, purpose, meetingPoint,
       withStaff: Boolean(payload.withStaff), passengers, overtimeEmployees, approvalUrl, expiresAt: approvalExpiresAt,
     });
-    let approvalEmailStatus: 'sent' | 'failed' | 'not_configured' = 'not_configured';
-    if (approvalFlowUrl) {
+    let approvalEmailStatus: 'queued' | 'sent' | 'failed' | 'not_configured' =
+      payload.requestType === 'overtime' && !isLateOt ? 'queued' : 'not_configured';
+    if (approvalFlowUrl && (payload.requestType !== 'overtime' || isLateOt)) {
       try {
         const response = await fetch(approvalFlowUrl, {
           method: 'POST',

@@ -19,8 +19,6 @@ import {
   type CompanyUser,
 } from "@/components/company-user-field";
 import type {
-  ApproverItem,
-  ApproverPosition,
   OvertimeEmployee,
   RequestType,
 } from "@/lib/types";
@@ -55,13 +53,37 @@ const DEPARTMENTS = [
   "TE",
 ];
 
-const APPROVER_POSITIONS: { value: ApproverPosition; label: string }[] = [
-  { value: "Supervisor", label: "Supervisor" },
-  { value: "Sect.Manager", label: "Sect.Manager" },
-  { value: "Dept.Manager", label: "Dept.Manager" },
-  { value: "Chief", label: "Chief" },
-  { value: "AGM.up", label: "AGM.up (When necessary)" },
-];
+const normalizeDepartment = (dept: string | undefined, jobTitle?: string): string => {
+  const d = (dept || "").trim().toLowerCase();
+  const j = (jobTitle || "").trim().toLowerCase();
+
+  if (j.includes("ta mfg") || d.includes("ta mfg")) return "TA MFG";
+  if (/\bpe\b/i.test(j) || j.includes("production engineering") || /\bpe\b/i.test(d)) return "PE";
+  if (/\bit\b/i.test(j) || j.includes("information technology") || /\bit\b/i.test(d)) return "IT";
+  if (/\bqa\b/i.test(j) || j.includes("quality assurance") || /\bqa\b/i.test(d)) return "QA";
+  if (j.includes("managing director") || /\bmd\b/i.test(j) || d.includes("managing director")) return "MD";
+
+  if (d === "information technology" || d === "it") return "IT";
+  if (d === "human resources" || d === "hr") return "HR";
+  if (d === "medical" || d === "md") return "MD";
+  if (d === "sustainability" || d === "sust") return "SUST";
+  if (d === "finance & accounting" || d === "fa" || d === "finance" || d === "accounting") return "FA";
+  if (d === "planning" || d === "pln") return "PLN";
+  if (d === "procurement" || d === "proc") return "PROC";
+  if (d === "production engineering" || d === "pe") return "PE";
+  if (d === "electrical engineering" || d === "ee") return "EE";
+  if (d === "facilities" || d === "fac") return "FAC";
+  if (d === "quality assurance" || d === "qa") return "QA";
+  if (d === "ta mfg" || d === "manufacturing") return "TA MFG";
+  if (d === "supply chain" || d === "sc") return "SC";
+  if (d === "testing engineering" || d === "te") return "TE";
+
+  if (d === "capacitor") return "MD";
+
+  const match = DEPARTMENTS.find((x) => x.toLowerCase() === d);
+  if (match) return match;
+  return dept || "";
+};
 
 const getTodayString = () => {
   const d = new Date();
@@ -77,9 +99,6 @@ export default function PublicRequestForm() {
   const [requesterEmail, setRequesterEmail] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [department, setDepartment] = useState("");
-  const [approvers, setApprovers] = useState<ApproverItem[]>([
-    { position: "Supervisor", name: "", email: "" },
-  ]);
   const [usingDate, setUsingDate] = useState(getTodayString);
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("17:00");
@@ -105,25 +124,6 @@ export default function PublicRequestForm() {
     manageUrl?: string;
   } | null>(null);
 
-  const updateApprover = <K extends keyof ApproverItem>(
-    index: number,
-    key: K,
-    value: ApproverItem[K],
-  ) =>
-    setApprovers((current) =>
-      current.map((item, i) =>
-        i === index ? { ...item, [key]: value } : item,
-      ),
-    );
-
-  const addApprover = () =>
-    setApprovers((current) => [
-      ...current,
-      { position: "Sect.Manager", name: "", email: "" },
-    ]);
-  const removeApprover = (index: number) =>
-    setApprovers((current) => current.filter((_, i) => i !== index));
-
   const updateEmployee = <K extends keyof OvertimeEmployee>(
     index: number,
     key: K,
@@ -141,7 +141,6 @@ export default function PublicRequestForm() {
     setDestination("");
     setPurpose("");
     setPassengers("");
-    setApprovers([{ position: "Supervisor", name: "", email: "" }]);
     setEmployees([emptyEmployee()]);
     setSuccess(null);
     setShowSubmitConfirmation(false);
@@ -154,7 +153,6 @@ export default function PublicRequestForm() {
     setRequesterEmail("");
     setEmployeeId("");
     setDepartment("");
-    setApprovers([{ position: "Supervisor", name: "", email: "" }]);
     setStartTime("08:00");
     setEndTime("17:00");
     setPickupLocation("Tokin factory");
@@ -176,12 +174,7 @@ export default function PublicRequestForm() {
       return setError("Requester employee number is required.");
     if (requestType === "overtime" && !isOtRequestWindowOpen()) {
       return setError(
-        "OT requests can be submitted only from 08:00 to 17:00 (Thailand time).",
-      );
-    }
-    if (approvers.some((a) => !a.name.trim() || !a.email.trim())) {
-      return setError(
-        "Please complete the name and email for every assigned approver.",
+        "OT requests can be submitted only from 08:00 to 16:00 (Thailand time).",
       );
     }
     if (requestType === "outside_company" && !purpose.trim())
@@ -232,8 +225,6 @@ export default function PublicRequestForm() {
               employeeId,
               department,
             },
-            approver: { name: approvers[0].name, email: approvers[0].email },
-            approversList: approvers,
             usingDate,
             startTime:
               requestType === "overtime" ? employees[0].workStart : startTime,
@@ -294,13 +285,8 @@ export default function PublicRequestForm() {
             Request number: <strong>{success.requestNo}</strong>
           </p>
           <p className="mt-4 text-sm text-gray-500">
-            The request was sent to{" "}
-            {approvers
-              .map((a) => a.email)
-              .filter(Boolean)
-              .join(", ")}
-            . You will receive another email after Admin assigns the vehicle and
-            driver.
+            The request has been routed to the active approver(s) for your department.
+            You will receive another email after Admin assigns the vehicle and driver.
           </p>
           {success.manageUrl && (
             <a
@@ -310,10 +296,15 @@ export default function PublicRequestForm() {
               Manage this request
             </a>
           )}
-          {success.emailStatus !== "sent" && (
+          {success.emailStatus === "queued" && (
+            <p className="mt-3 rounded-md bg-blue-50 p-3 text-sm text-blue-800">
+              This OT request will be included in the department approval summary at 15:30.
+            </p>
+          )}
+          {success.emailStatus !== "sent" && success.emailStatus !== "queued" && (
             <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
-              The request was saved, but the approval email service is not
-              ready. Admin can still see this request.
+              The request was saved, but the approval email service is not ready.
+              Admin and department approvers can still see this request in the portal.
             </p>
           )}
           <Button className="mt-6" onClick={reset}>
@@ -356,7 +347,7 @@ export default function PublicRequestForm() {
 
   return (
     <PublicFrame>
-      <div className="relative mx-auto max-w-4xl lg:max-w-none lg:px-4">
+      <div className="relative mx-auto max-w-[1500px]">
         <form onSubmit={submit} className="space-y-5">
           <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-3">
             <div>
@@ -440,7 +431,7 @@ export default function PublicRequestForm() {
                       onSelectUser={(person) => {
                         setRequesterName(person.displayName);
                         setRequesterEmail(person.mail);
-                        if (person.department) setDepartment(person.department);
+                        if (person.department) setDepartment(normalizeDepartment(person.department, person.jobTitle));
                         if (person.employeeId) setEmployeeId(person.employeeId);
                       }}
                     />
@@ -456,92 +447,11 @@ export default function PublicRequestForm() {
                   </div>
                 </Card>
 
-                <Card className="p-5">
-                  <div className="mb-4">
-                    <h2 className="font-bold text-ink">Approved by</h2>
-                    <p className="text-xs text-gray-500">
-                      Select position levels and search manager names or emails
-                      for approval.
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    {approvers.map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-col gap-3 border border-line bg-canvas p-3 sm:flex-row sm:items-end"
-                      >
-                        <div className="w-full sm:w-52 flex-shrink-0">
-                          <Field label="Position">
-                            <Select
-                              value={item.position}
-                              onChange={(e) =>
-                                updateApprover(
-                                  index,
-                                  "position",
-                                  e.target.value as ApproverPosition,
-                                )
-                              }
-                            >
-                              <option value="Supervisor">Supervisor</option>
-                              <option value="Sect.Manager">Sect.Manager</option>
-                              <option value="Dept.Manager">Dept.Manager</option>
-                              <option value="Director">Director</option>
-                            </Select>
-                          </Field>
-                        </div>
-                        <div className="w-full">
-                          <CompanyUserField
-                            label="Approver name"
-                            required
-                            value={item.name}
-                            onChange={(val) =>
-                              updateApprover(index, "name", val)
-                            }
-                            placeholder="Search name..."
-                            onSelectUser={(person) => {
-                              updateApprover(index, "name", person.displayName);
-                              updateApprover(index, "email", person.mail);
-                            }}
-                          />
-                        </div>
-                        <div className="w-full">
-                          <Field label="Approver email">
-                            <Input
-                              required
-                              type="email"
-                              value={item.email}
-                              placeholder="name@yageo.com"
-                              onChange={(e) =>
-                                updateApprover(index, "email", e.target.value)
-                              }
-                            />
-                          </Field>
-                        </div>
-                        {approvers.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() => removeApprover(index)}
-                            className="self-end"
-                            title="Remove approver"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 flex justify-end">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={addApprover}
-                    >
-                      <Plus size={15} /> Add approver
-                    </Button>
-                  </div>
+                <Card className="border-blue-200 bg-blue-50/60 p-5">
+                  <h2 className="font-bold text-ink">Approval routing</h2>
+                  <p className="mt-1 text-sm leading-6 text-gray-600">
+                    The system routes this request to the active approver(s) assigned to the selected department. You do not need to enter a manager email.
+                  </p>
                 </Card>
               </div>
 
@@ -1021,7 +931,7 @@ export default function PublicRequestForm() {
                     onSelectUser={(person) => {
                       setRequesterName(person.displayName);
                       setRequesterEmail(person.mail);
-                      if (person.department) setDepartment(person.department);
+                      if (person.department) setDepartment(normalizeDepartment(person.department, person.jobTitle));
                       if (person.employeeId) setEmployeeId(person.employeeId);
                     }}
                   />
@@ -1036,92 +946,12 @@ export default function PublicRequestForm() {
                 </div>
               </Card>
 
-              <Card className="p-5">
-                <div className="mb-4">
-                  <h2 className="font-bold text-ink">Approved by</h2>
-                  <p className="text-xs text-gray-500">
-                    Select position levels and search manager names or emails
-                    for approval.
+                <Card className="border-blue-200 bg-blue-50/60 p-5">
+                  <h2 className="font-bold text-ink">Approval routing</h2>
+                  <p className="mt-1 text-sm leading-6 text-gray-600">
+                    The system routes this request to the active approver(s) assigned to the selected department. You do not need to enter a manager email.
                   </p>
-                </div>
-
-                <div className="space-y-3">
-                  {approvers.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col gap-3 border border-line bg-canvas p-3 sm:flex-row sm:items-end"
-                    >
-                      <div className="w-full sm:w-52 flex-shrink-0">
-                        <Field label="Position">
-                          <Select
-                            value={item.position}
-                            onChange={(e) =>
-                              updateApprover(
-                                index,
-                                "position",
-                                e.target.value as ApproverPosition,
-                              )
-                            }
-                          >
-                            {APPROVER_POSITIONS.map((p) => (
-                              <option key={p.value} value={p.value}>
-                                {p.label}
-                              </option>
-                            ))}
-                          </Select>
-                        </Field>
-                      </div>
-                      <div className="flex-1">
-                        <CompanyUserField
-                          label="Approver name"
-                          required
-                          value={item.name}
-                          placeholder="Search name..."
-                          onChange={(val) => updateApprover(index, "name", val)}
-                          onSelectUser={(person) => {
-                            updateApprover(index, "name", person.displayName);
-                            updateApprover(index, "email", person.mail);
-                          }}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <Field label="Approver email">
-                          <Input
-                            required
-                            type="email"
-                            value={item.email}
-                            placeholder="name@yageo.com"
-                            onChange={(e) =>
-                              updateApprover(index, "email", e.target.value)
-                            }
-                          />
-                        </Field>
-                      </div>
-                      {approvers.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => removeApprover(index)}
-                          className="self-end"
-                          title="Remove approver"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 flex justify-start">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={addApprover}
-                  >
-                    <Plus size={15} /> Add approver
-                  </Button>
-                </div>
-              </Card>
+                </Card>
 
               <Card className="p-5">
                 <h2 className="mb-4 font-bold">Request details</h2>
@@ -1267,9 +1097,9 @@ export default function PublicRequestForm() {
               <dd className="font-medium text-ink">{requesterName || "—"}</dd>
               <dt className="text-gray-500">Using date</dt>
               <dd className="font-medium text-ink">{usingDate || "—"}</dd>
-              <dt className="text-gray-500">Approver</dt>
+              <dt className="text-gray-500">Approval route</dt>
               <dd className="font-medium text-ink">
-                {approvers.map((approver) => approver.name).filter(Boolean).join(", ") || "—"}
+                {department || "—"} department approver(s)
               </dd>
             </dl>
 
@@ -1345,49 +1175,31 @@ export default function PublicRequestForm() {
 function PublicFrame({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-canvas">
-      <header
-        className="border-b border-white/10 px-5 py-0 text-white"
-        style={{
-          background: "linear-gradient(90deg, #00498E 0%, #003A71 100%)",
-        }}
-      >
-        <div className="mx-auto flex h-16 max-w-6xl lg:max-w-none lg:px-14 items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center bg-white/15 ring-1 ring-white/20">
-              <svg
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                viewBox="0 0 24 24"
-                className="text-white"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8 17H5a2 2 0 01-2-2v-4l3-7h10l3 7v4a2 2 0 01-2 2h-3m-6 0a1 1 0 002 0m0 0a1 1 0 002 0M8 17h6"
-                />
-              </svg>
+      <header className="border-b border-line bg-white px-4 sm:px-6 shadow-sm">
+        <div className="mx-auto flex h-16 max-w-[1500px] items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 items-center justify-center">
+              <img src="/tokin-logo.png" alt="TOKIN Logo" className="h-10 w-auto object-contain" />
             </div>
+            <div className="h-8 w-px bg-gray-200" />
             <div>
-              <p className="text-[15px] font-bold leading-tight">
-                TOKIN Transport
+              <p className="text-[15px] font-bold text-ink leading-tight">
+                Transport Portal
               </p>
-              <p className="text-[11px] text-blue-200/80">
-                Transportation Request Portal
+              <p className="text-[11px] text-gray-500 font-medium">
+                Car Service Requisition
               </p>
             </div>
           </div>
           <a
             href="/admin/login"
-            className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-medium text-blue-100 hover:bg-white/10 hover:text-white transition"
+            className="rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink hover:bg-gray-50 hover:text-brand transition shadow-sm"
           >
             Admin Login
           </a>
         </div>
       </header>
-      <div className="p-4 py-8 md:p-10 lg:px-14">{children}</div>
+      <div className="mx-auto max-w-[1500px] px-4 py-8 sm:px-6">{children}</div>
     </main>
   );
 }

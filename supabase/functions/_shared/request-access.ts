@@ -39,8 +39,13 @@ const randomToken = () => {
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 };
 
-const bangkokHour = () => Number(new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'Asia/Bangkok', hour: '2-digit', hour12: false,
-}).format(new Date()));
+const bangkokMinutes = () => {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value ?? '0');
+  return hour * 60 + minute;
+};
 
-export { bangkokHour, date, email, randomToken, requiredText, sha256Hex, time, token };
+export { bangkokMinutes, date, email, randomToken, requiredText, sha256Hex, time, token };

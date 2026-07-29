@@ -1,1 +1,4 @@
-import { Vehicles } from '@/components/resource-management';export default function Page(){return <Vehicles/>}
+import { Vehicles } from "@/components/resource-management";
+export default function Page() {
+  return <Vehicles />;
+}

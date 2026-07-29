@@ -85,9 +85,8 @@ export function CompanyUserField({
   }, [showDropdown]);
 
   useEffect(() => {
-    if (disabled || value.trim().length < 2) {
+    if (!showDropdown || disabled || value.trim().length < 2) {
       setResults([]);
-      setShowDropdown(false);
       setSearching(false);
       return;
     }
@@ -135,7 +134,7 @@ export function CompanyUserField({
       window.clearTimeout(timer);
       setSearching(false);
     };
-  }, [value, disabled]);
+  }, [value, disabled, showDropdown]);
 
 
   useEffect(() => {
@@ -166,7 +165,16 @@ export function CompanyUserField({
           setShowDropdown(true);
         }}
         onFocus={() => {
-          if (results.length > 0) setShowDropdown(true);
+          selectedUserNameRef.current = null; // Clear lock when user focuses to search again
+          if (value.trim().length >= 2) {
+            setShowDropdown(true);
+          }
+        }}
+        onBlur={() => {
+          // A brief delay to allow onClick of dropdown item to fire before unmounting
+          setTimeout(() => {
+            setShowDropdown(false);
+          }, 200);
         }}
       />
       {searching && (
@@ -181,7 +189,7 @@ export function CompanyUserField({
     <div ref={containerRef} className="relative">
       {label ? <Field label={label}>{inputContent}</Field> : inputContent}
 
-      {showDropdown && results.length > 0 && typeof document !== 'undefined' && createPortal(
+      {showDropdown && results.length > 0 && coords.width > 0 && typeof document !== 'undefined' && createPortal(
         <div
           ref={dropdownRef}
           style={{

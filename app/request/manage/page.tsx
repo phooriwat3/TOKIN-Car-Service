@@ -1,4 +1,4 @@
-import PublicManageRequest from '@/components/public-manage-request';
+import PublicManageRequest from "@/components/public-manage-request";
 
 export default async function ManageRequestPage({
   searchParams,

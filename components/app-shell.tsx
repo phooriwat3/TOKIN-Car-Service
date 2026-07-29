@@ -121,12 +121,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-3 px-5 border-b border-white/10">
-        <div className="flex h-9 w-9 items-center justify-center bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
-          <CarFront size={18} className="text-white" />
+      <div className="flex h-16 items-center gap-4 px-5 border-b border-white/10">
+        <div className="flex h-10 items-center justify-center bg-white rounded-md px-2 py-0.5 shadow-sm">
+          <img src="/tokin-logo.png" alt="TOKIN Logo" className="h-8 w-auto object-contain" />
         </div>
+        <div className="h-8 w-px bg-white/20" />
         <div>
-          <p className="text-[15px] font-bold text-white leading-tight">TOKIN Transport</p>
+          <p className="text-[15px] font-bold text-white leading-tight">Transport Portal</p>
           <p className="text-[11px] text-blue-200/80 font-medium">{portalLabel[role]}</p>
         </div>
       </div>

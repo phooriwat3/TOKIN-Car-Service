@@ -12,9 +12,21 @@ The application will call the Flow trigger with a server-side secret; the trigge
   "requestId": "uuid",
   "requestNo": "CSR-2026-000001",
   "requestType": "overtime",
-  "requester": { "name": "Narin Srisuk", "email": "narin@example.com", "department": "Engineering" },
-  "approver": { "id": "uuid", "name": "Pimchanok Arun", "email": "pimchanok@example.com" },
-  "summary": { "usingDate": "2026-07-20", "purpose": "OT production support", "employeeCount": 4 },
+  "requester": {
+    "name": "Narin Srisuk",
+    "email": "narin@example.com",
+    "department": "Engineering"
+  },
+  "approver": {
+    "id": "uuid",
+    "name": "Pimchanok Arun",
+    "email": "pimchanok@example.com"
+  },
+  "summary": {
+    "usingDate": "2026-07-20",
+    "purpose": "OT production support",
+    "employeeCount": 4
+  },
   "detailUrl": "https://tokin-car-service.vercel.app/approvals/uuid",
   "callbackUrl": "https://PROJECT.supabase.co/functions/v1/power-automate-callback"
 }

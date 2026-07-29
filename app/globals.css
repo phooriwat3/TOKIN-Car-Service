@@ -1,17 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --brand: #00498E;
-  --brand-dark: #003A71;
-  --brand-light: #E6F0F9;
-  --canvas: #F5F7FA;
-  --ink: #1A2332;
-  --line: #DDE3EC;
-  --accent: #F0A500;
+  --brand: #00498e;
+  --brand-dark: #003a71;
+  --brand-light: #e6f0f9;
+  --canvas: #f5f7fa;
+  --ink: #1a2332;
+  --line: #dde3ec;
+  --accent: #f0a500;
 }
 
 * {
@@ -25,9 +25,13 @@ html {
 }
 
 body {
-  font-family: 'Noto Sans Thai', 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-  color: #1A2332;
-  background: #F5F7FA;
+  font-family:
+    "IBM Plex Sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  color: #1a2332;
+  background: #f5f7fa;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -44,47 +48,85 @@ table {
 
 /* Fade-in animation */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Slide-in from left (sidebar items) */
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-8px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Scale-in (cards, modals) */
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.97); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.animate-fade-in    { animation: fadeIn 0.25s ease both; }
-.animate-slide-in   { animation: slideInLeft 0.2s ease both; }
-.animate-scale-in   { animation: scaleIn 0.2s ease both; }
+.animate-fade-in {
+  animation: fadeIn 0.25s ease both;
+}
+.animate-slide-in {
+  animation: slideInLeft 0.2s ease both;
+}
+.animate-scale-in {
+  animation: scaleIn 0.2s ease both;
+}
 
 /* Stagger delays for list items */
-.stagger-1 { animation-delay: 0.04s; }
-.stagger-2 { animation-delay: 0.08s; }
-.stagger-3 { animation-delay: 0.12s; }
-.stagger-4 { animation-delay: 0.16s; }
-.stagger-5 { animation-delay: 0.20s; }
+.stagger-1 {
+  animation-delay: 0.04s;
+}
+.stagger-2 {
+  animation-delay: 0.08s;
+}
+.stagger-3 {
+  animation-delay: 0.12s;
+}
+.stagger-4 {
+  animation-delay: 0.16s;
+}
+.stagger-5 {
+  animation-delay: 0.2s;
+}
 
 /* Focus-visible ring using brand color */
 *:focus-visible {
-  outline: 2px solid #00498E;
+  outline: 2px solid #00498e;
   outline-offset: 2px;
 }
 
 /* Scrollbar styling */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #DDE3EC; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #b0bac8; }
-
-.ot-guidelines {
-  font-family: 'Noto Sans Thai', 'IBM Plex Sans', system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum' 1;
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #dde3ec;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b0bac8;
 }

@@ -14,11 +14,11 @@ Add these properties to the HTTP trigger JSON schema of all three flows:
 
 Configure **Send an email (V2)** as follows:
 
-| Flow | To | Subject | Body |
-| --- | --- | --- | --- |
-| TOKIN - Request Approval | Approver email | `triggerBody()?['emailSubject']` | `triggerBody()?['emailBodyHtml']` |
+| Flow                                  | To              | Subject                          | Body                              |
+| ------------------------------------- | --------------- | -------------------------------- | --------------------------------- |
+| TOKIN - Request Approval              | Approver email  | `triggerBody()?['emailSubject']` | `triggerBody()?['emailBodyHtml']` |
 | TOKIN - Requester Manage Notification | Requester email | `triggerBody()?['emailSubject']` | `triggerBody()?['emailBodyHtml']` |
-| TOKIN - Assignment Notification | Requester email | `triggerBody()?['emailSubject']` | `triggerBody()?['emailBodyHtml']` |
+| TOKIN - Assignment Notification       | Requester email | `triggerBody()?['emailSubject']` | `triggerBody()?['emailBodyHtml']` |
 
 For each Subject and Body field, select **Expression**, paste the expression shown above, and select **Add**. The Outlook connector treats the Body value as HTML. Keep **From (Send as)** set to `th-info@yageo.com`.
 

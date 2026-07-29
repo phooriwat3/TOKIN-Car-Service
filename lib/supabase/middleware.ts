@@ -1,5 +1,5 @@
-import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -10,7 +10,9 @@ export async function updateSession(request: NextRequest) {
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
@@ -20,15 +22,18 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
-  const isPublic = request.nextUrl.pathname === '/login'
-    || request.nextUrl.pathname === '/admin/login'
-    || request.nextUrl.pathname === '/'
-    || request.nextUrl.pathname.startsWith('/request')
-    || request.nextUrl.pathname.startsWith('/api/request');
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isPublic =
+    request.nextUrl.pathname === "/login" ||
+    request.nextUrl.pathname === "/admin/login" ||
+    request.nextUrl.pathname === "/" ||
+    request.nextUrl.pathname.startsWith("/request") ||
+    request.nextUrl.pathname.startsWith("/api/request");
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = '/admin/login';
+    url.pathname = "/admin/login";
     return NextResponse.redirect(url);
   }
   return response;

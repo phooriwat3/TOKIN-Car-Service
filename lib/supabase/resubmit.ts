@@ -1,10 +1,13 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Booking } from '@/lib/types';
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Booking } from "@/lib/types";
 
-export async function resubmitBooking(supabase: SupabaseClient, booking: Booking): Promise<void> {
-  const { error } = await supabase.rpc('resubmit_booking', {
+export async function resubmitBooking(
+  supabase: SupabaseClient,
+  booking: Booking,
+): Promise<void> {
+  const { error } = await supabase.rpc("resubmit_booking", {
     p_booking_id: booking.id,
-    p_request_type: booking.requestType ?? 'outside_company',
+    p_request_type: booking.requestType ?? "outside_company",
     p_approver_id: booking.approverId,
     p_using_date: booking.usingDate,
     p_start_time: booking.startTime,

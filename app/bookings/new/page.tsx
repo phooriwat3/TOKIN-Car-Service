@@ -1,1 +1,1 @@
-export { default } from '@/components/new-email-request-form';
+export { default } from "@/components/new-email-request-form";
