@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
@@ -9,53 +10,45 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Booking } from "@/lib/types";
+import { ArrowDownUp, Search } from "lucide-react";
+import type { Booking } from "@/lib/types";
 import { Badge, Empty, Input } from "./ui";
 import { statusLabel } from "@/lib/business";
-import { ArrowUpDown, Search } from "lucide-react";
-export function BookingTable({
-  bookings,
-  basePath = "/bookings",
-}: {
-  bookings: Booking[];
-  basePath?: string;
-}) {
+
+export function BookingTable({ bookings, basePath = "/bookings" }: { bookings: Booking[]; basePath?: string }) {
   const [filter, setFilter] = useState("");
   const columns = useMemo(() => {
-    const c = createColumnHelper<Booking>();
+    const column = createColumnHelper<Booking>();
     return [
-      c.accessor("bookingNo", {
-        header: "Booking",
-        cell: (i) => (
-          <Link
-            className="font-mono font-semibold text-brand hover:underline"
-            href={`${basePath}/${i.row.original.id}`}
-          >
-            {i.getValue()}
+      column.accessor("bookingNo", {
+        header: "Request",
+        cell: (info) => (
+          <Link className="font-semibold text-brand hover:text-brand-dark hover:underline" href={`${basePath}/${info.row.original.id}`}>
+            {info.getValue()}
           </Link>
         ),
       }),
-      c.accessor("usingDate", {
-        header: "Schedule",
-        cell: (i) => (
+      column.accessor("usingDate", {
+        header: "Date and time",
+        cell: (info) => (
           <div>
-            <p>{i.getValue()}</p>
-            <p className="text-xs text-gray-500">
-              {i.row.original.startTime} - {i.row.original.endTime}
-            </p>
+            <p className="font-medium text-ink">{info.getValue()}</p>
+            <p className="mt-0.5 text-xs text-gray-500">{info.row.original.startTime}–{info.row.original.endTime}</p>
           </div>
         ),
       }),
-      c.accessor("destination", { header: "Destination" }),
-      c.accessor("requesterName", { header: "Requester" }),
-      c.accessor("status", {
+      column.accessor("destination", {
+        header: "Destination",
+        cell: (info) => <span className="font-medium text-ink">{info.getValue()}</span>,
+      }),
+      column.accessor("requesterName", { header: "Requested by" }),
+      column.accessor("status", {
         header: "Status",
-        cell: (i) => (
-          <Badge status={i.getValue()}>{statusLabel(i.getValue())}</Badge>
-        ),
+        cell: (info) => <Badge status={info.getValue()}>{statusLabel(info.getValue())}</Badge>,
       }),
     ];
   }, [basePath]);
+
   const table = useReactTable({
     data: bookings,
     columns,
@@ -65,60 +58,41 @@ export function BookingTable({
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+  const rows = table.getRowModel().rows;
+
   return (
-    <div className="overflow-hidden border border-line bg-white">
-      <div className="relative max-w-sm p-3">
-        <Search
-          className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400"
-          size={16}
-        />
-        <Input
-          className="pl-9"
-          placeholder="Search bookings"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
+    <div className="overflow-hidden rounded-xl border border-line bg-white shadow-card">
+      <div className="flex flex-col justify-between gap-3 border-b border-line px-4 py-4 sm:flex-row sm:items-center sm:px-5">
+        <p className="text-sm text-gray-500"><span className="font-semibold text-ink">{rows.length}</span> {rows.length === 1 ? "request" : "requests"}</p>
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+          <Input className="h-9 pl-9" aria-label="Search requests" placeholder="Search request, destination…" value={filter} onChange={(event) => setFilter(event.target.value)} />
+        </div>
       </div>
-      {table.getRowModel().rows.length === 0 ? (
-        <Empty
-          title="No bookings found"
-          body="Try a different search or create a new request."
-        />
+      {rows.length === 0 ? (
+        <Empty title="No matching requests" body={filter ? "Clear the search or try another term." : "New requests will appear here."} />
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="border-y border-line bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-              <tr className="font-bold">
-                {table.getHeaderGroups().map((g) => (
-                  <tr key={g.id}>
-                    {g.headers.map((h) => (
-                      <th key={h.id} className="px-4 py-3">
-                        <button
-                          className="flex items-center gap-1 font-semibold"
-                          onClick={h.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(
-                            h.column.columnDef.header,
-                            h.getContext(),
-                          )}
-                          <ArrowUpDown size={12} />
-                        </button>
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </tr>
+          <table className="w-full min-w-[780px] text-left text-sm">
+            <thead className="border-b border-line bg-[#f8f9fa] text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+              {table.getHeaderGroups().map((group) => (
+                <tr key={group.id}>
+                  {group.headers.map((header) => (
+                    <th key={header.id} className="px-5 py-3">
+                      <button className="flex items-center gap-1.5 hover:text-ink" onClick={header.column.getToggleSortingHandler()}>
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        <ArrowDownUp size={12} className="text-gray-400" />
+                      </button>
+                    </th>
+                  ))}
+                </tr>
+              ))}
             </thead>
-            <tbody>
-              {table.getRowModel().rows.map((r) => (
-                <tr
-                  key={r.id}
-                  className="border-b border-line last:border-0 hover:bg-canvas"
-                >
-                  {r.getVisibleCells().map((c) => (
-                    <td key={c.id} className="px-4 py-3">
-                      {flexRender(c.column.columnDef.cell, c.getContext())}
-                    </td>
+            <tbody className="divide-y divide-line">
+              {rows.map((row) => (
+                <tr key={row.id} className="transition-colors hover:bg-[#f8fafb]">
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-5 py-4 text-gray-600">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
                   ))}
                 </tr>
               ))}

@@ -15,5 +15,5 @@ export function bangkokTime(date = new Date()) {
 
 export function isOtRequestWindowOpen(date = new Date()) {
   const time = bangkokTime(date);
-  return time >= OT_REQUEST_START && time <= OT_REQUEST_END;
+  return time >= OT_REQUEST_START && time < OT_REQUEST_END;
 }

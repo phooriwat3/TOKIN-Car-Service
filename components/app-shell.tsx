@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  BarChart3, CalendarDays, Car, CarFront, ChevronRight, ClipboardCheck,
+  BarChart3, CalendarDays, Car, CarFront, ClipboardCheck,
   ClipboardList, LayoutDashboard, LogOut, Menu, Plus, Users, X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -58,14 +58,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (configured && !loading && !authenticated) {
-      if (path !== '/' && path !== '/login' && path !== '/admin/login' && !path.startsWith('/request')) {
-        router.replace(path.startsWith('/admin') ? '/admin/login' : '/login');
+      if (
+        path !== '/' &&
+        path !== '/login' &&
+        path !== '/approver/login' &&
+        path !== '/admin/login' &&
+        !path.startsWith('/request')
+      ) {
+        router.replace(path.startsWith('/approvals') ? '/approver/login' : '/admin/login');
       }
     }
   }, [configured, loading, authenticated, path, router]);
 
-  if (path === '/' || path === '/login' || path === '/admin/login' || path.startsWith('/request')) return <>{children}</>;
-  const loginPath = role === 'requester' ? '/login' : '/admin/login';
+  if (
+    path === '/' ||
+    path === '/login' ||
+    path === '/approver/login' ||
+    path === '/admin/login' ||
+    path.startsWith('/request')
+  ) return <>{children}</>;
+  const loginPath =
+    role === 'approver'
+      ? '/approver/login'
+      : role === 'admin'
+        ? '/admin/login'
+        : '/request';
 
   if (configured && loading)
     return (
@@ -121,18 +138,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-4 px-5 border-b border-white/10">
-        <div className="flex h-10 items-center justify-center bg-white rounded-md px-2 py-0.5 shadow-sm">
+      <div className="flex h-[72px] items-center gap-3 border-b border-white/10 px-5">
+        <div className="flex h-9 items-center justify-center rounded-md bg-white px-2 shadow-sm">
           <img src="/tokin-logo.png" alt="TOKIN Logo" className="h-8 w-auto object-contain" />
         </div>
-        <div className="h-8 w-px bg-white/20" />
+        <div className="h-7 w-px bg-white/15" />
         <div>
-          <p className="text-[15px] font-bold text-white leading-tight">Transport Portal</p>
-          <p className="text-[11px] text-blue-200/80 font-medium">{portalLabel[role]}</p>
+          <p className="text-sm font-semibold leading-tight text-white">Transport operations</p>
+          <p className="mt-0.5 text-[11px] font-medium text-slate-300">{portalLabel[role]}</p>
         </div>
       </div>
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-white/35">
+      <nav className="flex-1 space-y-1 px-3 py-5">
+        <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
           Navigation
         </p>
         {links[role].map((x) => {
@@ -144,22 +161,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href={x.href}
               onClick={() => setOpen(false)}
               className={cn(
-                'group flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                'group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-150',
                 isActive
-                  ? 'bg-white text-brand shadow-md'
+                  ? 'bg-white/12 text-white ring-1 ring-inset ring-white/10'
                   : 'text-blue-100/80 hover:bg-white/10 hover:text-white',
               )}
             >
-              <I size={17} className={cn('flex-shrink-0', isActive ? 'text-brand' : 'text-blue-200/70 group-hover:text-white')} />
+              <I size={17} className={cn('flex-shrink-0', isActive ? 'text-white' : 'text-slate-400 group-hover:text-white')} />
               <span className="flex-1">{x.label}</span>
-              {isActive && <ChevronRight size={14} className="text-brand/50" />}
+              {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#ed9b2d]" />}
             </Link>
           );
         })}
       </nav>
       <div className="border-t border-white/10 p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center bg-white/20 text-xs font-bold text-white ring-2 ring-white/30">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white ring-1 ring-white/20">
             {getInitials(user.fullName)}
           </div>
           <div className="min-w-0 flex-1">
@@ -174,8 +191,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-canvas">
       <aside
-        className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col lg:flex shadow-sidebar"
-        style={{ background: 'linear-gradient(180deg, #00498E 0%, #003166 100%)' }}
+        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col shadow-sidebar lg:flex"
+        style={{ background: 'linear-gradient(180deg, #102d44 0%, #0b2133 100%)' }}
       >
         <SidebarContent />
       </aside>
@@ -184,7 +201,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <aside
             className="relative flex h-full w-72 flex-col shadow-modal animate-slide-in"
-            style={{ background: 'linear-gradient(180deg, #00498E 0%, #003166 100%)' }}
+            style={{ background: 'linear-gradient(180deg, #102d44 0%, #0b2133 100%)' }}
           >
             <SidebarContent />
             <button
@@ -196,8 +213,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </aside>
         </div>
       )}
-      <div className="lg:pl-60">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-white/95 backdrop-blur-sm px-4 md:px-6 shadow-header">
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-white/95 px-4 shadow-header backdrop-blur-sm md:px-7">
           <div className="flex items-center gap-3">
             <button
               className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 lg:hidden transition"
@@ -206,7 +223,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Menu size={18} />
             </button>
             <div className="hidden text-sm font-medium sm:flex items-center gap-1.5">
-              <span className="text-brand font-semibold">TOKIN</span>
+              <span className="font-semibold text-ink">TOKIN</span>
               <span className="text-gray-300">/</span>
               <span className="text-ink capitalize">{portalLabel[role]}</span>
             </div>
@@ -238,7 +255,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </header>
-        <main className="mx-auto max-w-[1440px] p-4 md:p-7 animate-fade-in">
+        <main className="mx-auto max-w-[1380px] animate-fade-in p-4 md:p-8">
           {children}
         </main>
       </div>

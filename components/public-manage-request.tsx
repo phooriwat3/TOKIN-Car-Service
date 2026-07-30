@@ -5,9 +5,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Loader2,
-  Plus,
   RefreshCw,
-  Trash2,
   XCircle,
   Clock3,
 } from "lucide-react";
@@ -26,6 +24,7 @@ import { OtGuidelines } from "@/components/ot-guidelines";
 import { GoogleMapLinks } from "@/components/google-map-links";
 import { CompanyUserField } from "@/components/company-user-field";
 import { isOtRequestWindowOpen } from "@/lib/request-window";
+import { overtimeDuration } from "@/lib/overtime";
 import type { BookingStatus, OvertimeEmployee, RequestType } from "@/lib/types";
 
 type ManagedRequest = {
@@ -122,14 +121,18 @@ export default function PublicManageRequest({
     initialToken ? "" : "Request link is missing.",
   );
   const [saving, setSaving] = useState(false);
-  const [showGuidelines, setShowGuidelines] = useState(true);
+  const [showGuidelines, setShowGuidelines] = useState(false);
   const otWindowOpen = useMemo(() => isOtRequestWindowOpen(), []);
 
   useEffect(() => {
     if (initialToken) load(initialToken);
   }, [initialToken]);
 
-  const disabled = saving || !permissions.canEdit || !request;
+  const disabled =
+    saving ||
+    !permissions.canEdit ||
+    !request ||
+    (request.requestType === "overtime" && !otWindowOpen);
 
   async function load(rawToken = token) {
     setState("loading");
@@ -169,7 +172,7 @@ export default function PublicManageRequest({
     if (!request) return;
     if (request.requestType === "overtime" && !otWindowOpen) {
       setMessage(
-        "OT requests can be edited only from 08:00 to 17:00 (Thailand time).",
+        "OT requests can be edited only from 08:00 to 16:00 (Thailand time).",
       );
       return;
     }
@@ -339,21 +342,26 @@ export default function PublicManageRequest({
     });
   }
 
+  const overtimeEmployee = request?.overtimeEmployees[0] ?? emptyEmployee();
+
   return (
     <main className="min-h-screen bg-canvas">
-      <header className="border-b border-line bg-[#17345f] px-5 py-4 text-white">
-        <div className="mx-auto flex h-16 max-w-6xl lg:max-w-none lg:px-14 items-center justify-between">
-          <div>
-            <p className="font-bold">TOKIN Transport</p>
-            <p className="text-xs text-blue-200">Request management</p>
+      <header className="border-b border-line bg-white px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-[1080px] items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="relative h-10 w-24 shrink-0 overflow-hidden sm:h-11 sm:w-28">
+              <img src="/tokin-logo.png" alt="TOKIN" className="absolute left-[-38px] top-[-42px] h-auto w-[171px] max-w-none sm:left-[-44px] sm:top-[-49px] sm:w-[200px]" />
+            </div>
+            <div className="hidden h-7 w-px bg-line sm:block" />
+            <div><p className="text-sm font-semibold text-ink">TOKIN Transport</p><p className="text-xs text-gray-500">Request management</p></div>
           </div>
-          <a href="/request" className="text-xs text-blue-200 hover:text-white">
+          <a href="/request" className="text-xs font-semibold text-brand hover:text-brand-dark">
             New request
           </a>
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl lg:max-w-none lg:px-14 p-4 py-8 md:p-8">
+      <div className="mx-auto max-w-[1080px] p-4 py-6 sm:p-6 sm:py-8">
         {state === "loading" && (
           <Card className="mx-auto max-w-xl p-8 text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-brand" />
@@ -434,577 +442,111 @@ export default function PublicManageRequest({
             )}
 
             {request.requestType === "overtime" ? (
-              /* Overtime form layout (stacked layout: top grid, bottom employees table) */
               <div className="space-y-5">
-                {/* Top Section: Requester and Approver in grid on Desktop, stack on Mobile */}
-                <div className="grid gap-5 lg:grid-cols-2">
-                  <Card className="p-5">
-                    <h2 className="mb-4 font-bold">Requester information</h2>
-                    <div className="border border-line bg-canvas p-4 rounded-xl grid gap-4 sm:grid-cols-2">
-                      <Field label="Employee number">
-                        <Input
-                          disabled={disabled}
-                          value={request.requester.employeeId ?? ""}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, "").slice(0, 7);
-                            updateRequester("employeeId", val);
-                          }}
-                        />
-                      </Field>
-                      <Field label="Department">
-                        <Select
-                          required
-                          disabled={disabled}
-                          value={request.requester.department}
-                          onChange={(e) =>
-                            updateRequester("department", e.target.value)
-                          }
-                        >
-                          <option value="">Select Dept</option>
-                          {DEPARTMENTS.map((dept) => (
-                            <option key={dept} value={dept}>
-                              {dept}
-                            </option>
-                          ))}
-                          {request.requester.department &&
-                            !DEPARTMENTS.includes(
-                              request.requester.department,
-                            ) && (
-                              <option value={request.requester.department}>
-                                {request.requester.department}
-                              </option>
-                            )}
-                        </Select>
-                      </Field>
-                      <CompanyUserField
-                        label="Employee name"
+                {!otWindowOpen && permissions.canEdit && (
+                  <div className="border-l-[3px] border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    Editing is locked outside the 08:00–16:00 Thailand submission window. You can still view the request details.
+                  </div>
+                )}
+
+                <section className="rounded-lg border border-line bg-white">
+                  <div className="border-b border-line bg-[#f7f8fa] px-5 py-4 sm:px-6">
+                    <h2 className="font-semibold text-ink">Employee information</h2>
+                    <p className="mt-0.5 text-xs text-gray-500">The department determines the approval route automatically.</p>
+                  </div>
+                  <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6">
+                    <CompanyUserField
+                      inputId="manage-employee-search"
+                      label="Employee name"
+                      required
+                      disabled={disabled}
+                      value={request.requester.name}
+                      onChange={(value) => {
+                        updateRequester("name", value);
+                        updateEmployee(0, "employeeName", value);
+                      }}
+                      placeholder="Search English name"
+                      onSelectUser={(person) => {
+                        updateRequester("name", person.displayName);
+                        updateEmployee(0, "employeeName", person.displayName);
+                        updateEmployee(0, "employeeEmail", person.mail);
+                        if (person.department) updateRequester("department", person.department);
+                        if (person.employeeId) {
+                          updateRequester("employeeId", person.employeeId);
+                          updateEmployee(0, "employeeId", person.employeeId);
+                        }
+                      }}
+                    />
+                    <Field label="Employee number">
+                      <Input
                         required
                         disabled={disabled}
-                        value={request.requester.name}
-                        onChange={(val) => updateRequester("name", val)}
-                        placeholder="Search name or email..."
-                        onSelectUser={(person) => {
-                          updateRequester("name", person.displayName);
-                          if (person.department)
-                            updateRequester("department", person.department);
-                          if (person.employeeId)
-                            updateRequester("employeeId", person.employeeId);
+                        value={request.requester.employeeId ?? overtimeEmployee.employeeId}
+                        onChange={(event) => {
+                          const value = event.target.value.replace(/\D/g, "").slice(0, 7);
+                          updateRequester("employeeId", value);
+                          updateEmployee(0, "employeeId", value);
                         }}
                       />
-                      <Field label="Company email">
-                        <Input
-                          required
-                          disabled
-                          type="email"
-                          value={request.requester.email}
-                        />
-                      </Field>
-                    </div>
-                  </Card>
-
-                  <Card className="p-5">
-                    <h2 className="mb-4 font-bold">Approver</h2>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                      <CompanyUserField
-                        label="Approver name"
-                        required
-                        disabled={disabled}
-                        value={request.approver.name}
-                        onChange={(val) => updateApprover("name", val)}
-                        placeholder="Search manager name or email..."
-                        onSelectUser={(person) => {
-                          updateApprover("name", person.displayName);
-                          updateApprover("email", person.mail);
-                        }}
-                      />
-                      <Field label="Approver email">
-                        <Input
-                          required
-                          disabled={disabled}
-                          type="email"
-                          value={request.approver.email}
-                          onChange={(e) =>
-                            updateApprover("email", e.target.value)
-                          }
-                        />
-                      </Field>
-                    </div>
-                  </Card>
-                </div>
-
-                {/* Bottom Section: Employees List */}
-                <div className="space-y-5">
-                  {/* Desktop View: Excel-like horizontal table */}
-                  <div className="hidden lg:block">
-                    <Card className="p-5">
-                      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <h2 className="font-bold">Employees</h2>
-                          <p className="text-sm text-gray-500">
-                            Add everyone included in this OT request. Type employee
-                            name to search directory.
-                          </p>
-                        </div>
-                      </div>
-                      {!otWindowOpen && permissions.canEdit && (
-                        <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
-                          OT requests can be edited only from 08:00 to 17:00 Thailand
-                          time.
-                        </p>
-                      )}
-
-                      <div className="overflow-x-auto pb-3">
-                        <table className="w-full text-left border-collapse min-w-[1050px]">
-                          <thead>
-                            <tr className="border-b border-line text-xs font-semibold text-gray-400 uppercase">
-                              <th className="pb-3 pr-2 w-8 text-center">#</th>
-                              <th className="pb-3 pr-2 w-[70px]">Emp No.</th>
-                              <th className="pb-3 pr-2 w-[180px]">Employee Name</th>
-                              <th className="pb-3 pr-2 w-[160px]">Company Email</th>
-                              <th className="pb-3 pr-2 w-[130px]">Work Description</th>
-                              <th className="pb-3 pr-2 w-[85px]">OT Start</th>
-                              <th className="pb-3 pr-2 w-[85px]">OT End</th>
-                              <th className="pb-3 pr-2 w-[85px]">Weekly Hours</th>
-                              <th className="pb-3 pr-2 w-[100px]">Transport</th>
-                              <th className="pb-3 pr-2 w-[185px]">Bus Stop</th>
-                              <th className="pb-3 text-center w-8"></th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-line">
-                            {request.overtimeEmployees.map((employee, index) => (
-                              <tr key={index} className="align-middle">
-                                <td className="py-3 pr-2 text-sm font-semibold text-gray-400 text-center">
-                                  {index + 1}
-                                </td>
-                                <td className="py-3 pr-2">
-                                  <Input
-                                    required
-                                    disabled={disabled}
-                                    className="px-2 text-center"
-                                    value={employee.employeeId}
-                                    onChange={(e) => {
-                                      const val = e.target.value.replace(/\D/g, "").slice(0, 7);
-                                      updateEmployee(
-                                        index,
-                                        "employeeId",
-                                        val,
-                                      );
-                                    }}
-                                  />
-                                </td>
-                                <td className="py-3 pr-2">
-                                  <CompanyUserField
-                                    label=""
-                                    required
-                                    disabled={disabled}
-                                    value={employee.employeeName}
-                                    placeholder="Search name..."
-                                    onChange={(val) =>
-                                      updateEmployee(index, "employeeName", val)
-                                    }
-                                    onSelectUser={(person) => {
-                                      updateEmployee(
-                                        index,
-                                        "employeeName",
-                                        person.displayName,
-                                      );
-                                      updateEmployee(
-                                        index,
-                                        "employeeEmail",
-                                        person.mail,
-                                      );
-                                      if (person.employeeId)
-                                        updateEmployee(
-                                          index,
-                                          "employeeId",
-                                          person.employeeId,
-                                        );
-                                    }}
-                                  />
-                                </td>
-                                <td className="py-3 pr-2">
-                                  <Input
-                                    required={employee.transportRequired}
-                                    disabled={disabled}
-                                    type="email"
-                                    placeholder="name@yageo.com"
-                                    value={employee.employeeEmail || ""}
-                                    onChange={(e) =>
-                                      updateEmployee(
-                                        index,
-                                        "employeeEmail",
-                                        e.target.value,
-                                      )
-                                    }
-                                  />
-                                </td>
-                                <td className="py-3 pr-2">
-                                  <Input
-                                    disabled={disabled}
-                                    placeholder="Describe work..."
-                                    value={employee.workDescription}
-                                    onChange={(e) =>
-                                      updateEmployee(
-                                        index,
-                                        "workDescription",
-                                        e.target.value,
-                                      )
-                                    }
-                                  />
-                                </td>
-                                <td className="py-3 pr-2">
-                                  <TimeMaskInput
-                                    required
-                                    disabled={disabled}
-                                    value={employee.workStart}
-                                    onChange={(val) =>
-                                      updateEmployee(index, "workStart", val)
-                                    }
-                                    quickTimes={["08:00", "17:20"]}
-                                  />
-                                </td>
-                                <td className="py-3 pr-2">
-                                  <TimeMaskInput
-                                    required
-                                    disabled={disabled}
-                                    value={employee.workEnd}
-                                    onChange={(val) =>
-                                      updateEmployee(index, "workEnd", val)
-                                    }
-                                    quickTimes={["16:45", "19:00", "20:00"]}
-                                  />
-                                </td>
-                                <td className="py-3 pr-2">
-                                  <WeeklyHoursInput
-                                    required
-                                    disabled={disabled}
-                                    value={employee.totalWeeklyHours}
-                                    onChange={(val) =>
-                                      updateEmployee(
-                                        index,
-                                        "totalWeeklyHours",
-                                        val,
-                                      )
-                                    }
-                                  />
-                                </td>
-                                <td className="py-3 pr-2">
-                                  <Select
-                                    disabled={disabled}
-                                    value={
-                                      employee.transportRequired ? "yes" : "no"
-                                    }
-                                    onChange={(e) =>
-                                      updateEmployee(
-                                        index,
-                                        "transportRequired",
-                                        e.target.value === "yes",
-                                      )
-                                    }
-                                  >
-                                    <option value="yes">Required</option>
-                                    <option value="no">Not required</option>
-                                  </Select>
-                                </td>
-                                <td className="py-3 pr-2">
-                                  <Input
-                                    required={employee.transportRequired}
-                                    disabled={
-                                      disabled || !employee.transportRequired
-                                    }
-                                    value={employee.busStop}
-                                    onChange={(e) =>
-                                      updateEmployee(
-                                        index,
-                                        "busStop",
-                                        e.target.value,
-                                      )
-                                    }
-                                  />
-                                </td>
-                                <td className="py-3 text-center">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={
-                                      disabled ||
-                                      request.overtimeEmployees.length === 1
-                                    }
-                                    onClick={() =>
-                                      update(
-                                        "overtimeEmployees",
-                                        request.overtimeEmployees.filter(
-                                          (_, itemIndex) => itemIndex !== index,
-                                        ),
-                                      )
-                                    }
-                                  >
-                                    <Trash2 size={16} />
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <div className="mt-2 flex justify-end">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          disabled={disabled}
-                          onClick={() =>
-                            update("overtimeEmployees", [
-                              ...request.overtimeEmployees,
-                              emptyEmployee(),
-                            ])
-                          }
-                        >
-                          <Plus size={16} /> Add employee
-                        </Button>
-                      </div>
-                    </Card>
+                    </Field>
+                    <Field label="Company email"><Input disabled value={request.requester.email} /></Field>
+                    <Field label="Department">
+                      <Select required disabled={disabled} value={request.requester.department} onChange={(event) => updateRequester("department", event.target.value)}>
+                        <option value="">Select department</option>
+                        {DEPARTMENTS.map((item) => <option key={item} value={item}>{item}</option>)}
+                        {request.requester.department && !DEPARTMENTS.includes(request.requester.department) && <option value={request.requester.department}>{request.requester.department}</option>}
+                      </Select>
+                    </Field>
+                    <Field label="Approver"><Input disabled value={request.approver.name || `${request.requester.department} department approver`} /></Field>
+                    <Field label="Approver email"><Input disabled value={request.approver.email} /></Field>
                   </div>
+                </section>
 
-                  {/* Mobile View: Stacked Cards (Layout 1) */}
-                  <div className="block lg:hidden space-y-4">
-                    <Card className="p-5">
-                      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <h2 className="font-bold">Employees</h2>
-                          <p className="text-sm text-gray-500">
-                            Add everyone included in this OT request. Type employee
-                            name to search directory.
-                          </p>
-                        </div>
-                      </div>
-                      {!otWindowOpen && permissions.canEdit && (
-                        <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
-                          OT requests can be edited only from 08:00 to 17:00 Thailand
-                          time.
-                        </p>
-                      )}
-
-                      <div className="space-y-4">
-                        {request.overtimeEmployees.map((employee, index) => (
-                          <div
-                            key={index}
-                            className="rounded-xl border border-line bg-canvas p-4 shadow-panel"
-                          >
-                            <div className="mb-3 flex justify-between items-center">
-                              <p className="font-bold text-ink text-sm">
-                                Employee {index + 1}
-                              </p>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                disabled={
-                                  disabled ||
-                                  request.overtimeEmployees.length === 1
-                                }
-                                onClick={() =>
-                                  update(
-                                    "overtimeEmployees",
-                                    request.overtimeEmployees.filter(
-                                      (_, itemIndex) => itemIndex !== index,
-                                    ),
-                                  )
-                                }
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </div>
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                              <Field label="Employee number">
-                                <Input
-                                  required
-                                  disabled={disabled}
-                                  className="px-2"
-                                  value={employee.employeeId}
-                                  onChange={(e) => {
-                                    const val = e.target.value.replace(/\D/g, "").slice(0, 7);
-                                    updateEmployee(
-                                      index,
-                                      "employeeId",
-                                      val,
-                                    );
-                                  }}
-                                />
-                              </Field>
-                              <CompanyUserField
-                                label="Employee name"
-                                required
-                                disabled={disabled}
-                                value={employee.employeeName}
-                                placeholder="Search name or email..."
-                                onChange={(val) =>
-                                  updateEmployee(index, "employeeName", val)
-                                }
-                                onSelectUser={(person) => {
-                                  updateEmployee(
-                                    index,
-                                    "employeeName",
-                                    person.displayName,
-                                  );
-                                  updateEmployee(
-                                    index,
-                                    "employeeEmail",
-                                    person.mail,
-                                  );
-                                  if (person.employeeId)
-                                    updateEmployee(
-                                      index,
-                                      "employeeId",
-                                      person.employeeId,
-                                    );
-                                }}
-                              />
-                              <Field label="Company email">
-                                <Input
-                                  required={employee.transportRequired}
-                                  disabled={disabled}
-                                  type="email"
-                                  placeholder="name@yageo.com"
-                                  value={employee.employeeEmail || ""}
-                                  onChange={(e) =>
-                                    updateEmployee(
-                                      index,
-                                      "employeeEmail",
-                                      e.target.value,
-                                    )
-                                  }
-                                />
-                              </Field>
-                              <Field label="Work description">
-                                <Input
-                                  disabled={disabled}
-                                  value={employee.workDescription}
-                                  onChange={(e) =>
-                                    updateEmployee(
-                                      index,
-                                      "workDescription",
-                                      e.target.value,
-                                    )
-                                  }
-                                />
-                              </Field>
-                              <Field label="OT start">
-                                <TimeMaskInput
-                                  required
-                                  disabled={disabled}
-                                  value={employee.workStart}
-                                  onChange={(val) =>
-                                    updateEmployee(index, "workStart", val)
-                                  }
-                                  quickTimes={["08:00", "17:20"]}
-                                />
-                              </Field>
-                              <Field label="OT end">
-                                <TimeMaskInput
-                                  required
-                                  disabled={disabled}
-                                  value={employee.workEnd}
-                                  onChange={(val) =>
-                                    updateEmployee(index, "workEnd", val)
-                                  }
-                                  quickTimes={["16:45", "19:00", "20:00"]}
-                                />
-                              </Field>
-                              <Field label="Weekly hours (max 60)">
-                                <WeeklyHoursInput
-                                  required
-                                  disabled={disabled}
-                                  value={employee.totalWeeklyHours}
-                                  onChange={(val) =>
-                                    updateEmployee(
-                                      index,
-                                      "totalWeeklyHours",
-                                      val,
-                                    )
-                                  }
-                                />
-                              </Field>
-                              <Field label="Transportation">
-                                <Select
-                                  disabled={disabled}
-                                  value={
-                                    employee.transportRequired ? "yes" : "no"
-                                  }
-                                  onChange={(e) =>
-                                    updateEmployee(
-                                      index,
-                                      "transportRequired",
-                                      e.target.value === "yes",
-                                    )
-                                  }
-                                >
-                                  <option value="yes">Required</option>
-                                  <option value="no">Not required</option>
-                                </Select>
-                              </Field>
-                              <Field label="Bus stop">
-                                <Input
-                                  required={employee.transportRequired}
-                                  disabled={
-                                    disabled || !employee.transportRequired
-                                  }
-                                  value={employee.busStop}
-                                  onChange={(e) =>
-                                    updateEmployee(
-                                      index,
-                                      "busStop",
-                                      e.target.value,
-                                    )
-                                  }
-                                />
-                              </Field>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 flex justify-end">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          disabled={disabled}
-                          onClick={() =>
-                            update("overtimeEmployees", [
-                              ...request.overtimeEmployees,
-                              emptyEmployee(),
-                            ])
-                          }
-                        >
-                          <Plus size={16} /> Add employee
-                        </Button>
-                      </div>
-                    </Card>
+                <section className="rounded-lg border border-line bg-white">
+                  <div className="border-b border-line bg-[#f7f8fa] px-5 py-4 sm:px-6">
+                    <h2 className="font-semibold text-ink">OT and transportation details</h2>
+                    <p className="mt-0.5 text-xs text-gray-500">Changes are resubmitted to the department approver.</p>
                   </div>
-
-                  {/* Actions inside full-width column */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      disabled={saving}
-                      onClick={() => load()}
-                    >
-                      <RefreshCw size={16} /> Reload
-                    </Button>
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="danger"
-                        disabled={saving || !permissions.canCancel}
-                        onClick={cancel}
-                      >
-                        Cancel request
-                      </Button>
-                      <Button disabled={saving || !permissions.canEdit}>
-                        {saving ? "Saving..." : "Save changes"}
-                      </Button>
+                  <div className="space-y-6 px-5 py-5 sm:px-6">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="OT / holiday work date"><Input required disabled={disabled} type="date" lang="en-US" value={request.usingDate} onChange={(event) => update("usingDate", event.target.value)} /></Field>
+                      <Field label="Weekly total working hours"><WeeklyHoursInput required disabled={disabled} value={overtimeEmployee.totalWeeklyHours} onChange={(value) => updateEmployee(0, "totalWeeklyHours", value)} /></Field>
+                      <div className="sm:col-span-2">
+                        <Field label="Work description (optional)"><Textarea disabled={disabled} value={overtimeEmployee.workDescription} onChange={(event) => { updateEmployee(0, "workDescription", event.target.value); update("purpose", `Overtime / Holiday Work: ${event.target.value}`); }} /></Field>
+                      </div>
+                      <Field label="OT start time"><TimeMaskInput required disabled={disabled} value={overtimeEmployee.workStart} onChange={(value) => { updateEmployee(0, "workStart", value); update("startTime", value); }} quickTimes={["08:00", "17:20"]} /></Field>
+                      <Field label="OT end time"><TimeMaskInput required disabled={disabled} value={overtimeEmployee.workEnd} onChange={(value) => { updateEmployee(0, "workEnd", value); update("endTime", value); }} quickTimes={["16:45", "19:00", "20:00"]} /></Field>
                     </div>
+                    <div className="flex items-center justify-between border-y border-line bg-[#fafbfc] px-3.5 py-3 text-sm">
+                      <span className="text-gray-600">Calculated OT duration</span>
+                      <strong className="text-ink">{overtimeDuration(overtimeEmployee.workStart, overtimeEmployee.workEnd) ?? "Check the time range"}</strong>
+                    </div>
+                    <fieldset>
+                      <legend className="text-[13px] font-semibold text-gray-700">Transportation requirement</legend>
+                      <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                        <label className={`flex min-h-[72px] gap-3 border p-3.5 ${overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300"}`}>
+                          <input type="radio" name="manage-transport" disabled={disabled} checked={overtimeEmployee.transportRequired} onChange={() => updateEmployee(0, "transportRequired", true)} className="mt-1 h-4 w-4 accent-brand" />
+                          <span><strong className="block text-sm text-ink">Transportation required</strong><span className="mt-1 block text-xs text-gray-500">Admin assigns a vehicle after approval.</span></span>
+                        </label>
+                        <label className={`flex min-h-[72px] gap-3 border p-3.5 ${!overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300"}`}>
+                          <input type="radio" name="manage-transport" disabled={disabled} checked={!overtimeEmployee.transportRequired} onChange={() => updateEmployee(0, "transportRequired", false)} className="mt-1 h-4 w-4 accent-brand" />
+                          <span><strong className="block text-sm text-ink">No transportation required</strong><span className="mt-1 block text-xs text-gray-500">No vehicle assignment will be created.</span></span>
+                        </label>
+                      </div>
+                    </fieldset>
+                    {overtimeEmployee.transportRequired ? (
+                      <Field label="Drop-off location"><Input required disabled={disabled} value={overtimeEmployee.busStop} onChange={(event) => updateEmployee(0, "busStop", event.target.value)} /></Field>
+                    ) : (
+                      <p className="border border-green-200 bg-green-50 px-3.5 py-3 text-sm text-green-800">No vehicle assignment is required for this request.</p>
+                    )}
+                  </div>
+                </section>
+
+                <div className="flex flex-col-reverse gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <Button type="button" variant="secondary" disabled={saving} onClick={() => load()}><RefreshCw size={16} /> Reload</Button>
+                  <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                    <Button type="button" variant="danger" disabled={saving || !permissions.canCancel} onClick={cancel}>Cancel request</Button>
+                    <Button disabled={saving || !permissions.canEdit || !otWindowOpen}>{saving ? "Saving…" : request.status === "changes_requested" ? "Resubmit request" : "Save changes"}</Button>
                   </div>
                 </div>
               </div>
@@ -1126,6 +668,7 @@ export default function PublicManageRequest({
                         required
                         disabled={disabled}
                         type="date"
+                        lang="en-US"
                         value={request.usingDate}
                         onChange={(e) => update("usingDate", e.target.value)}
                       />

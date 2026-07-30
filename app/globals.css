@@ -4,14 +4,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Sarabun";
+  src: url("/fonts/Sarabun-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
-  --brand: #00498e;
-  --brand-dark: #003a71;
-  --brand-light: #e6f0f9;
-  --canvas: #f5f7fa;
-  --ink: #1a2332;
-  --line: #dde3ec;
-  --accent: #f0a500;
+  --brand: #07529a;
+  --brand-dark: #063b70;
+  --brand-light: #eaf2f9;
+  --canvas: #f3f5f7;
+  --ink: #17212b;
+  --line: #d9dee5;
+  --accent: #d58b16;
 }
 
 * {
@@ -22,11 +30,13 @@ html {
   scroll-behavior: smooth;
   text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
+  background: var(--canvas);
 }
 
 body {
   font-family:
-    "IBM Plex Sans",
+    "Sarabun",
+    "Segoe UI",
     system-ui,
     -apple-system,
     sans-serif;
@@ -34,6 +44,7 @@ body {
   background: #f5f7fa;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "kern" 1, "tnum" 1;
 }
 
 button,
@@ -128,5 +139,14 @@ table {
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #b0bac8;
+  background: #aab4c0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Field, Input } from './ui';
 import { Loader2 } from 'lucide-react';
+import { compareCompanyUsersBySearch } from '@/lib/company-search';
 
 export type CompanyUser = {
   displayName: string;
@@ -13,32 +14,10 @@ export type CompanyUser = {
   employeeId?: string;
 };
 
-function computeSearchScore(displayName: string, mail: string, query: string): number {
-  const q = query.toLowerCase().trim();
-  const name = displayName.toLowerCase();
-  const email = mail.toLowerCase();
-
-  if (name === q) return 1000;
-  if (email === q || email.split('@')[0] === q) return 900;
-
-  if (name.startsWith(q)) return 500;
-  if (email.startsWith(q)) return 400;
-
-  const nameWords = name.split(/\s+/);
-  if (nameWords.some((word) => word.startsWith(q))) return 300;
-
-  const emailPrefix = email.split('@')[0];
-  const emailParts = emailPrefix.split(/[\._\-]/);
-  if (emailParts.some((part) => part.startsWith(q))) return 200;
-
-  if (name.includes(q)) return 100;
-  if (email.includes(q)) return 50;
-
-  return 0;
-}
-
 export function CompanyUserField({
   label,
+  inputId,
+  describedBy,
   value,
   onChange,
   onSelectUser,
@@ -47,6 +26,8 @@ export function CompanyUserField({
   disabled = false,
 }: {
   label: string;
+  inputId?: string;
+  describedBy?: string;
   value: string;
   onChange: (val: string) => void;
   onSelectUser: (user: CompanyUser) => void;
@@ -85,7 +66,7 @@ export function CompanyUserField({
   }, [showDropdown]);
 
   useEffect(() => {
-    if (!showDropdown || disabled || value.trim().length < 2) {
+    if (!showDropdown || disabled || value.trim().length < 1) {
       setResults([]);
       setSearching(false);
       return;
@@ -111,11 +92,9 @@ export function CompanyUserField({
         const result = await response.json();
         if (response.ok && Array.isArray(result.users)) {
           const queryStr = value.trim().toLowerCase();
-          const sorted = [...result.users].sort((a, b) => {
-            const scoreA = computeSearchScore(a.displayName, a.mail, queryStr);
-            const scoreB = computeSearchScore(b.displayName, b.mail, queryStr);
-            return scoreB - scoreA;
-          });
+          const sorted = [...result.users].sort((a, b) =>
+            compareCompanyUsersBySearch(a, b, queryStr),
+          );
           setResults(sorted);
           setShowDropdown(sorted.length > 0);
         } else {
@@ -128,7 +107,7 @@ export function CompanyUserField({
       } finally {
         setSearching(false);
       }
-    }, 350);
+    }, 120);
 
     return () => {
       window.clearTimeout(timer);
@@ -155,6 +134,12 @@ export function CompanyUserField({
   const inputContent = (
     <div className="relative">
       <Input
+        id={inputId}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={showDropdown && results.length > 0}
+        aria-controls={inputId ? `${inputId}-results` : undefined}
+        aria-describedby={describedBy}
         required={required}
         disabled={disabled}
         value={value}
@@ -166,7 +151,7 @@ export function CompanyUserField({
         }}
         onFocus={() => {
           selectedUserNameRef.current = null; // Clear lock when user focuses to search again
-          if (value.trim().length >= 2) {
+          if (value.trim().length >= 1) {
             setShowDropdown(true);
           }
         }}
@@ -192,6 +177,9 @@ export function CompanyUserField({
       {showDropdown && results.length > 0 && coords.width > 0 && typeof document !== 'undefined' && createPortal(
         <div
           ref={dropdownRef}
+          id={inputId ? `${inputId}-results` : undefined}
+          role="listbox"
+          aria-label="Company directory results"
           style={{
             position: 'absolute',
             top: `${coords.top}px`,
@@ -203,6 +191,8 @@ export function CompanyUserField({
           {results.map((person) => (
             <button
               type="button"
+              role="option"
+              aria-selected="false"
               key={person.mail}
               onClick={() => {
                 selectedUserNameRef.current = person.displayName.trim();

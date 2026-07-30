@@ -16,20 +16,20 @@ export const Button = React.forwardRef<
     <button
       ref={ref}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 select-none',
+        'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50 select-none',
         size === 'sm' && 'h-8 px-3 text-xs',
         size === 'md' && 'h-9 px-4 text-sm',
         size === 'lg' && 'h-11 px-6 text-sm',
         variant === 'primary' &&
-          'bg-brand text-white shadow-btn hover:bg-brand-dark active:scale-[.98] active:shadow-none',
+          'bg-brand text-white shadow-btn hover:bg-brand-dark active:bg-[#052f59]',
         variant === 'secondary' &&
-          'border border-line bg-white text-ink shadow-panel hover:bg-brand-light hover:border-brand/30 active:scale-[.98]',
+          'border border-line bg-white text-ink shadow-panel hover:border-gray-400 hover:bg-gray-50',
         variant === 'outline' &&
-          'border border-brand text-brand hover:bg-brand-light active:scale-[.98]',
+          'border border-brand text-brand hover:bg-brand-light',
         variant === 'danger' &&
-          'bg-danger text-white shadow-btn hover:bg-red-700 active:scale-[.98]',
+          'bg-danger text-white shadow-btn hover:bg-red-800',
         variant === 'ghost' &&
-          'text-gray-500 hover:bg-gray-100 hover:text-ink active:scale-[.98]',
+          'text-gray-600 hover:bg-gray-100 hover:text-ink',
         className,
       )}
       {...p}
@@ -44,7 +44,7 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
     <div
       ref={ref}
       className={cn(
-        'rounded-xl border border-line bg-white shadow-card transition-shadow duration-200',
+        'rounded-xl border border-line/90 bg-white shadow-card',
         className,
       )}
       {...p}
@@ -59,9 +59,9 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
     <input
       ref={ref}
       className={cn(
-        'h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink placeholder-gray-400',
+        'h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-ink placeholder:text-gray-400',
         'outline-none transition-all duration-150',
-        'focus:border-brand focus:ring-2 focus:ring-brand/15',
+        'focus:border-brand focus:ring-[3px] focus:ring-brand/10',
         'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400',
         className,
       )}
@@ -81,7 +81,7 @@ export const Select = React.forwardRef<
     className={cn(
       'h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink',
       'outline-none transition-all duration-150',
-      'focus:border-brand focus:ring-2 focus:ring-brand/15',
+      'focus:border-brand focus:ring-[3px] focus:ring-brand/10',
       'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400',
       className,
     )}
@@ -98,9 +98,9 @@ export const Textarea = React.forwardRef<
   <textarea
     ref={ref}
     className={cn(
-      'min-h-24 w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder-gray-400',
+      'min-h-24 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-ink placeholder:text-gray-400',
       'outline-none transition-all duration-150',
-      'focus:border-brand focus:ring-2 focus:ring-brand/15',
+      'focus:border-brand focus:ring-[3px] focus:ring-brand/10',
       'disabled:cursor-not-allowed disabled:bg-gray-50',
       className,
     )}
@@ -121,7 +121,7 @@ export function Field({
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</span>
+      <span className="text-[13px] font-semibold text-gray-700">{label}</span>
       {children}
       {error && (
         <span className="flex items-center gap-1 text-xs text-danger">
@@ -158,7 +158,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center border px-2 py-0.5 text-xs font-semibold tracking-wide',
+        'inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-none',
         cls,
       )}
     >
@@ -204,12 +204,14 @@ export function Empty({ title, body }: { title: string; body: string }) {
  */
 export function WeeklyHoursInput({
   value,
+  id,
   onChange,
   disabled,
   required,
   className,
 }: {
   value: number;
+  id?: string;
   onChange: (val: number) => void;
   disabled?: boolean;
   required?: boolean;
@@ -306,6 +308,7 @@ export function WeeklyHoursInput({
         />
       )}
       <input
+        id={id}
         type="text"
         inputMode="numeric"
         readOnly
@@ -318,7 +321,7 @@ export function WeeklyHoursInput({
         className={cn(
           'h-10 w-full rounded-lg border border-line bg-white px-3 pr-12 text-sm text-ink',
           'outline-none transition-all duration-150 tabular-nums cursor-text select-none',
-          'focus:border-brand focus:ring-2 focus:ring-brand/15',
+          'focus:border-brand focus:ring-[3px] focus:ring-brand/10',
           'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400',
           isMax && 'border-red-400 bg-red-50 text-red-700 focus:border-red-500 focus:ring-red-500/15',
           isWarning && 'border-amber-400 bg-amber-50 text-amber-800 focus:border-amber-500 focus:ring-amber-500/15',
@@ -360,6 +363,7 @@ const convert12to24 = (hh: string, mm: string, ampm: string): string => {
 
 export function TimeMaskInput({
   value,
+  id,
   onChange,
   disabled,
   required,
@@ -367,6 +371,7 @@ export function TimeMaskInput({
   quickTimes,
 }: {
   value: string;
+  id?: string;
   onChange: (val: string) => void;
   disabled?: boolean;
   required?: boolean;
@@ -705,6 +710,7 @@ export function TimeMaskInput({
   return (
     <div className="relative w-full">
       <Input
+        id={id}
         ref={inputRef}
         type="text"
         inputMode="numeric"

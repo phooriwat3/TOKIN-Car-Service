@@ -14,6 +14,12 @@ type Booking = {
   purpose: string;
 };
 
+type Approver = {
+  id: string;
+  full_name: string;
+  email: string;
+};
+
 const esc = (value: unknown) => String(value ?? "")
   .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
   .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
@@ -66,17 +72,45 @@ Deno.serve(async (request: Request) => {
 
     let emailsSent = 0;
     let requestsQueued = 0;
+    let departmentsSkipped = 0;
     for (const [departmentId, bookings] of byDepartment) {
-      const { data: department } = await db.from("departments").select("name,code")
-        .eq("id", departmentId).single();
-      const { data: approvers, error: approverError } = await db.from("profiles")
-        .select("id,full_name,email").eq("department_id", departmentId)
-        .eq("role", "approver").eq("is_active", true).order("full_name");
+      const { data: department, error: departmentError } = await db
+        .from("departments")
+        .select("name,code")
+        .eq("id", departmentId)
+        .single();
+      if (departmentError) throw departmentError;
+
+      const { data: assignments, error: assignmentError } = await db
+        .from("department_approvers")
+        .select("approver_id")
+        .eq("department_id", departmentId)
+        .eq("is_active", true);
+      if (assignmentError) throw assignmentError;
+
+      const approverIds = [...new Set(
+        (assignments ?? []).map((assignment) => String(assignment.approver_id)),
+      )];
+      if (!approverIds.length) {
+        departmentsSkipped += 1;
+        continue;
+      }
+
+      const { data: approvers, error: approverError } = await db
+        .from("profiles")
+        .select("id,full_name,email")
+        .in("id", approverIds)
+        .eq("role", "approver")
+        .eq("is_active", true)
+        .order("full_name");
       if (approverError) throw approverError;
-      if (!approvers?.length) continue;
+      if (!approvers?.length) {
+        departmentsSkipped += 1;
+        continue;
+      }
 
       let departmentSucceeded = true;
-      for (const approver of approvers) {
+      for (const approver of approvers as Approver[]) {
         const approvalQueueUrl = `${appBaseUrl()}/approvals`;
         const linked: Array<Booking & { approvalUrl: string }> = bookings.map((booking) => ({
           ...booking,
@@ -117,7 +151,14 @@ Deno.serve(async (request: Request) => {
       }
     }
 
-    return json({ ok: true, date: today, departments: byDepartment.size, emailsSent, requestsQueued });
+    return json({
+      ok: true,
+      date: today,
+      departments: byDepartment.size,
+      departmentsSkipped,
+      emailsSent,
+      requestsQueued,
+    });
   } catch (cause) {
     return json({ error: cause instanceof Error ? cause.message : "Unable to send OT approval digests." }, 500);
   }
