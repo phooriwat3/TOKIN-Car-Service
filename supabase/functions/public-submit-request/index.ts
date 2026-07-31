@@ -415,8 +415,6 @@ Deno.serve(async (request: Request) => {
         requesterManageEmailStatus,
         manageUrl,
         manageTokenExpiresAt,
-        approvalUrl,
-        approvalTokenExpiresAt,
       },
       201,
     );

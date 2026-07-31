@@ -1,9 +1,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { json } from "../_shared/http.ts";
+import { randomToken, sha256Hex } from "../_shared/request-access.ts";
 
 type Booking = {
   id: string;
   booking_no: string;
+  revision_no: number;
   department_id: string;
   requester_name: string;
   requester_department: string;
@@ -30,6 +32,9 @@ const appBaseUrl = () => Deno.env.get("APP_BASE_URL")?.trim().replace(/\/+$/, ""
 const bangkokDate = () => new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit",
 }).format(new Date());
+const approvalTokenExpiry = () =>
+  new Date(Date.now() + 48 * 60 * 60_000).toISOString();
+
 
 const emailHtml = (input: {
   approverName: string;
@@ -56,7 +61,7 @@ Deno.serve(async (request: Request) => {
     const today = bangkokDate();
     const dayStart = new Date(`${today}T00:00:00+07:00`).toISOString();
     const { data, error } = await db.from("bookings")
-      .select("id,booking_no,department_id,requester_name,requester_department,using_date,start_time,end_time,num_passengers,purpose")
+      .select("id,booking_no,revision_no,department_id,requester_name,requester_department,using_date,start_time,end_time,num_passengers,purpose")
       .eq("request_type", "overtime")
       .eq("status", "pending_approval")
       .eq("urgent", false)
@@ -111,11 +116,40 @@ Deno.serve(async (request: Request) => {
 
       let departmentSucceeded = true;
       for (const approver of approvers as Approver[]) {
-        const approvalQueueUrl = `${appBaseUrl()}/approvals`;
-        const linked: Array<Booking & { approvalUrl: string }> = bookings.map((booking) => ({
-          ...booking,
-          approvalUrl: approvalQueueUrl,
-        }));
+        const linked: Array<Booking & { approvalUrl: string }> = [];
+        for (const booking of bookings) {
+          const approverEmail = approver.email.trim().toLowerCase();
+          const { error: revokeError } = await db
+            .from("request_access_tokens")
+            .update({ revoked_at: new Date().toISOString() })
+            .eq("booking_id", booking.id)
+            .eq("token_type", "approval")
+            .ilike("subject_email", approverEmail)
+            .is("used_at", null)
+            .is("revoked_at", null);
+          if (revokeError) throw revokeError;
+
+          const rawToken = randomToken();
+          const tokenHash = await sha256Hex(rawToken);
+          const expiresAt = approvalTokenExpiry();
+          const { error: tokenError } = await db
+            .from("request_access_tokens")
+            .insert({
+              booking_id: booking.id,
+              token_type: "approval",
+              token_hash: tokenHash,
+              revision_no: booking.revision_no,
+              subject_email: approverEmail,
+              expires_at: expiresAt,
+            });
+          if (tokenError) throw tokenError;
+
+          linked.push({
+            ...booking,
+            approvalUrl:
+              `${appBaseUrl()}/request/approve?token=${encodeURIComponent(rawToken)}`,
+          });
+        }
         const subject = `[OT approval batch] ${department?.code ?? "Department"} - ${today} (${linked.length})`;
         const response = await fetch(flowUrl, {
           method: "POST",
@@ -160,6 +194,13 @@ Deno.serve(async (request: Request) => {
       requestsQueued,
     });
   } catch (cause) {
-    return json({ error: cause instanceof Error ? cause.message : "Unable to send OT approval digests." }, 500);
+    const errorMessage = cause instanceof Error
+      ? cause.message
+      : cause && typeof cause === "object" && "message" in cause
+      ? String((cause as { message?: unknown }).message ?? "Unknown database error.")
+      : "Unable to send OT approval digests.";
+
+    console.error("Unable to send OT approval digests", cause);
+    return json({ error: errorMessage }, 500);
   }
 });

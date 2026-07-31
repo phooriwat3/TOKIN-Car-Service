@@ -316,8 +316,6 @@ Deno.serve(async (request) => {
       manageToken: newRawToken,
       manageTokenExpiresAt: expiresAt,
       approvalEmailStatus,
-      approvalUrl,
-      approvalTokenExpiresAt: approvalExpiresAt,
     });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : 'Unable to update request.';
