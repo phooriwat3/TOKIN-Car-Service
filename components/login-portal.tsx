@@ -24,6 +24,7 @@ export function LoginPortal({ portal }: LoginPortalProps) {
     role,
     setRole,
     signIn,
+    signInWithMicrosoft,
     signOut,
   } = useApp();
   const router = useRouter();
@@ -31,6 +32,7 @@ export function LoginPortal({ portal }: LoginPortalProps) {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [microsoftSubmitting, setMicrosoftSubmitting] = useState(false);
 
   const enterDemo = (nextRole: Role) => {
     setRole(nextRole);
@@ -46,6 +48,15 @@ export function LoginPortal({ portal }: LoginPortalProps) {
       // Provider exposes the safe authentication error message.
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const submitMicrosoft = async () => {
+    setMicrosoftSubmitting(true);
+    try {
+      await signInWithMicrosoft(admin ? "/admin/bookings" : "/approvals");
+    } catch {
+      setMicrosoftSubmitting(false);
     }
   };
 
@@ -169,7 +180,37 @@ export function LoginPortal({ portal }: LoginPortalProps) {
             </p>
 
             {configured ? (
-              <form className="mt-8 space-y-5" onSubmit={submit}>
+              <div className="mt-8">
+                <Button
+                  size="lg"
+                  type="button"
+                  variant="outline"
+                  className="w-full border-slate-300 bg-white text-ink hover:bg-slate-50"
+                  disabled={microsoftSubmitting || loading}
+                  onClick={submitMicrosoft}
+                >
+                  {microsoftSubmitting ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-brand" />
+                  ) : (
+                    <span aria-hidden="true" className="grid grid-cols-2 gap-[2px]">
+                      <span className="h-[7px] w-[7px] bg-[#f25022]" />
+                      <span className="h-[7px] w-[7px] bg-[#7fba00]" />
+                      <span className="h-[7px] w-[7px] bg-[#00a4ef]" />
+                      <span className="h-[7px] w-[7px] bg-[#ffb900]" />
+                    </span>
+                  )}
+                  Continue with Microsoft 365
+                </Button>
+
+                <div className="my-6 flex items-center gap-3">
+                  <span className="h-px flex-1 bg-line" />
+                  <span className="text-xs font-medium uppercase tracking-[0.12em] text-gray-400">
+                    Or use password
+                  </span>
+                  <span className="h-px flex-1 bg-line" />
+                </div>
+
+                <form className="space-y-5" onSubmit={submit}>
                 <Field label="Company email">
                   <div className="relative">
                     <Mail
@@ -223,7 +264,7 @@ export function LoginPortal({ portal }: LoginPortalProps) {
                 <Button
                   size="lg"
                   className="w-full"
-                  disabled={submitting || loading}
+                  disabled={submitting || microsoftSubmitting || loading}
                 >
                   {submitting ? (
                     <>
@@ -234,7 +275,8 @@ export function LoginPortal({ portal }: LoginPortalProps) {
                     "Sign in"
                   )}
                 </Button>
-              </form>
+                </form>
+              </div>
             ) : (
               <Button
                 size="lg"

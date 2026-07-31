@@ -29,6 +29,7 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname === "/login" ||
     request.nextUrl.pathname === "/approver/login" ||
     request.nextUrl.pathname === "/admin/login" ||
+    request.nextUrl.pathname.startsWith("/auth/") ||
     request.nextUrl.pathname === "/" ||
     request.nextUrl.pathname.startsWith("/request") ||
     request.nextUrl.pathname.startsWith("/api/request");

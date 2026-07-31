@@ -31,6 +31,7 @@ type Ctx = {
   error: string | null;
   setRole: (role: Role) => void;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithMicrosoft: (nextPath: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateBooking: (id: string, patch: Partial<Booking>) => Promise<void>;
   addBooking: (booking: Booking) => Promise<Booking>;
@@ -197,6 +198,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithMicrosoft = async (nextPath: string) => {
+    if (!supabase) return;
+    setError(null);
+    const redirectUrl = new URL("/auth/callback", window.location.origin);
+    redirectUrl.searchParams.set("next", nextPath);
+    const { error: signInError } = await supabase.auth.signInWithOAuth({
+      provider: "azure",
+      options: {
+        scopes: "email",
+        redirectTo: redirectUrl.toString(),
+      },
+    });
+    if (signInError) {
+      setError(signInError.message);
+      throw signInError;
+    }
+  };
+
   const signOut = async () => {
     if (supabase) {
       await supabase.auth.signOut();
@@ -308,6 +327,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       error,
       setRole,
       signIn,
+      signInWithMicrosoft,
       signOut,
       updateBooking,
       addBooking,
