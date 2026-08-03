@@ -1,8 +1,13 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { createPortal } from 'react-dom';
+import { TrendingDown, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const buttonFocusRing =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/50 focus-visible:ring-offset-2';
 
 /* ─── Button ─── */
 export const Button = React.forwardRef<
@@ -16,20 +21,21 @@ export const Button = React.forwardRef<
     <button
       ref={ref}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50 select-none',
+        'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 select-none',
+        buttonFocusRing,
         size === 'sm' && 'h-8 px-3 text-xs',
         size === 'md' && 'h-9 px-4 text-sm',
-        size === 'lg' && 'h-11 px-6 text-sm',
+        size === 'lg' && 'h-10 px-5 text-sm',
         variant === 'primary' &&
-          'bg-brand text-white shadow-btn hover:bg-brand-dark active:bg-[#052f59]',
+          'bg-brand-500 text-white shadow-btn hover:bg-brand-600 active:bg-brand-700',
         variant === 'secondary' &&
-          'border border-line bg-white text-ink shadow-panel hover:border-gray-400 hover:bg-gray-50',
+          'border border-slate-200 bg-white text-slate-700 shadow-xs hover:border-slate-300 hover:bg-slate-50',
         variant === 'outline' &&
-          'border border-brand text-brand hover:bg-brand-light',
+          'border border-brand-400 text-brand-500 hover:bg-brand-50',
         variant === 'danger' &&
-          'bg-danger text-white shadow-btn hover:bg-red-800',
+          'bg-danger text-white shadow-xs hover:bg-red-700',
         variant === 'ghost' &&
-          'text-gray-600 hover:bg-gray-100 hover:text-ink',
+          'text-slate-600 hover:bg-slate-100 hover:text-ink',
         className,
       )}
       {...p}
@@ -44,7 +50,7 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
     <div
       ref={ref}
       className={cn(
-        'rounded-xl border border-line/90 bg-white shadow-card',
+        'rounded-xl border border-slate-200/80 bg-white shadow-card transition-shadow duration-200',
         className,
       )}
       {...p}
@@ -53,16 +59,30 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
 );
 Card.displayName = 'Card';
 
+export const CardHover = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...p }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        'rounded-xl border border-slate-200/80 bg-white shadow-card transition-shadow duration-200 hover:shadow-card-hover',
+        className,
+      )}
+      {...p}
+    />
+  ),
+);
+CardHover.displayName = 'CardHover';
+
 /* ─── Input ─── */
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...p }, ref) => (
     <input
       ref={ref}
       className={cn(
-        'h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-ink placeholder:text-gray-400',
+        'h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-ink placeholder:text-slate-400',
         'outline-none transition-all duration-150',
-        'focus:border-brand focus:ring-[3px] focus:ring-brand/10',
-        'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400',
+        'focus:border-brand-400 focus:ring-[3px] focus:ring-brand-400/12',
+        'disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400',
         className,
       )}
       {...p}
@@ -79,10 +99,10 @@ export const Select = React.forwardRef<
   <select
     ref={ref}
     className={cn(
-      'h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink',
+      'h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-ink',
       'outline-none transition-all duration-150',
-      'focus:border-brand focus:ring-[3px] focus:ring-brand/10',
-      'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400',
+      'focus:border-brand-400 focus:ring-[3px] focus:ring-brand-400/12',
+      'disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400',
       className,
     )}
     {...p}
@@ -98,10 +118,10 @@ export const Textarea = React.forwardRef<
   <textarea
     ref={ref}
     className={cn(
-      'min-h-24 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-ink placeholder:text-gray-400',
+      'min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-ink placeholder:text-slate-400',
       'outline-none transition-all duration-150',
-      'focus:border-brand focus:ring-[3px] focus:ring-brand/10',
-      'disabled:cursor-not-allowed disabled:bg-gray-50',
+      'focus:border-brand-400 focus:ring-[3px] focus:ring-brand-400/12',
+      'disabled:cursor-not-allowed disabled:bg-slate-50',
       className,
     )}
     {...p}
@@ -137,15 +157,28 @@ export function Field({
 
 /* ─── Badge ─── */
 const badgeVariants: Record<string, string> = {
-  completed: 'bg-success-light text-success border-success/20',
-  rejected: 'bg-danger-light text-danger border-danger/20',
-  cancelled: 'bg-gray-100 text-gray-600 border-gray-200',
-  pending_approval: 'bg-accent-light text-amber-700 border-accent/25',
-  changes_requested: 'bg-orange-50 text-orange-700 border-orange-200',
-  approved: 'bg-brand-light text-brand border-brand/20',
-  assigned: 'bg-violet-50 text-violet-700 border-violet-200',
-  in_progress: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  completed: 'bg-emerald-50 text-emerald-700 border-emerald-200/70',
+  rejected: 'bg-red-50 text-red-700 border-red-200/70',
+  cancelled: 'bg-slate-100 text-slate-600 border-slate-200/70',
+  pending_approval: 'bg-amber-50 text-amber-700 border-amber-200/70',
+  changes_requested: 'bg-orange-50 text-orange-700 border-orange-200/70',
+  approved: 'bg-brand-50 text-brand-600 border-brand-200/70',
+  assigned: 'bg-violet-50 text-violet-700 border-violet-200/70',
+  in_progress: 'bg-indigo-50 text-indigo-700 border-indigo-200/70',
 };
+
+const badgeDotColors: Record<string, string> = {
+  completed: 'bg-emerald-500',
+  rejected: 'bg-red-500',
+  cancelled: 'bg-slate-400',
+  pending_approval: 'bg-amber-500',
+  changes_requested: 'bg-orange-500',
+  approved: 'bg-brand-500',
+  assigned: 'bg-violet-500',
+  in_progress: 'bg-indigo-500',
+};
+
+const pulseStatuses = new Set(['in_progress', 'pending_approval']);
 
 export function Badge({
   children,
@@ -154,26 +187,151 @@ export function Badge({
   children: React.ReactNode;
   status?: string;
 }) {
-  const cls = (status && badgeVariants[status]) || 'bg-gray-100 text-gray-600 border-gray-200';
+  const cls =
+    (status && badgeVariants[status]) || 'bg-slate-100 text-slate-600 border-slate-200/70';
+  const dotColor = (status && badgeDotColors[status]) || 'bg-slate-400';
+  const pulse = status ? pulseStatuses.has(status) : false;
+
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-none',
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium leading-none',
         cls,
       )}
     >
+      <span
+        className={cn('h-1.5 w-1.5 shrink-0 rounded-full', dotColor, pulse && 'animate-pulse')}
+        aria-hidden="true"
+      />
       {children}
     </span>
   );
+}
+
+/* ─── Section Label ─── */
+export function SectionLabel({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <p
+      className={cn(
+        'text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400',
+        className,
+      )}
+    >
+      {children}
+    </p>
+  );
+}
+
+/* ─── Stat (KPI metric card) ─── */
+const statToneStyles = {
+  blue: {
+    gradient: 'linear-gradient(135deg, #f0f7fd 0%, #dbeafe 100%)',
+    iconBg: 'bg-brand-500 text-white',
+  },
+  amber: {
+    gradient: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+    iconBg: 'bg-amber-500 text-white',
+  },
+  green: {
+    gradient: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+    iconBg: 'bg-emerald-500 text-white',
+  },
+  violet: {
+    gradient: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+    iconBg: 'bg-violet-500 text-white',
+  },
+  red: {
+    gradient: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+    iconBg: 'bg-red-500 text-white',
+  },
+} as const;
+
+export type StatTone = keyof typeof statToneStyles;
+
+export function Stat({
+  label,
+  value,
+  icon,
+  tone,
+  trend,
+  href,
+  className,
+}: {
+  label: string;
+  value: number | string;
+  icon: React.ReactNode;
+  tone: StatTone;
+  trend?: { value: number; label: string };
+  href?: string;
+  className?: string;
+}) {
+  const styles = statToneStyles[tone];
+  const trendPositive = trend ? trend.value >= 0 : false;
+
+  const card = (
+    <div
+      className={cn(
+        'rounded-xl border border-slate-200/60 p-5 shadow-card transition-shadow duration-200',
+        href && 'hover:shadow-card-hover',
+        className,
+      )}
+      style={{ background: styles.gradient }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className={cn('rounded-xl p-2.5', styles.iconBg)}>{icon}</div>
+        {trend && (
+          <span
+            className={cn(
+              'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold',
+              trendPositive
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'bg-red-50 text-red-700',
+            )}
+          >
+            {trendPositive ? (
+              <TrendingUp size={12} strokeWidth={2.5} />
+            ) : (
+              <TrendingDown size={12} strokeWidth={2.5} />
+            )}
+            {trendPositive ? '+' : ''}
+            {trend.value}%
+          </span>
+        )}
+      </div>
+      <p className="mt-4 text-3xl font-bold font-display tracking-tight text-ink tabular-nums">
+        {value}
+      </p>
+      <p className="mt-1 text-sm font-medium text-slate-600">{label}</p>
+      {trend?.label && (
+        <p className="mt-2 text-xs text-slate-500">{trend.label}</p>
+      )}
+    </div>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/50 focus-visible:ring-offset-2 rounded-xl">
+        {card}
+      </Link>
+    );
+  }
+
+  return card;
 }
 
 /* ─── Empty State ─── */
 export function Empty({ title, body }: { title: string; body: string }) {
   return (
     <div className="py-16 text-center">
-      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center bg-brand-light">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-brand-50 p-4">
         <svg
-          className="text-brand"
+          className="text-brand-400"
           width="22"
           height="22"
           fill="none"
@@ -188,8 +346,8 @@ export function Empty({ title, body }: { title: string; body: string }) {
           />
         </svg>
       </div>
-      <p className="font-semibold text-ink">{title}</p>
-      <p className="mt-1 text-sm text-gray-500">{body}</p>
+      <p className="text-base font-semibold text-slate-800">{title}</p>
+      <p className="mt-1 text-sm text-slate-500">{body}</p>
     </div>
   );
 }
