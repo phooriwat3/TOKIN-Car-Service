@@ -87,7 +87,11 @@ Deno.serve(async (request) => {
         meetingPoint: booking.meeting_point,
         withStaff: booking.with_staff,
         numPassengers: booking.num_passengers,
-        passengers: booking.booking_passengers ?? [],
+        passengers: booking.booking_passengers?.length
+          ? booking.booking_passengers
+          : Array.from({ length: booking.num_passengers }, (_item, index) => ({
+              name: `Passenger ${index + 1}`, seq: index,
+            })),
         overtimeEmployees: booking.overtime_employees ?? [],
         vehicle: publicVehicle,
         driver: publicDriver,

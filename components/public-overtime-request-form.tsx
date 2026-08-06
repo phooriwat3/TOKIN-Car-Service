@@ -9,7 +9,6 @@ import {
   Select,
   Textarea,
   TimeMaskInput,
-  WeeklyHoursInput,
 } from "@/components/ui";
 import {
   CompanyUserField,
@@ -50,6 +49,7 @@ export type PublicOvertimeRequestFormProps = {
   department: string;
   directorySelected: boolean;
   confirmedSelf: boolean;
+  tigerSpaceConfirmed: boolean;
   usingDate: string;
   employee: OvertimeEmployee;
   reviewing: boolean;
@@ -60,6 +60,7 @@ export type PublicOvertimeRequestFormProps = {
   onRequesterChange: (field: RequesterField, value: string) => void;
   onDirectorySelect: (person: CompanyUser) => void;
   onConfirmedSelfChange: (value: boolean) => void;
+  onTigerSpaceConfirmedChange: (value: boolean) => void;
   onUsingDateChange: (value: string) => void;
   onEmployeeChange: <K extends keyof OvertimeEmployee>(
     field: K,
@@ -89,9 +90,8 @@ export function PublicOvertimeRequestForm(
   const detailsComplete = Boolean(
     props.usingDate &&
     duration &&
-    props.employee.totalWeeklyHours > 0 &&
-    props.employee.totalWeeklyHours <= 60 &&
-    (!props.employee.transportRequired || props.employee.busStop.trim()),
+    props.tigerSpaceConfirmed &&
+    props.employee.busStop.trim(),
   );
   const activeStep = props.reviewing ? 3 : employeeComplete ? 2 : 1;
 
@@ -131,10 +131,8 @@ export function PublicOvertimeRequestForm(
             />
             <Summary label="Department" value={props.department} />
             <Summary label="Company email" value={props.requesterEmail} />
-            <Summary
-              label="Approver"
-              value={`${props.department} department approver`}
-            />
+            <Summary label="OT source" value="Tiger Space (no duplicate OT approval)" />
+            <Summary label="OT verification" value="Waiting for HR/GA verification" />
             <Summary label="OT / holiday work date" value={formatUsDate(props.usingDate)} />
             <Summary
               label="Work description"
@@ -148,24 +146,8 @@ export function PublicOvertimeRequestForm(
               label="OT duration"
               value={duration ?? "Invalid time range"}
             />
-            <Summary
-              label="Weekly total working hours"
-              value={`${props.employee.totalWeeklyHours.toFixed(2)} hours`}
-            />
-            <Summary
-              label="Transportation"
-              value={
-                props.employee.transportRequired
-                  ? "Transportation required"
-                  : "No transportation required"
-              }
-            />
-            {props.employee.transportRequired && (
-              <Summary
-                label="Drop-off location"
-                value={props.employee.busStop}
-              />
-            )}
+            <Summary label="Transportation" value="Transportation required" />
+            <Summary label="Drop-off location" value={props.employee.busStop} />
           </dl>
           <div className="flex flex-col-reverse gap-3 border-t border-line bg-[#fafbfc] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
             <Button
@@ -223,8 +205,9 @@ export function PublicOvertimeRequestForm(
               Thailand time
             </p>
             <p className="mt-0.5 text-xs leading-5 text-amber-800">
-              Requests received by {OT_NORMAL_REQUEST_CUTOFF} enter the
-              department approval batch. Current Thailand time: {bangkokTime()}.
+              Requests received by {OT_NORMAL_REQUEST_CUTOFF} enter the normal
+              transport-planning batch. OT verification may continue after this cutoff.
+              Current Thailand time: {bangkokTime()}.
             </p>
           </div>
         </div>
@@ -239,9 +222,9 @@ export function PublicOvertimeRequestForm(
 
       <div className="border-l-[3px] border-brand bg-brand-light/60 px-4 py-3 text-sm text-gray-700">
         <p>
-          <strong className="text-ink">Before you begin:</strong> Submit one
-          request for yourself. Requests are grouped by department, and your
-          department approver can review the request after submission.
+          <strong className="text-ink">Before you begin:</strong> Submit your OT
+          request in Tiger Space, then submit this transport request for yourself.
+          You do not need to wait for OT approval before requesting transport.
         </p>
       </div>
 
@@ -368,7 +351,7 @@ export function PublicOvertimeRequestForm(
         <SectionHeader
           step="2"
           title="OT and transportation details"
-          description="Enter your work schedule and whether transportation is required."
+          description="Enter the Tiger Space OT schedule and the drop-off point for this transport request."
           id="ot-section-heading"
         />
         <div className="space-y-6 px-5 py-5 sm:px-6">
@@ -383,16 +366,6 @@ export function PublicOvertimeRequestForm(
                 value={props.usingDate}
                 onChange={(event) =>
                   props.onUsingDateChange(event.target.value)
-                }
-              />
-            </Field>
-            <Field label="Weekly total working hours">
-              <WeeklyHoursInput
-                id="weekly-hours"
-                required
-                value={props.employee.totalWeeklyHours}
-                onChange={(value) =>
-                  props.onEmployeeChange("totalWeeklyHours", value)
                 }
               />
             </Field>
@@ -438,48 +411,40 @@ export function PublicOvertimeRequestForm(
             </strong>
           </div>
 
-          <fieldset>
-            <legend className="text-[13px] font-semibold text-gray-700">
-              Transportation requirement
-            </legend>
-            <div className="mt-2 grid gap-3 sm:grid-cols-2">
-              <RadioCard
-                checked={props.employee.transportRequired}
-                title="Transportation required"
-                description="Admin will assign a vehicle and driver after approval."
-                onChange={() =>
-                  props.onEmployeeChange("transportRequired", true)
-                }
-              />
-              <RadioCard
-                checked={!props.employee.transportRequired}
-                title="No transportation required"
-                description="Submit the OT record without a vehicle assignment."
-                onChange={() =>
-                  props.onEmployeeChange("transportRequired", false)
-                }
-              />
-            </div>
-          </fieldset>
-
-          {props.employee.transportRequired ? (
-            <Field label="Drop-off location / bus stop">
-              <Input
-                id="drop-off-location"
-                required
-                placeholder="Enter your usual bus stop or drop-off point"
-                value={props.employee.busStop}
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+            <p className="font-semibold">Transport request only</p>
+            <p className="mt-1 text-xs leading-5 text-blue-800">
+              Tiger Space remains the source of truth for OT. Submit this form only when you need transportation.
+            </p>
+            <label className="mt-3 flex items-start gap-2">
+              <input
+                id="tiger-space-confirmed"
+                type="checkbox"
+                checked={props.tigerSpaceConfirmed}
                 onChange={(event) =>
-                  props.onEmployeeChange("busStop", event.target.value)
+                  props.onTigerSpaceConfirmedChange(event.target.checked)
                 }
+                className="mt-0.5 h-4 w-4 accent-brand"
               />
-            </Field>
-          ) : (
-            <div className="flex items-start gap-2 border border-green-200 bg-green-50 px-3.5 py-3 text-sm text-green-800">
-              <Check className="mt-0.5 shrink-0" size={16} />
-              <p>No vehicle assignment is required for this request.</p>
-            </div>
-          )}
+              <span>
+                I confirm that I have submitted this OT in Tiger Space and I require
+                transportation. The transport request will remain pending until HR/GA
+                can verify the approved OT from the Tiger Space report.
+              </span>
+            </label>
+          </div>
+
+          <Field label="Drop-off location / bus stop">
+            <Input
+              id="drop-off-location"
+              required
+              placeholder="Enter your usual bus stop or drop-off point"
+              value={props.employee.busStop}
+              onChange={(event) =>
+                props.onEmployeeChange("busStop", event.target.value)
+              }
+            />
+          </Field>
         </div>
       </section>
 

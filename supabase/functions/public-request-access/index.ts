@@ -61,7 +61,9 @@ Deno.serve(async (request) => {
       .update({ last_accessed_at: new Date().toISOString() })
       .eq('id', access.id);
 
-    const editable = ['pending_approval', 'changes_requested'].includes(booking.status);
+    const editable = ['pending_approval', 'pending_ot_verification', 'changes_requested'].includes(booking.status);
+    const canCancel = editable ||
+      (booking.request_type === 'overtime' && booking.status === 'approved');
     return json({
       request: {
         id: booking.id,
@@ -101,7 +103,7 @@ Deno.serve(async (request) => {
         createdAt: booking.created_at,
         updatedAt: booking.updated_at,
       },
-      permissions: { canEdit: editable, canCancel: editable },
+      permissions: { canEdit: editable, canCancel },
     });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : 'Unable to load request.';

@@ -3,16 +3,18 @@
 ## Roles
 
 - Public requester: no account. Opens `/request`, chooses OT transportation or an outside-company trip, and submits the form.
-- Approver: no account. Receives an approval email and chooses Approve or Reject.
+- Approver: no account. Receives approval email only for outside-company trips.
 - Admin: the only Supabase Auth account. Signs in at `/admin/login`, plans a vehicle/driver while approval is pending, and confirms the assignment after approval.
 
 ## Workflow
 
 1. The browser calls the public `public-submit-request` Edge Function.
 2. The function validates and rate-limits the request, then inserts it using the service role.
-3. The function calls the approval-email flow with the request details and callback URL.
+3. Outside-company trips call the approval-email flow. OT transport requests
+   enter the Tiger Space verification queue without a duplicate approval email.
 4. The approval flow sends the decision to `approval-callback` with the callback secret.
-5. Approved requests unlock Admin's Confirm assignment action.
+5. Outside trips unlock assignment after department approval. OT transport
+   unlocks assignment after HR/GA verifies the approved Tiger Space report.
 6. Confirm assignment calls `notify-requester-assignment`.
 7. The assignment-email flow sends the vehicle, driver, pickup point, date, and time to the requester email.
 

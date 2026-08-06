@@ -2,6 +2,7 @@ export type Role = "requester" | "approver" | "admin" | "driver";
 export type BookingStatus =
   | "draft"
   | "pending_approval"
+  | "pending_ot_verification"
   | "changes_requested"
   | "approved"
   | "rejected"
@@ -11,6 +12,12 @@ export type BookingStatus =
   | "completed"
   | "cancelled";
 export type RequestType = "outside_company" | "overtime";
+export type OtVerificationStatus =
+  | "not_required"
+  | "pending"
+  | "verified"
+  | "not_found"
+  | "rejected";
 export type Category =
   | "business_trip"
   | "after_hours"
@@ -147,6 +154,12 @@ export interface Booking {
   urgentReason?: string;
   afterHours: boolean;
   overtimeTransport: boolean;
+  sourceSystem?: "transport_portal" | "tiger_space";
+  sourceReference?: string;
+  sourceConfirmed?: boolean;
+  otVerificationStatus?: OtVerificationStatus;
+  otVerifiedAt?: string;
+  otVerificationNote?: string;
   createdAt: string;
   rejectReason?: string;
   approval?: Approval;

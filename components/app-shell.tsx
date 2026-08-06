@@ -2,12 +2,12 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  BarChart3, CalendarDays, Car, CarFront, ClipboardCheck,
-  ClipboardList, LayoutDashboard, LogOut, Menu, Plus, Users, X,
+  BarChart3, Bell, CalendarDays, CarFront, ChevronRight, ClipboardCheck,
+  ClipboardList, LayoutDashboard, LogOut, Menu, Plus, X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from './app-provider';
-import { Button } from './ui';
+import { Button, SectionLabel } from './ui';
 import { cn } from '@/lib/utils';
 import { Role } from '@/lib/types';
 
@@ -24,8 +24,6 @@ const links: Record<Role, { href: string; label: string; icon: any }[]> = {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/bookings', label: 'All bookings', icon: ClipboardList },
     { href: '/admin/calendar', label: 'Schedule', icon: CalendarDays },
-    { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
-    { href: '/admin/drivers', label: 'Drivers', icon: Users },
     { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
   ],
   driver: [
@@ -48,6 +46,21 @@ function getInitials(name: string) {
     .map((w) => w[0])
     .join('')
     .toUpperCase();
+}
+
+function getPageLabel(path: string, role: Role) {
+  const matchingLink = [...links[role]]
+    .sort((a, b) => b.href.length - a.href.length)
+    .find((link) => path === link.href || (link.href !== '/dashboard' && path.startsWith(`${link.href}/`)));
+
+  if (matchingLink) return matchingLink.label;
+
+  const segment = path.split('/').filter(Boolean).at(-1);
+  if (!segment) return 'Dashboard';
+
+  return segment
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -136,53 +149,82 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
     );
 
+  const currentPageLabel = getPageLabel(path, role);
+  const activeHref = [...links[role]]
+    .sort((a, b) => b.href.length - a.href.length)
+    .find((link) => path === link.href || (link.href !== '/dashboard' && path.startsWith(`${link.href}/`)))
+    ?.href;
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push(loginPath);
+    router.refresh();
+  };
+
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      <div className="flex h-[72px] items-center gap-3 border-b border-white/10 px-5">
+      <div className="relative flex h-[68px] shrink-0 items-center gap-3 px-5">
         <div className="flex h-9 items-center justify-center rounded-md bg-white px-2 shadow-sm">
           <img src="/tokin-logo.png" alt="TOKIN Logo" className="h-8 w-auto object-contain" />
         </div>
         <div className="h-7 w-px bg-white/15" />
-        <div>
-          <p className="text-sm font-semibold leading-tight text-white">Transport operations</p>
-          <p className="mt-0.5 text-[11px] font-medium text-slate-300">{portalLabel[role]}</p>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold leading-tight text-white">Transport operations</p>
+          <div className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#f59e0b]" aria-hidden="true" />
+            <span className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-300">
+              {portalLabel[role]}
+            </span>
+          </div>
         </div>
+        <div className="absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
       </div>
       <nav className="flex-1 space-y-1 px-3 py-5">
-        <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+        <SectionLabel className="mb-2 px-3 text-white/30">
           Navigation
-        </p>
+        </SectionLabel>
         {links[role].map((x) => {
           const I = x.icon;
-          const isActive = path === x.href || (x.href !== '/dashboard' && path.startsWith(x.href));
+          const isActive = x.href === activeHref;
           return (
             <Link
               key={x.href}
               href={x.href}
               onClick={() => setOpen(false)}
               className={cn(
-                'group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+                'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                 isActive
-                  ? 'bg-white/12 text-white ring-1 ring-inset ring-white/10'
-                  : 'text-blue-100/80 hover:bg-white/10 hover:text-white',
+                  ? 'bg-white/[0.09] text-white ring-1 ring-inset ring-white/[0.08]'
+                  : 'text-white/70 hover:bg-white/[0.055] hover:text-white/90',
               )}
             >
+              {isActive && (
+                <span className="absolute left-0 top-1/2 h-[18px] w-[3px] -translate-y-1/2 rounded-full bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.45)]" />
+              )}
               <I size={17} className={cn('flex-shrink-0', isActive ? 'text-white' : 'text-slate-400 group-hover:text-white')} />
               <span className="flex-1">{x.label}</span>
-              {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#ed9b2d]" />}
             </Link>
           );
         })}
       </nav>
-      <div className="border-t border-white/10 p-4">
+      <div className="border-t border-white/[0.07] p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white ring-1 ring-white/20">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white ring-2 ring-white/15">
             {getInitials(user.fullName)}
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-white">{user.fullName}</p>
-            <p className="truncate text-xs text-blue-200/70">{user.department}</p>
+            <p className="truncate text-xs text-slate-400/80">{user.department}</p>
           </div>
+          <button
+            type="button"
+            title="Sign out"
+            aria-label="Sign out"
+            onClick={handleSignOut}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/[0.07] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </div>
@@ -191,20 +233,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-canvas">
       <aside
-        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col shadow-sidebar lg:flex"
-        style={{ background: 'linear-gradient(180deg, #102d44 0%, #0b2133 100%)' }}
+        className="fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-white/[0.06] shadow-sidebar lg:flex"
+        style={{ background: 'linear-gradient(175deg, var(--sidebar-bg-from) 0%, var(--sidebar-bg-to) 100%)' }}
       >
         <SidebarContent />
       </aside>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <button className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <button
+            type="button"
+            aria-label="Close navigation menu"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setOpen(false)}
+          />
           <aside
-            className="relative flex h-full w-72 flex-col shadow-modal animate-slide-in"
-            style={{ background: 'linear-gradient(180deg, #102d44 0%, #0b2133 100%)' }}
+            className="relative flex h-full w-[260px] flex-col border-r border-white/[0.06] shadow-modal animate-slide-in"
+            style={{ background: 'linear-gradient(175deg, var(--sidebar-bg-from) 0%, var(--sidebar-bg-to) 100%)' }}
           >
             <SidebarContent />
             <button
+              type="button"
+              aria-label="Close navigation menu"
               className="absolute right-3 top-4 flex h-8 w-8 items-center justify-center text-white/70 hover:bg-white/10 hover:text-white transition"
               onClick={() => setOpen(false)}
             >
@@ -213,19 +262,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </aside>
         </div>
       )}
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-white/95 px-4 shadow-header backdrop-blur-sm md:px-7">
+      <div className="lg:pl-[260px]">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/70 bg-white/[0.92] px-4 shadow-header backdrop-blur-md backdrop-saturate-150 md:px-7">
           <div className="flex items-center gap-3">
             <button
+              type="button"
+              aria-label="Open navigation menu"
               className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 lg:hidden transition"
               onClick={() => setOpen(true)}
             >
               <Menu size={18} />
             </button>
-            <div className="hidden text-sm font-medium sm:flex items-center gap-1.5">
-              <span className="font-semibold text-ink">TOKIN</span>
-              <span className="text-gray-300">/</span>
-              <span className="text-ink capitalize">{portalLabel[role]}</span>
+            <div className="hidden items-center gap-1.5 text-sm font-medium sm:flex" aria-label="Breadcrumb">
+              <span className="font-semibold text-slate-900">TOKIN</span>
+              <ChevronRight size={14} className="text-slate-400" />
+              <span className="text-slate-500">{portalLabel[role]}</span>
+              <ChevronRight size={14} className="text-slate-400" />
+              <span className="text-slate-900">{currentPageLabel}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -238,7 +291,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     setRole(e.target.value as Role);
                     router.push('/dashboard');
                   }}
-                  className="h-8 border border-line bg-white px-2.5 text-xs font-semibold capitalize text-ink focus:outline-none focus:border-brand"
+                  aria-label="Switch demo role"
+                  className="h-8 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold capitalize text-slate-700 shadow-xs outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20"
                 >
                   {(['requester', 'approver', 'admin', 'driver'] as Role[]).map((r) => (
                     <option key={r}>{r}</option>
@@ -247,12 +301,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </>
             )}
             <button
-              title="Sign out"
-              onClick={async () => { await signOut(); router.push(loginPath); router.refresh(); }}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-danger transition"
+              type="button"
+              title="Notifications"
+              aria-label="Notifications, 3 unread"
+              className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/40"
             >
-              <LogOut size={16} />
+              <Bell size={18} />
+              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-[#f59e0b] px-0.5 text-[9px] font-bold leading-none text-white">
+                3
+              </span>
             </button>
+            <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 py-1 pl-1 pr-2.5 shadow-xs">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-700 ring-1 ring-brand-200">
+                {getInitials(user.fullName)}
+              </div>
+              <span className="hidden max-w-28 truncate text-xs font-semibold text-slate-700 md:block">
+                {user.fullName}
+              </span>
+            </div>
           </div>
         </header>
         <main className="mx-auto max-w-[1380px] animate-fade-in p-4 md:p-8">

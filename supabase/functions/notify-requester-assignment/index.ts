@@ -29,12 +29,13 @@ Deno.serve(async (request: Request) => {
     const body = await request.json();
     const bookingId = typeof body.requestId === 'string' ? body.requestId : '';
     const { data: booking, error } = await db.from('bookings').select(`
-      id,booking_no,revision_no,request_type,requester_name,requester_email,using_date,start_time,end_time,pickup_location,destination,purpose,
+      id,booking_no,revision_no,request_type,requester_name,requester_email,using_date,start_time,end_time,pickup_location,destination,purpose,num_passengers,
       vehicle_assignments(
         vehicle_id,driver_id,notes,manual_transport_units,
         vehicle:vehicles(license_plate,brand,model),
         driver:drivers(full_name,phone)
       ),
+      booking_passengers(name,seq),
       overtime_employees(*)
     `).eq('id', bookingId).single();
     if (error || !booking) return json({ error: 'Request not found.' }, 404);
@@ -111,16 +112,29 @@ Deno.serve(async (request: Request) => {
       pickupLocation: booking.pickup_location, destination: booking.destination, purpose: booking.purpose,
       vehicle: emailVehicle,
       driver: emailDriver, transportUnits, notes: assignment.notes ?? '',
-      overtimeEmployees: (booking.overtime_employees ?? []).map((employee: any) => ({
-        employeeId: employee.employee_id,
-        employeeName: employee.employee_name,
-        workDescription: employee.work_description,
-        workStart: employee.work_start,
-        workEnd: employee.work_end,
-        totalWeeklyHours: employee.total_weekly_hours,
-        transportRequired: employee.transport_required,
-        busStop: employee.bus_stop,
-      })),
+      overtimeEmployees: booking.request_type === 'outside_company'
+        ? (booking.booking_passengers?.length
+          ? booking.booking_passengers
+          : Array.from({ length: booking.num_passengers }, (_item, index) => ({
+              name: `Passenger ${index + 1}`, seq: index,
+            })))
+          .sort((a: any, b: any) => a.seq - b.seq)
+          .map((passenger: any, index: number) => ({
+            employeeId: `passenger:${index}`,
+            employeeName: passenger.name,
+            workDescription: '', workStart: '', workEnd: '',
+            totalWeeklyHours: 0, transportRequired: true, busStop: booking.destination,
+          }))
+        : (booking.overtime_employees ?? []).map((employee: any) => ({
+            employeeId: employee.employee_id,
+            employeeName: employee.employee_name,
+            workDescription: employee.work_description,
+            workStart: employee.work_start,
+            workEnd: employee.work_end,
+            totalWeeklyHours: employee.total_weekly_hours,
+            transportRequired: employee.transport_required,
+            busStop: employee.bus_stop,
+          })),
       viewUrl, pdfUrl, expiresAt: documentExpiresAt,
     });
 

@@ -9,7 +9,11 @@ export function RequestFormDetails({ id }: { id: string }) {
   if (!booking) return null;
   return (
     <Card className="p-5">
-      <h2 className="font-bold">Email approval information</h2>
+      <h2 className="font-bold">
+        {booking.requestType === "overtime"
+          ? "Tiger Space verification information"
+          : "Email approval information"}
+      </h2>
       <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
         <Info
           label="Request type"
@@ -19,8 +23,28 @@ export function RequestFormDetails({ id }: { id: string }) {
               : "CAR SERVICE REQUISITION"
           }
         />
-        <Info label="Selected approver" value={booking.approverName || "-"} />
-        <Info label="Approver email" value={booking.approverEmail || "-"} />
+        {booking.requestType === "overtime" ? (
+          <>
+            <Info label="OT source" value="Tiger Space" />
+            <Info
+              label="Verification result"
+              value={
+                booking.otVerificationStatus === "verified"
+                  ? "Approved OT matched"
+                  : booking.otVerificationStatus === "not_found"
+                    ? "Not found yet"
+                    : booking.otVerificationStatus === "rejected"
+                      ? "OT not approved"
+                      : "Waiting for report"
+              }
+            />
+          </>
+        ) : (
+          <>
+            <Info label="Selected approver" value={booking.approverName || "-"} />
+            <Info label="Approver email" value={booking.approverEmail || "-"} />
+          </>
+        )}
       </dl>
       {booking.requestType !== "overtime" && (
         <div className="mt-5">

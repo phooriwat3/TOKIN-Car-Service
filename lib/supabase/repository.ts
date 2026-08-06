@@ -103,6 +103,13 @@ function mapBooking(row: any): Booking {
     urgentReason: row.urgent_reason ?? undefined,
     afterHours: row.after_hours,
     overtimeTransport: row.overtime_transport,
+    sourceSystem: row.source_system ?? "transport_portal",
+    sourceReference: row.source_reference ?? undefined,
+    sourceConfirmed: row.source_confirmed ?? false,
+    otVerificationStatus: row.ot_verification_status ??
+      (row.request_type === "overtime" ? "pending" : "not_required"),
+    otVerifiedAt: row.ot_verified_at ?? undefined,
+    otVerificationNote: row.ot_verification_note ?? undefined,
     createdAt: row.created_at,
     rejectReason: row.reject_reason ?? undefined,
     approval: approval
@@ -329,7 +336,7 @@ export async function persistBookingUpdate(
     result = await supabase.rpc("accept_assignment", { p_booking_id: id });
   } else if (patch.assignment) {
     result = patch.assignment.manualTransportUnits?.length
-      ? await supabase.rpc("assign_overtime_booking_manual", {
+      ? await supabase.rpc("assign_booking_manual", {
           p_booking_id: id,
           p_transport_units: patch.assignment.manualTransportUnits,
           p_notes: patch.assignment.notes ?? null,
@@ -353,6 +360,12 @@ export async function persistBookingUpdate(
           .eq("employee_id", emp.employeeId);
       }
     }
+  } else if (patch.otVerificationStatus) {
+    result = await supabase.rpc("verify_tiger_space_booking", {
+      p_booking_id: id,
+      p_result: patch.otVerificationStatus,
+      p_note: patch.otVerificationNote ?? null,
+    });
   } else if (patch.status === "in_progress" && patch.tripLog) {
     result = await supabase.rpc("start_trip", {
       p_booking_id: id,

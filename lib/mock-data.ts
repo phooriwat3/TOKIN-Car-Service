@@ -246,6 +246,10 @@ export const seedData: AppData = {
       urgent: false,
       afterHours: true,
       overtimeTransport: true,
+      sourceSystem: "tiger_space",
+      sourceConfirmed: true,
+      otVerificationStatus: "verified",
+      otVerifiedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       approval: {
         action: "approved",

@@ -4,3 +4,4 @@ node_modules
 *.log
 *.tsbuildinfo
 supabase/.temp/
+Test_Report_*.xls

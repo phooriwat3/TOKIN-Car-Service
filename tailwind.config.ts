@@ -71,6 +71,7 @@ export default {
       fontFamily: {
         display: ['Plus Jakarta Sans', 'Inter', 'Segoe UI', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'Sarabun', 'Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'monospace'],
       },
       boxShadow: {
         xs: 'var(--shadow-xs)',
@@ -88,12 +89,12 @@ export default {
         xl: 'var(--shadow-xl)',
       },
       borderRadius: {
-        DEFAULT: '8px',
-        sm: '4px',
-        md: '8px',
-        lg: '12px',
-        xl: '16px',
-        '2xl': '20px',
+        DEFAULT: 'var(--radius-md)',
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        xl: 'var(--radius-xl)',
+        '2xl': 'var(--radius-2xl)',
         full: '9999px',
       },
       transitionDuration: {

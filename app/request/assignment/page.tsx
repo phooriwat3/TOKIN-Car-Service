@@ -126,16 +126,22 @@ export default async function AssignmentPage({
                     const employee = assignment.overtimeEmployees.find(
                       (item) => item.employee_id === employeeId,
                     );
+                    const passengerIndex = employeeId.startsWith("passenger:")
+                      ? Number(employeeId.split(":")[1])
+                      : -1;
+                    const passenger = passengerIndex >= 0
+                      ? assignment.passengers[passengerIndex]
+                      : undefined;
                     return (
                       <div
                         key={employeeId}
                         className="rounded-lg bg-blue-50 p-3 text-sm"
                       >
                         <p className="font-semibold">
-                          {employee?.employee_name || employeeId}
+                          {employee?.employee_name || passenger?.name || employeeId}
                         </p>
                         <p className="mt-1 text-xs text-gray-600">
-                          Drop-off: {employee?.bus_stop || "-"}
+                          Drop-off: {employee?.bus_stop || assignment.destination || "-"}
                         </p>
                       </div>
                     );

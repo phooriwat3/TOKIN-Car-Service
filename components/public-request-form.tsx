@@ -137,6 +137,7 @@ export default function PublicRequestForm() {
   const [requesterName, setRequesterName] = useState("");
   const [directorySelected, setDirectorySelected] = useState(false);
   const [confirmedSelf, setConfirmedSelf] = useState(false);
+  const [tigerSpaceConfirmed, setTigerSpaceConfirmed] = useState(false);
   const [requesterEmail, setRequesterEmail] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [department, setDepartment] = useState("");
@@ -243,6 +244,7 @@ export default function PublicRequestForm() {
     setEmployees([emptyEmployee()]);
     setDirectorySelected(false);
     setConfirmedSelf(false);
+    setTigerSpaceConfirmed(false);
     setSuccess(null);
     setShowSubmitConfirmation(false);
     setError("");
@@ -265,6 +267,7 @@ export default function PublicRequestForm() {
     setEmployees([emptyEmployee()]);
     setDirectorySelected(false);
     setConfirmedSelf(false);
+    setTigerSpaceConfirmed(false);
     setShowSubmitConfirmation(false);
     setError("");
   };
@@ -333,18 +336,14 @@ export default function PublicRequestForm() {
           "OT end time must be after the start time.",
           "ot-end",
         );
-      if (
-        !Number.isFinite(employee.totalWeeklyHours) ||
-        employee.totalWeeklyHours <= 0 ||
-        employee.totalWeeklyHours > 60
-      )
+      if (!tigerSpaceConfirmed)
         return failValidation(
-          "Weekly total working hours must be greater than 0 and no more than 60.",
-          "weekly-hours",
+          "Confirm that you submitted this OT in Tiger Space.",
+          "tiger-space-confirmed",
         );
-      if (employee.transportRequired && !employee.busStop.trim())
+      if (!employee.busStop.trim())
         return failValidation(
-          "Drop-off location is required when transportation is requested.",
+          "Drop-off location is required.",
           "drop-off-location",
         );
     } else if (!purpose.trim()) {
@@ -412,6 +411,8 @@ export default function PublicRequestForm() {
             passengers: requestType === "outside_company" ? passengerList : [],
             overtimeEmployees:
               requestType === "overtime" ? [overtimeEmployee] : [],
+            tigerSpaceConfirmed:
+              requestType === "overtime" ? tigerSpaceConfirmed : undefined,
             website,
           }),
         },
@@ -468,7 +469,10 @@ export default function PublicRequestForm() {
           </div>
           <dl className="grid gap-x-8 gap-y-4 px-5 py-5 text-sm sm:grid-cols-2 sm:px-7">
             <Info label="Request number" value={success.requestNo} />
-            <Info label="Current status" value="Pending department approval" />
+            <Info
+              label="Current status"
+              value={requestType === "overtime" ? "Waiting for OT verification" : "Pending department approval"}
+            />
             <Info
               label="Submitted"
               value={new Intl.DateTimeFormat("en-GB", {
@@ -479,12 +483,14 @@ export default function PublicRequestForm() {
             />
             <Info label="Department" value={department} />
             <Info
-              label="Approver"
-              value={`${department} department approver`}
+              label={requestType === "overtime" ? "OT source" : "Approver"}
+              value={requestType === "overtime" ? "Tiger Space" : `${department} department approver`}
             />
             <Info
               label="Expected next step"
-              value="After approval, Admin assigns the vehicle and driver and emails the employee."
+              value={requestType === "overtime"
+                ? "HR/GA checks the Tiger Space report. Transport is confirmed after the OT is verified."
+                : "After approval, GA sources the vehicle and driver and emails the requester."}
             />
           </dl>
           {success.emailStatus === "queued" && (
@@ -493,7 +499,7 @@ export default function PublicRequestForm() {
               summary.
             </p>
           )}
-          {success.emailStatus !== "sent" &&
+          {requestType !== "overtime" && success.emailStatus !== "sent" &&
             success.emailStatus !== "queued" && (
               <p className="mx-5 mb-5 border-l-[3px] border-amber-500 bg-amber-50 px-3.5 py-3 text-sm text-amber-900 sm:mx-7">
                 The request was saved, but the approval email service is not
@@ -556,8 +562,8 @@ export default function PublicRequestForm() {
                 Where do you need to go?
               </h1>
               <p className="mt-3 text-sm leading-6 text-gray-500 sm:text-base">
-                Start with the type of transport you need. Your company details
-                route the request to the right approver automatically.
+                Start with the type of transport you need. OT transport is
+                checked against Tiger Space; outside trips go to an approver.
               </p>
             </div>
             <div className="mt-5 shrink-0 text-sm sm:mt-0 sm:text-right">
@@ -642,6 +648,7 @@ export default function PublicRequestForm() {
               department={department}
               directorySelected={directorySelected}
               confirmedSelf={confirmedSelf}
+              tigerSpaceConfirmed={tigerSpaceConfirmed}
               usingDate={usingDate}
               employee={employees[0] ?? emptyEmployee()}
               reviewing={showSubmitConfirmation}
@@ -667,6 +674,7 @@ export default function PublicRequestForm() {
                 setDirectorySelected(true);
               }}
               onConfirmedSelfChange={setConfirmedSelf}
+              onTigerSpaceConfirmedChange={setTigerSpaceConfirmed}
               onUsingDateChange={setUsingDate}
               onEmployeeChange={(field, value) =>
                 updateEmployee(0, field, value)
@@ -975,8 +983,8 @@ function RequestProgress() {
     },
     {
       icon: <ShieldCheck size={17} />,
-      title: "Department approval",
-      body: "Sent to your department approver",
+      title: "Approval / verification",
+      body: "Tiger Space check for OT; department approval for outside trips",
     },
     {
       icon: <Car size={17} />,

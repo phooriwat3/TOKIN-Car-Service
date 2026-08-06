@@ -41,7 +41,24 @@ export function BookingTable({ bookings, basePath = "/bookings" }: { bookings: B
         header: "Destination",
         cell: (info) => <span className="font-medium text-ink">{info.getValue()}</span>,
       }),
-      column.accessor("requesterName", { header: "Requested by" }),
+      column.accessor(
+        (row) =>
+          [row.requesterName, row.requesterEmployeeId, row.department]
+            .filter(Boolean)
+            .join(" "),
+        {
+          id: "requester",
+          header: "Employee / department",
+          cell: (info) => (
+            <div>
+              <p className="font-medium text-ink">{info.row.original.requesterName}</p>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {info.row.original.requesterEmployeeId || "No employee number"} · {info.row.original.department}
+              </p>
+            </div>
+          ),
+        },
+      ),
       column.accessor("status", {
         header: "Status",
         cell: (info) => <Badge status={info.getValue()}>{statusLabel(info.getValue())}</Badge>,

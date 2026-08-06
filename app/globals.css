@@ -80,6 +80,7 @@
   /* === Typography === */
   --font-display: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif;
   --font-body: "Inter", "Sarabun", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
 
   /* === Shadows === */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -113,10 +114,12 @@ html {
   text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   background: var(--canvas);
+  scrollbar-color: #c7d2de transparent;
+  scrollbar-width: thin;
 }
 
 body {
-  font-family: var(--font-body);
+  font-family: var(--font-body, "Inter", "Sarabun", "Segoe UI", system-ui, sans-serif);
   color: var(--ink);
   background: var(--canvas);
   -webkit-font-smoothing: antialiased;
@@ -130,12 +133,12 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-display);
+  font-family: var(--font-display, "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif);
   letter-spacing: -0.025em;
 }
 
 .font-display {
-  font-family: var(--font-display);
+  font-family: var(--font-display, "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif);
 }
 
 button,

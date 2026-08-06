@@ -16,7 +16,7 @@ type OvertimeEmployee = {
   busStop?: string;
 };
 
-const editableStatuses = ['pending_approval', 'changes_requested'];
+const editableStatuses = ['pending_approval', 'pending_ot_verification', 'changes_requested', 'approved'];
 const appBaseUrl = () => {
   const configured = Deno.env.get('APP_BASE_URL')?.trim().replace(/\/+$/, '');
   return configured || 'https://tokin-car-service.vercel.app';
@@ -53,7 +53,7 @@ Deno.serve(async (request) => {
     }
 
     const { data: current, error: currentError } = await db.from('bookings')
-      .select('id,booking_no,status,revision_no,requester_email')
+      .select('id,booking_no,status,revision_no,requester_email,request_type')
       .eq('id', access.booking_id).maybeSingle();
     if (currentError) throw currentError;
     if (!current || current.revision_no !== access.revision_no) {
@@ -111,16 +111,21 @@ Deno.serve(async (request) => {
     if (departmentError || !department) {
       throw new Error('Selected department is unavailable. Please contact Admin.');
     }
+    if (action === 'update' && current.status === 'approved') {
+      return json({ error: 'Cancel this Tiger Space transport request and submit a new one to change its details.' }, 409);
+    }
     const { data: departmentApprovers, error: approversError } = await db.from('profiles')
       .select('id,full_name,email').eq('department_id', department.id)
       .eq('role', 'approver').eq('is_active', true).order('full_name');
     if (approversError) throw approversError;
     const selectedApprover = departmentApprovers?.[0];
-    if (!selectedApprover) {
+    if (!selectedApprover && payload.requestType === 'outside_company') {
       throw new Error(`No active approver is configured for ${department.code}. Please contact Admin.`);
     }
-    const approverName = selectedApprover.full_name;
-    const approverEmail = email(selectedApprover.email, 'Approver email');
+    const approverName = selectedApprover?.full_name ?? '';
+    const approverEmail = selectedApprover
+      ? email(selectedApprover.email, 'Approver email')
+      : '';
     const usingDate = date(payload.usingDate);
     const startTime = time(payload.startTime, 'Start time');
     const endTime = time(payload.endTime, 'End time');
@@ -172,9 +177,9 @@ Deno.serve(async (request) => {
         ? payload.requester.employeeId.trim().slice(0, 100) : null,
       requester_department: department.name,
       department_id: department.id,
-      approver_id: selectedApprover.id,
-      approver_name: approverName,
-      approver_email: approverEmail,
+      approver_id: payload.requestType === 'outside_company' ? selectedApprover?.id ?? null : null,
+      approver_name: payload.requestType === 'outside_company' ? approverName : null,
+      approver_email: payload.requestType === 'outside_company' ? approverEmail : null,
       request_type: payload.requestType,
       category: payload.requestType === 'overtime' ? 'overtime_transport' : 'business_trip',
       using_date: usingDate,
@@ -188,9 +193,17 @@ Deno.serve(async (request) => {
       with_staff: Boolean(payload.withStaff),
       after_hours: payload.requestType === 'overtime',
       overtime_transport: payload.requestType === 'overtime',
-      status: 'pending_approval',
+      status: payload.requestType === 'overtime'
+        ? 'pending_ot_verification'
+        : 'pending_approval',
+      ot_verification_status: payload.requestType === 'overtime'
+        ? 'pending'
+        : 'not_required',
+      ot_verified_at: null,
+      ot_verified_by: null,
+      ot_verification_note: null,
       reject_reason: null,
-      approval_email_status: payload.requestType === 'overtime' && !isLateOt ? 'queued' : 'pending',
+      approval_email_status: payload.requestType === 'overtime' ? 'not_configured' : 'pending',
       urgent: isLateOt,
       urgent_reason: isLateOt ? 'Submitted after the 15:30 OT approval batch cutoff.' : null,
       revision_no: nextRevision,
@@ -234,19 +247,23 @@ Deno.serve(async (request) => {
     });
     if (tokenError) throw tokenError;
 
-    const approvalRawToken = randomToken();
-    const approvalTokenHash = await sha256Hex(approvalRawToken);
-    const approvalExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString();
-    const approvalUrl = `${appBaseUrl()}/request/approve?token=${encodeURIComponent(approvalRawToken)}`;
-    const { error: approvalTokenError } = await db.from('request_access_tokens').insert({
-      booking_id: current.id,
-      token_type: 'approval',
-      token_hash: approvalTokenHash,
-      revision_no: nextRevision,
-      subject_email: approverEmail,
-      expires_at: approvalExpiresAt,
-    });
-    if (approvalTokenError) throw approvalTokenError;
+    let approvalExpiresAt = '';
+    let approvalUrl = '';
+    if (payload.requestType === 'outside_company') {
+      const approvalRawToken = randomToken();
+      const approvalTokenHash = await sha256Hex(approvalRawToken);
+      approvalExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString();
+      approvalUrl = `${appBaseUrl()}/request/approve?token=${encodeURIComponent(approvalRawToken)}`;
+      const { error: approvalTokenError } = await db.from('request_access_tokens').insert({
+        booking_id: current.id,
+        token_type: 'approval',
+        token_hash: approvalTokenHash,
+        revision_no: nextRevision,
+        subject_email: approverEmail,
+        expires_at: approvalExpiresAt,
+      });
+      if (approvalTokenError) throw approvalTokenError;
+    }
 
     const { data: snapshotBooking, error: snapshotError } = await db.from('bookings').select(`
       *, booking_passengers(name,seq),
@@ -257,7 +274,9 @@ Deno.serve(async (request) => {
     const { error: historyError } = await db.from('booking_revision_history').insert({
       booking_id: current.id,
       revision_no: nextRevision,
-      status: 'pending_approval',
+      status: payload.requestType === 'overtime'
+        ? 'pending_ot_verification'
+        : 'pending_approval',
       snapshot: snapshotBooking,
       change_source: 'requester_edit',
       changed_by_email: current.requester_email,
@@ -267,14 +286,14 @@ Deno.serve(async (request) => {
 
     const manageUrl = `${appBaseUrl()}/request/manage?token=${encodeURIComponent(newRawToken)}`;
     const approvalFlowUrl = Deno.env.get('POWER_AUTOMATE_APPROVAL_FLOW_URL');
-    const approverEmailTemplate = approvalEmail({
-      requestNo: current.booking_no, requestType: payload.requestType, requesterName, requesterDepartment,
-      approverName, usingDate, startTime, endTime, pickupLocation, destination, purpose, meetingPoint,
-      withStaff: Boolean(payload.withStaff), passengers, overtimeEmployees, approvalUrl, expiresAt: approvalExpiresAt,
-    });
     let approvalEmailStatus: 'queued' | 'sent' | 'failed' | 'not_configured' =
-      payload.requestType === 'overtime' && !isLateOt ? 'queued' : 'not_configured';
-    if (approvalFlowUrl && (payload.requestType !== 'overtime' || isLateOt)) {
+      'not_configured';
+    if (approvalFlowUrl && payload.requestType === 'outside_company') {
+      const approverEmailTemplate = approvalEmail({
+        requestNo: current.booking_no, requestType: payload.requestType, requesterName, requesterDepartment,
+        approverName, usingDate, startTime, endTime, pickupLocation, destination, purpose, meetingPoint,
+        withStaff: Boolean(payload.withStaff), passengers, overtimeEmployees, approvalUrl, expiresAt: approvalExpiresAt,
+      });
       try {
         const response = await fetch(approvalFlowUrl, {
           method: 'POST',
@@ -311,7 +330,9 @@ Deno.serve(async (request) => {
       ok: true,
       requestId: current.id,
       requestNo: current.booking_no,
-      status: 'pending_approval',
+      status: payload.requestType === 'overtime'
+        ? 'pending_ot_verification'
+        : 'pending_approval',
       revisionNo: nextRevision,
       manageToken: newRawToken,
       manageTokenExpiresAt: expiresAt,

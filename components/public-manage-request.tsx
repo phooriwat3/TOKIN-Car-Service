@@ -86,7 +86,8 @@ const emptyEmployee = (): OvertimeEmployee => ({
 });
 
 const statusText: Record<string, string> = {
-  pending_approval: "Pending approval",
+  pending_approval: "Pending department approval",
+  pending_ot_verification: "Waiting for OT verification",
   changes_requested: "Changes requested",
   approved: "Approved",
   rejected: "Rejected",
@@ -224,7 +225,10 @@ export default function PublicManageRequest({
         current
           ? {
               ...current,
-              status: "pending_approval",
+              status:
+                current.requestType === "overtime"
+                  ? "pending_ot_verification"
+                  : "pending_approval",
               revisionNo: Number(result.revisionNo ?? current.revisionNo + 1),
             }
           : current,
@@ -232,7 +236,9 @@ export default function PublicManageRequest({
       setPermissions({ canEdit: true, canCancel: true });
       setState("saved");
       setMessage(
-        "Request updated and sent back for approval. Please use this latest page if you need to edit again.",
+        request.requestType === "overtime"
+          ? "Transport request updated. HR/GA will verify it against the Tiger Space report."
+          : "Request updated and sent back for approval. Please use this latest page if you need to edit again.",
       );
     } catch (cause) {
       setMessage(
@@ -497,15 +503,15 @@ export default function PublicManageRequest({
                         {request.requester.department && !DEPARTMENTS.includes(request.requester.department) && <option value={request.requester.department}>{request.requester.department}</option>}
                       </Select>
                     </Field>
-                    <Field label="Approver"><Input disabled value={request.approver.name || `${request.requester.department} department approver`} /></Field>
-                    <Field label="Approver email"><Input disabled value={request.approver.email} /></Field>
+                    <Field label="OT approval system"><Input disabled value="Tiger Space" /></Field>
+                    <Field label="Transport verification"><Input disabled value="HR/GA checks the Tiger Space report" /></Field>
                   </div>
                 </section>
 
                 <section className="rounded-lg border border-line bg-white">
                   <div className="border-b border-line bg-[#f7f8fa] px-5 py-4 sm:px-6">
                     <h2 className="font-semibold text-ink">OT and transportation details</h2>
-                    <p className="mt-0.5 text-xs text-gray-500">Changes are resubmitted to the department approver.</p>
+                    <p className="mt-0.5 text-xs text-gray-500">Changes return the transport request to waiting for Tiger Space verification.</p>
                   </div>
                   <div className="space-y-6 px-5 py-5 sm:px-6">
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -526,7 +532,7 @@ export default function PublicManageRequest({
                       <div className="mt-2 grid gap-3 sm:grid-cols-2">
                         <label className={`flex min-h-[72px] gap-3 border p-3.5 ${overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300"}`}>
                           <input type="radio" name="manage-transport" disabled={disabled} checked={overtimeEmployee.transportRequired} onChange={() => updateEmployee(0, "transportRequired", true)} className="mt-1 h-4 w-4 accent-brand" />
-                          <span><strong className="block text-sm text-ink">Transportation required</strong><span className="mt-1 block text-xs text-gray-500">Admin assigns a vehicle after approval.</span></span>
+                          <span><strong className="block text-sm text-ink">Transportation required</strong><span className="mt-1 block text-xs text-gray-500">GA can plan now and confirm transport after OT verification.</span></span>
                         </label>
                         <label className={`flex min-h-[72px] gap-3 border p-3.5 ${!overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300"}`}>
                           <input type="radio" name="manage-transport" disabled={disabled} checked={!overtimeEmployee.transportRequired} onChange={() => updateEmployee(0, "transportRequired", false)} className="mt-1 h-4 w-4 accent-brand" />

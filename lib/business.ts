@@ -28,7 +28,14 @@ export const totalCost = (b: Booking) =>
   (b.tripLog?.fuelCost || 0) +
   (b.tripLog?.tollFee || 0) +
   (b.tripLog?.parkingFee || 0);
+const statusLabels: Record<string, string> = {
+  pending_approval: "Pending department approval",
+  pending_ot_verification: "Waiting for OT verification",
+  approved: "Ready for transport planning",
+};
+
 export const statusLabel = (s: string) =>
+  statusLabels[s] ??
   s
     .split("_")
     .map((x) => x[0].toUpperCase() + x.slice(1))

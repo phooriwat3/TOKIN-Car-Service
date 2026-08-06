@@ -40,6 +40,7 @@ type PublicRequest = {
     busStop?: string;
     employeeEmail?: string;
   }>;
+  tigerSpaceConfirmed?: boolean;
   website?: string;
 };
 
@@ -128,10 +129,12 @@ Deno.serve(async (request: Request) => {
       .order("full_name");
     if (approversError) throw approversError;
     const selectedApprover = departmentApprovers?.[0];
-    if (!selectedApprover)
+    if (!selectedApprover && payload.requestType !== "overtime")
       throw new Error(`No active approver is configured for ${department.code}. Please contact Admin.`);
-    const approverName = selectedApprover.full_name;
-    const approverEmail = email(selectedApprover.email, "Approver email");
+    const approverName = selectedApprover?.full_name ?? "Tiger Space";
+    const approverEmail = selectedApprover
+      ? email(selectedApprover.email, "Approver email")
+      : requesterEmail;
     const usingDate = date(payload.usingDate);
     const startTime = time(payload.startTime, "Start time");
     const endTime = time(payload.endTime, "End time");
@@ -147,6 +150,13 @@ Deno.serve(async (request: Request) => {
         : [];
     if (payload.requestType === "overtime" && !overtimeEmployees.length)
       throw new Error("At least one OT employee is required.");
+    if (payload.requestType === "overtime" && !payload.tigerSpaceConfirmed)
+      throw new Error("Confirm that you submitted this OT in Tiger Space.");
+    if (
+      payload.requestType === "overtime" &&
+      overtimeEmployees.some((item) => !item.transportRequired)
+    )
+      throw new Error("This form is only for employees who require transportation.");
     if (overtimeEmployees.length > 20)
       throw new Error("A request can contain at most 20 employees.");
 
@@ -162,11 +172,30 @@ Deno.serve(async (request: Request) => {
             : null,
         requester_department: department.name,
         department_id: department.id,
-        status: "pending_approval",
+        status:
+          payload.requestType === "overtime"
+            ? "pending_ot_verification"
+            : "pending_approval",
         request_type: payload.requestType,
-        approver_id: selectedApprover.id,
-        approver_name: approverName,
-        approver_email: approverEmail,
+        approver_id:
+          payload.requestType === "outside_company"
+            ? selectedApprover?.id ?? null
+            : null,
+        approver_name:
+          payload.requestType === "outside_company" && selectedApprover
+            ? approverName
+            : null,
+        approver_email:
+          payload.requestType === "outside_company" && selectedApprover
+            ? approverEmail
+            : null,
+        source_system:
+          payload.requestType === "overtime" ? "tiger_space" : "transport_portal",
+        source_reference: null,
+        source_confirmed:
+          payload.requestType === "overtime" && Boolean(payload.tigerSpaceConfirmed),
+        ot_verification_status:
+          payload.requestType === "overtime" ? "pending" : "not_required",
         category:
           payload.requestType === "overtime"
             ? "overtime_transport"
@@ -276,23 +305,27 @@ Deno.serve(async (request: Request) => {
       });
     if (manageTokenError) throw manageTokenError;
 
-    const approvalToken = randomToken();
-    const approvalTokenHash = await sha256Hex(approvalToken);
-    const approvalTokenExpiresAt = new Date(
-      Date.now() + 7 * 24 * 60 * 60_000,
-    ).toISOString();
-    const approvalUrl = `${appBaseUrl()}/request/approve?token=${encodeURIComponent(approvalToken)}`;
-    const { error: approvalTokenError } = await db
-      .from("request_access_tokens")
-      .insert({
-        booking_id: booking.id,
-        token_type: "approval",
-        token_hash: approvalTokenHash,
-        revision_no: 1,
-        subject_email: approverEmail,
-        expires_at: approvalTokenExpiresAt,
-      });
-    if (approvalTokenError) throw approvalTokenError;
+    let approvalTokenExpiresAt = "";
+    let approvalUrl = "";
+    if (payload.requestType === "outside_company") {
+      const approvalToken = randomToken();
+      const approvalTokenHash = await sha256Hex(approvalToken);
+      approvalTokenExpiresAt = new Date(
+        Date.now() + 7 * 24 * 60 * 60_000,
+      ).toISOString();
+      approvalUrl = `${appBaseUrl()}/request/approve?token=${encodeURIComponent(approvalToken)}`;
+      const { error: approvalTokenError } = await db
+        .from("request_access_tokens")
+        .insert({
+          booking_id: booking.id,
+          token_type: "approval",
+          token_hash: approvalTokenHash,
+          revision_no: 1,
+          subject_email: approverEmail,
+          expires_at: approvalTokenExpiresAt,
+        });
+      if (approvalTokenError) throw approvalTokenError;
+    }
 
     const requesterManageFlowUrl = Deno.env.get(
       "POWER_AUTOMATE_REQUESTER_MANAGE_FLOW_URL",
@@ -357,8 +390,8 @@ Deno.serve(async (request: Request) => {
 
     const approvalFlowUrl = Deno.env.get("POWER_AUTOMATE_APPROVAL_FLOW_URL");
     let approvalEmailStatus: "queued" | "sent" | "failed" | "not_configured" =
-      payload.requestType === "overtime" && !isLateOt ? "queued" : "not_configured";
-    if (approvalFlowUrl && (payload.requestType !== "overtime" || isLateOt)) {
+      "not_configured";
+    if (approvalFlowUrl && payload.requestType === "outside_company") {
       const approverEmailTemplate = approvalEmail({
         ...emailRequest,
         approvalUrl,
@@ -411,7 +444,10 @@ Deno.serve(async (request: Request) => {
         requestId: booking.id,
         requestNo: booking.booking_no,
         approvalEmailStatus,
-        approvalMode: payload.requestType === "overtime" && !isLateOt ? "department_batch" : "immediate",
+        approvalMode:
+          payload.requestType === "overtime"
+            ? "tiger_space_transport_only"
+            : "department_approval",
         requesterManageEmailStatus,
         manageUrl,
         manageTokenExpiresAt,

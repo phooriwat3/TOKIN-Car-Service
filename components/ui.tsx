@@ -161,6 +161,7 @@ const badgeVariants: Record<string, string> = {
   rejected: 'bg-red-50 text-red-700 border-red-200/70',
   cancelled: 'bg-slate-100 text-slate-600 border-slate-200/70',
   pending_approval: 'bg-amber-50 text-amber-700 border-amber-200/70',
+  pending_ot_verification: 'bg-sky-50 text-sky-700 border-sky-200/70',
   changes_requested: 'bg-orange-50 text-orange-700 border-orange-200/70',
   approved: 'bg-brand-50 text-brand-600 border-brand-200/70',
   assigned: 'bg-violet-50 text-violet-700 border-violet-200/70',
@@ -172,13 +173,14 @@ const badgeDotColors: Record<string, string> = {
   rejected: 'bg-red-500',
   cancelled: 'bg-slate-400',
   pending_approval: 'bg-amber-500',
+  pending_ot_verification: 'bg-sky-500',
   changes_requested: 'bg-orange-500',
   approved: 'bg-brand-500',
   assigned: 'bg-violet-500',
   in_progress: 'bg-indigo-500',
 };
 
-const pulseStatuses = new Set(['in_progress', 'pending_approval']);
+const pulseStatuses = new Set(['in_progress', 'pending_approval', 'pending_ot_verification']);
 
 export function Badge({
   children,

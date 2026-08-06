@@ -102,6 +102,19 @@ export function BookingDetail({
               <strong>Urgent:</strong> {b.urgentReason}
             </div>
           )}
+          {isOt && (
+            <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+              <strong>Tiger Space transport request:</strong>{" "}
+              {b.otVerificationStatus === "verified"
+                ? "OT has been matched against the Tiger Space report."
+                : b.otVerificationStatus === "not_found"
+                  ? "No matching approved OT was found yet; this request remains pending."
+                  : b.otVerificationStatus === "rejected"
+                    ? "OT was not approved, so transport cannot be confirmed."
+                    : "Waiting for HR/GA to verify the approved OT from the Tiger Space report."}
+              {b.otVerificationNote ? ` Note: ${b.otVerificationNote}` : ""}
+            </div>
+          )}
         </Card>
       </div>
 
@@ -262,10 +275,13 @@ export function BookingDetail({
                         (employeeId) =>
                           b.overtimeEmployees?.find(
                             (employee) => employee.employeeId === employeeId,
-                          )?.employeeName || employeeId,
+                          )?.employeeName ||
+                          (employeeId.startsWith("passenger:")
+                            ? b.passengerList[Number(employeeId.split(":")[1])]
+                            : employeeId),
                       )
                       .join(", ") || "-"}
-                    <div className="mt-1">
+                    {isOt && <div className="mt-1">
                       Drop-offs:{" "}
                       {(unit.employeeIds ?? [])
                         .map(
@@ -275,7 +291,7 @@ export function BookingDetail({
                             )?.busStop || "-",
                         )
                         .join(", ") || "-"}
-                    </div>
+                    </div>}
                   </div>
                 </div>
               ))}
