@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -78,7 +76,7 @@
   --sidebar-accent: #f59e0b;
 
   /* === Typography === */
-  --font-display: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Inter", "Sarabun", "Segoe UI", system-ui, sans-serif;
   --font-body: "Inter", "Sarabun", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
 
@@ -89,20 +87,20 @@
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.04);
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
   --shadow-sidebar: 4px 0 32px rgba(5, 15, 30, 0.2);
-  --shadow-header: 0 1px 0 rgba(0, 0, 0, 0.07), 0 4px 16px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 16px rgba(15, 23, 42, 0.04);
-  --shadow-card-hover: 0 4px 6px rgba(15, 23, 42, 0.08), 0 12px 28px rgba(15, 23, 42, 0.08);
-  --shadow-modal: 0 24px 64px rgba(5, 15, 30, 0.22);
+  --shadow-header: 0 1px 0 rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-card-hover: 0 3px 8px rgba(15, 23, 42, 0.08);
+  --shadow-modal: 0 16px 36px rgba(5, 15, 30, 0.18);
   --shadow-btn: 0 1px 3px rgba(14, 87, 173, 0.25), 0 1px 1px rgba(0, 0, 0, 0.05);
 
   /* === Layout === */
   --sidebar-w: 260px;
   --header-h: 64px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 20px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
 }
 
 * {
@@ -125,6 +123,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "kern" 1, "tnum" 1;
+  line-height: 1.5;
 }
 
 h1,
@@ -133,12 +132,24 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-display, "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif);
+  font-family: var(--font-display, "Inter", "Sarabun", "Segoe UI", system-ui, sans-serif);
   letter-spacing: -0.025em;
 }
 
+::selection {
+  background: var(--brand-100);
+  color: var(--brand-900);
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+
 .font-display {
-  font-family: var(--font-display, "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif);
+  font-family: var(--font-display, "Inter", "Sarabun", "Segoe UI", system-ui, sans-serif);
 }
 
 button,

@@ -131,7 +131,7 @@ export function AdminReportWorkspace() {
               <button
                 key={item.booking.id}
                 onClick={() => setSelectedId(item.booking.id)}
-                className={`w-full rounded-xl border p-4 text-left transition ${selectedId === item.booking.id ? "border-brand bg-brand-light shadow-sm" : "border-line bg-white hover:border-brand/40"}`}
+                className={`w-full rounded-lg border p-4 text-left transition ${selectedId === item.booking.id ? "border-brand bg-brand-light shadow-sm" : "border-line bg-white hover:border-brand/40"}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>

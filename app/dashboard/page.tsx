@@ -28,7 +28,7 @@ const actionByRole: Record<
     icon: FilePlus2,
   },
   approver: {
-    href: "/approvals",
+    href: "/request",
     label: "Open approval queue",
     icon: CheckCircle2,
   },
@@ -42,7 +42,7 @@ const actionByRole: Record<
 
 const listPathByRole: Record<Role, string> = {
   requester: "/bookings",
-  approver: "/approvals",
+  approver: "/request",
   admin: "/admin/bookings",
   driver: "/driver/trips",
 };

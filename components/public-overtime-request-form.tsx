@@ -8,7 +8,6 @@ import {
   Input,
   Select,
   Textarea,
-  TimeMaskInput,
 } from "@/components/ui";
 import {
   CompanyUserField,
@@ -386,22 +385,28 @@ export function PublicOvertimeRequestForm(
               </Field>
             </div>
             <Field label="OT start time">
-              <TimeMaskInput
-                id="ot-start"
-                required
-                value={props.employee.workStart}
-                onChange={(value) => props.onEmployeeChange("workStart", value)}
-                quickTimes={["08:00", "17:20"]}
-              />
+              <div className="space-y-2">
+                <Input
+                  id="ot-start"
+                  required
+                  type="time"
+                  value={props.employee.workStart}
+                  onChange={(event) => props.onEmployeeChange("workStart", event.target.value)}
+                />
+                <QuickTime options={["08:00", "17:20"]} onSelect={(value) => props.onEmployeeChange("workStart", value)} />
+              </div>
             </Field>
             <Field label="OT end time">
-              <TimeMaskInput
-                id="ot-end"
-                required
-                value={props.employee.workEnd}
-                onChange={(value) => props.onEmployeeChange("workEnd", value)}
-                quickTimes={["16:45", "19:00", "20:00"]}
-              />
+              <div className="space-y-2">
+                <Input
+                  id="ot-end"
+                  required
+                  type="time"
+                  value={props.employee.workEnd}
+                  onChange={(event) => props.onEmployeeChange("workEnd", event.target.value)}
+                />
+                <QuickTime options={["16:45", "19:00", "20:00"]} onSelect={(value) => props.onEmployeeChange("workEnd", value)} />
+              </div>
             </Field>
           </div>
           <div className="flex items-center justify-between border-y border-line bg-[#fafbfc] px-3.5 py-3 text-sm">
@@ -544,6 +549,29 @@ function SectionHeader({
   );
 }
 
+function QuickTime({
+  options,
+  onSelect,
+}: {
+  options: string[];
+  onSelect: (value: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-2">
+      <span className="mr-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Quick time</span>
+      {options.map((time) => (
+        <button
+          key={time}
+          type="button"
+          onClick={() => onSelect(time)}
+          className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+        >
+          {time}
+        </button>
+      ))}
+    </div>
+  );
+}
 function RadioCard({
   checked,
   title,

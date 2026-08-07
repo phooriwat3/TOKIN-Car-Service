@@ -12,6 +12,8 @@ export type BookingStatus =
   | "completed"
   | "cancelled";
 export type RequestType = "outside_company" | "overtime";
+export type RequestOrigin = "employee" | "hr_direct";
+export type OtVerificationMode = "tiger_space" | "manager_exception";
 export type OtVerificationStatus =
   | "not_required"
   | "pending"
@@ -157,7 +159,10 @@ export interface Booking {
   sourceSystem?: "transport_portal" | "tiger_space";
   sourceReference?: string;
   sourceConfirmed?: boolean;
+  requestOrigin?: RequestOrigin;
+  createdByName?: string;
   otVerificationStatus?: OtVerificationStatus;
+  otVerificationMode?: OtVerificationMode;
   otVerifiedAt?: string;
   otVerificationNote?: string;
   createdAt: string;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const allowedDestinations = new Set(["/approvals", "/admin/bookings"]);
+const allowedDestinations = new Set(["/admin/bookings"]);
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const requestedNext = requestUrl.searchParams.get("next") ?? "";
   const nextPath = allowedDestinations.has(requestedNext)
     ? requestedNext
-    : "/approvals";
+    : "/admin/bookings";
 
   if (code) {
     const supabase = await createClient();
@@ -19,9 +19,7 @@ export async function GET(request: Request) {
     }
   }
 
-  const loginPath = nextPath.startsWith("/admin")
-    ? "/admin/login"
-    : "/approver/login";
+  const loginPath = "/admin/login";
   const loginUrl = new URL(loginPath, requestUrl.origin);
   loginUrl.searchParams.set("error", "microsoft_sign_in_failed");
   return NextResponse.redirect(loginUrl);

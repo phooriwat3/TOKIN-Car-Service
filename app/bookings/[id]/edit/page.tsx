@@ -124,7 +124,8 @@ export default function EditRequest({
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
-    if (!approver) return setError("Select an approver.");
+    if (booking.requestType === "outside_company" && !approver)
+      return setError("Select an approver.");
     if (
       booking.requestType === "overtime" &&
       employees.some(
@@ -139,10 +140,10 @@ export default function EditRequest({
     try {
       await resubmitBooking({
         ...booking,
-        status: "pending_approval",
-        approverId: approver.id,
-        approverName: approver.fullName,
-        approverEmail: approver.email,
+        status: booking.requestType === "overtime" ? "pending_ot_verification" : "pending_approval",
+        approverId: booking.requestType === "outside_company" ? approver?.id : undefined,
+        approverName: booking.requestType === "outside_company" ? approver?.fullName : undefined,
+        approverEmail: booking.requestType === "outside_company" ? approver?.email : undefined,
         usingDate,
         startTime:
           booking.requestType === "overtime"
@@ -198,6 +199,7 @@ export default function EditRequest({
                 onChange={(e) => setUsingDate(e.target.value)}
               />
             </Field>
+            {booking.requestType === "outside_company" && (
             <Field label="Approver">
               <Select
                 required
@@ -212,6 +214,7 @@ export default function EditRequest({
                 ))}
               </Select>
             </Field>
+            )}
             {booking.requestType !== "overtime" && (
               <>
                 <Field label="Start time">

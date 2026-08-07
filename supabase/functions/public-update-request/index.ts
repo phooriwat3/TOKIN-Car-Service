@@ -114,13 +114,19 @@ Deno.serve(async (request) => {
     if (action === 'update' && current.status === 'approved') {
       return json({ error: 'Cancel this Tiger Space transport request and submit a new one to change its details.' }, 409);
     }
-    const { data: departmentApprovers, error: approversError } = await db.from('profiles')
-      .select('id,full_name,email').eq('department_id', department.id)
-      .eq('role', 'approver').eq('is_active', true).order('full_name');
-    if (approversError) throw approversError;
-    const selectedApprover = departmentApprovers?.[0];
-    if (!selectedApprover && payload.requestType === 'outside_company') {
-      throw new Error(`No active approver is configured for ${department.code}. Please contact Admin.`);
+    let selectedApprover: { id: string; full_name: string; email: string } | undefined;
+    if (payload.requestType === 'outside_company') {
+      const requestedApproverEmail = email(payload.approver?.email, 'Approver email');
+      const { data: departmentApprovers, error: approversError } = await db.from('profiles')
+        .select('id,full_name,email').eq('department_id', department.id)
+        .eq('role', 'approver').eq('is_active', true).order('full_name');
+      if (approversError) throw approversError;
+      selectedApprover = departmentApprovers?.find(
+        (item) => item.email?.trim().toLowerCase() === requestedApproverEmail,
+      );
+      if (!selectedApprover) {
+        throw new Error(`Select an active approver for ${department.code}.`);
+      }
     }
     const approverName = selectedApprover?.full_name ?? '';
     const approverEmail = selectedApprover

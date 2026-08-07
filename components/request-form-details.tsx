@@ -10,7 +10,9 @@ export function RequestFormDetails({ id }: { id: string }) {
   return (
     <Card className="p-5">
       <h2 className="font-bold">
-        {booking.requestType === "overtime"
+        {booking.requestOrigin === "hr_direct"
+          ? "HR-created OT transport information"
+          : booking.requestType === "overtime"
           ? "Tiger Space verification information"
           : "Email approval information"}
       </h2>
@@ -18,12 +20,26 @@ export function RequestFormDetails({ id }: { id: string }) {
         <Info
           label="Request type"
           value={
-            booking.requestType === "overtime"
+            booking.requestOrigin === "hr_direct"
+              ? "HR-CREATED OT TRANSPORT"
+              : booking.requestType === "overtime"
               ? "OVERTIME / HOLIDAY WORK"
               : "CAR SERVICE REQUISITION"
           }
         />
-        {booking.requestType === "overtime" ? (
+        {booking.requestOrigin === "hr_direct" ? (
+          <>
+            <Info label="Created by" value={booking.createdByName || "HR / GA"} />
+            <Info
+              label="OT verification route"
+              value={booking.otVerificationMode === "manager_exception"
+                ? "Manager exception - no Tiger OpenSpace entry"
+                : booking.otVerificationStatus === "verified"
+                  ? "Verified in Tiger OpenSpace"
+                  : "Tiger OpenSpace verification pending"}
+            />
+          </>
+        ) : booking.requestType === "overtime" ? (
           <>
             <Info label="OT source" value="Tiger Space" />
             <Info

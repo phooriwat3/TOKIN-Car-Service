@@ -86,7 +86,7 @@ export function OtGuidelines() {
 
   return (
     <section className="ot-guidelines overflow-hidden bg-white text-ink">
-      <header className="bg-gradient-to-br from-[#0a2745] via-[#00498e] to-[#0063a6] pb-5 pl-5 pr-16 pt-6 text-white sm:pb-6 sm:pl-7 sm:pr-20">
+      <header className="bg-brand-700 pb-5 pl-5 pr-16 pt-6 text-white sm:pb-6 sm:pl-7 sm:pr-20">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-2xl">
             <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-100">
@@ -98,7 +98,7 @@ export function OtGuidelines() {
           </div>
 
           <div
-            className="flex border border-white/20 bg-white/10 p-0.5 backdrop-blur-sm"
+            className="flex border border-white/20 bg-brand-800 p-0.5"
             aria-label="OT rules language"
           >
             {(["th", "en"] as const).map((option) => (
@@ -121,7 +121,7 @@ export function OtGuidelines() {
 
         <div className="mt-6 grid gap-px overflow-hidden border border-white/15 bg-white/15 sm:grid-cols-3">
           {limits.map((item) => (
-            <div key={item.label} className="bg-[#0d4679]/90 px-4 py-3.5">
+            <div key={item.label} className="bg-brand-800 px-4 py-3.5">
               <p className="text-[11px] font-medium leading-4 text-blue-100/80">{item.label}</p>
               <p className="mt-1.5 text-xl font-semibold tracking-tight text-white">
                 {item.value}

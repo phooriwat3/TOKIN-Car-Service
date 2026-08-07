@@ -1,5 +1,5 @@
-import { LoginPortal } from "@/components/login-portal";
+import { redirect } from "next/navigation";
 
 export default function ApproverLoginPage() {
-  return <LoginPortal portal="approver" />;
+  redirect("/request");
 }

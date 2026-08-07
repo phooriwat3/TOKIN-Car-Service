@@ -1,5 +1,5 @@
 import { LoginPortal } from "@/components/login-portal";
 
 export default function AdminLogin() {
-  return <LoginPortal portal="admin" />;
+  return <LoginPortal />;
 }

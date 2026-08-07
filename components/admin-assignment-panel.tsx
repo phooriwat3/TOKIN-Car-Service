@@ -125,8 +125,9 @@ export function AdminAssignmentPanel({
     setSaving(true);
     setMessage("");
     try {
-      const nextStatus =
-        result === "verified"
+      const nextStatus = booking.requestOrigin === "hr_direct"
+        ? booking.status
+        : result === "verified"
           ? "approved"
           : result === "rejected"
             ? "rejected"
@@ -225,7 +226,7 @@ export function AdminAssignmentPanel({
   return (
     <div className="space-y-5">
       <BookingDetail id={id} admin />
-      {isOt && !["assigned", "scheduled", "in_progress", "completed", "cancelled"].includes(booking.status) && (
+      {isOt && booking.otVerificationMode !== "manager_exception" && !["assigned", "scheduled", "in_progress", "completed", "cancelled"].includes(booking.status) && (
         <Card className="border-l-4 border-l-sky-500 p-6 shadow-card">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -310,7 +311,7 @@ export function AdminAssignmentPanel({
 
           <div className="mt-6 space-y-4">
             {units.map((unit, index) => (
-              <div key={unit.unitId} className="rounded-xl border border-line bg-canvas p-4">
+              <div key={unit.unitId} className="rounded-lg border border-line bg-canvas p-4">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-semibold text-ink">Vehicle {index + 1}</h3>
                   <Button
@@ -383,7 +384,7 @@ export function AdminAssignmentPanel({
             </Button>
           </div>
 
-          <div className="mt-6 rounded-xl border border-brand/20 p-4">
+          <div className="mt-6 rounded-lg border border-brand/20 p-4">
             <div className="flex items-center gap-2">
               <Users size={18} className="text-brand" />
               <h3 className="font-semibold text-ink">Assign passengers</h3>

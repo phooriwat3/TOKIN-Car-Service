@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { Badge, Button, Card, Field, Textarea } from "@/components/ui";
+import { BrandLogo } from "@/components/brand";
 
 type ApprovalRequest = {
   requestNo: string;
@@ -313,11 +314,11 @@ export default function PublicApproveRequest({
 
 function Page({ children }: { children: ReactNode }) {
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10 text-ink">
+    <main className="min-h-screen bg-canvas px-4 py-6 text-ink sm:py-10">
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand font-bold text-white">
-            TT
+          <div className="flex h-11 items-center rounded-lg border border-slate-200 bg-white px-2 shadow-xs">
+            <BrandLogo compact />
           </div>
           <div>
             <p className="font-bold">TOKIN Transport</p>

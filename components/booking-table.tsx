@@ -78,7 +78,7 @@ export function BookingTable({ bookings, basePath = "/bookings" }: { bookings: B
   const rows = table.getRowModel().rows;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-line bg-white shadow-card">
+    <div className="overflow-hidden rounded-lg border border-line bg-white shadow-card">
       <div className="flex flex-col justify-between gap-3 border-b border-line px-4 py-4 sm:flex-row sm:items-center sm:px-5">
         <p className="text-sm text-gray-500"><span className="font-semibold text-ink">{rows.length}</span> {rows.length === 1 ? "request" : "requests"}</p>
         <div className="relative w-full sm:w-72">
@@ -89,13 +89,13 @@ export function BookingTable({ bookings, basePath = "/bookings" }: { bookings: B
       {rows.length === 0 ? (
         <Empty title="No matching requests" body={filter ? "Clear the search or try another term." : "New requests will appear here."} />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overscroll-x-contain">
           <table className="w-full min-w-[780px] text-left text-sm">
-            <thead className="border-b border-line bg-[#f8f9fa] text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+            <thead className="border-b border-line bg-slate-50 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
               {table.getHeaderGroups().map((group) => (
                 <tr key={group.id}>
                   {group.headers.map((header) => (
-                    <th key={header.id} className="px-5 py-3">
+                    <th key={header.id} className="whitespace-nowrap px-5 py-3.5">
                       <button className="flex items-center gap-1.5 hover:text-ink" onClick={header.column.getToggleSortingHandler()}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         <ArrowDownUp size={12} className="text-gray-400" />
@@ -107,7 +107,7 @@ export function BookingTable({ bookings, basePath = "/bookings" }: { bookings: B
             </thead>
             <tbody className="divide-y divide-line">
               {rows.map((row) => (
-                <tr key={row.id} className="transition-colors hover:bg-[#f8fafb]">
+                <tr key={row.id} className="transition-colors hover:bg-brand-50/40">
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-5 py-4 text-gray-600">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
                   ))}

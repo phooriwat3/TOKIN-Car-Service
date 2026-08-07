@@ -25,6 +25,7 @@ import { GoogleMapLinks } from "@/components/google-map-links";
 import { CompanyUserField } from "@/components/company-user-field";
 import { isOtRequestWindowOpen } from "@/lib/request-window";
 import { overtimeDuration } from "@/lib/overtime";
+import { PublicHeader } from "@/components/brand";
 import type { BookingStatus, OvertimeEmployee, RequestType } from "@/lib/types";
 
 type ManagedRequest = {
@@ -352,20 +353,10 @@ export default function PublicManageRequest({
 
   return (
     <main className="min-h-screen bg-canvas">
-      <header className="border-b border-line bg-white px-4 sm:px-6">
-        <div className="mx-auto flex h-16 max-w-[1080px] items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="relative h-10 w-24 shrink-0 overflow-hidden sm:h-11 sm:w-28">
-              <img src="/tokin-logo.png" alt="TOKIN" className="absolute left-[-38px] top-[-42px] h-auto w-[171px] max-w-none sm:left-[-44px] sm:top-[-49px] sm:w-[200px]" />
-            </div>
-            <div className="hidden h-7 w-px bg-line sm:block" />
-            <div><p className="text-sm font-semibold text-ink">TOKIN Transport</p><p className="text-xs text-gray-500">Request management</p></div>
-          </div>
-          <a href="/request" className="text-xs font-semibold text-brand hover:text-brand-dark">
-            New request
-          </a>
-        </div>
-      </header>
+      <PublicHeader
+        context="Request management"
+        action={<a href="/request" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-brand-300 hover:text-brand-600">New request</a>}
+      />
 
       <div className="mx-auto max-w-[1080px] p-4 py-6 sm:p-6 sm:py-8">
         {state === "loading" && (
@@ -561,7 +552,7 @@ export default function PublicManageRequest({
               <div className="space-y-5">
                 <Card className="p-5">
                   <h2 className="mb-4 font-bold">Requester information</h2>
-                  <div className="border border-line bg-canvas p-4 rounded-xl grid gap-4 sm:grid-cols-2">
+                  <div className="border border-line bg-canvas p-4 rounded-lg grid gap-4 sm:grid-cols-2">
                     <Field label="Employee number">
                       <Input
                         disabled={disabled}
@@ -623,6 +614,7 @@ export default function PublicManageRequest({
                   </div>
                 </Card>
 
+                {request.requestType === "outside_company" && (
                 <Card className="p-5">
                   <h2 className="mb-4 font-bold">Approver</h2>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -631,7 +623,7 @@ export default function PublicManageRequest({
                       required
                       disabled={disabled}
                       value={request.approver.name}
-                      onChange={(val) => updateApprover("name", val)}
+                      onChange={(val) => { updateApprover("name", val); updateApprover("email", ""); }}
                       placeholder="Search manager name or email..."
                       onSelectUser={(person) => {
                         updateApprover("name", person.displayName);
@@ -651,6 +643,7 @@ export default function PublicManageRequest({
                     </Field>
                   </div>
                 </Card>
+                )}
 
                 <Card className="p-5">
                   <h2 className="mb-4 font-bold">Request details</h2>
@@ -873,8 +866,10 @@ function normalizeRequest(raw: ManagedRequest): ManagedRequest {
 function validate(request: ManagedRequest) {
   if (!request.requester.name.trim()) return "Requester name is required.";
   if (!request.requester.department.trim()) return "Department is required.";
-  if (!request.approver.name.trim() || !request.approver.email.trim())
-    return "Approver is required.";
+  if (
+    request.requestType === "outside_company" &&
+    (!request.approver.name.trim() || !request.approver.email.trim())
+  ) return "Approver is required.";
   if (!request.usingDate || !request.startTime || !request.endTime)
     return "Date and time are required.";
   if (request.endTime <= request.startTime)

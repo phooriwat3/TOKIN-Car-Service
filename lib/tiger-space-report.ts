@@ -123,7 +123,10 @@ export function matchTigerSpaceReport(
     .filter(
       (booking) =>
         booking.requestType === "overtime" &&
-        booking.status === "pending_ot_verification",
+        booking.otVerificationMode !== "manager_exception" &&
+        ["pending", "not_found"].includes(booking.otVerificationStatus ?? "pending") &&
+        (booking.status === "pending_ot_verification" || booking.requestOrigin === "hr_direct") &&
+        !["cancelled", "rejected"].includes(booking.status),
     )
     .map((booking) => {
       const employeeId =

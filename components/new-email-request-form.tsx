@@ -114,8 +114,9 @@ export default function NewEmailRequestForm() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
-    if (!requestType || !selectedApprover)
-      return setError("Please select the request type and approver.");
+    if (!requestType) return setError("Please select the request type.");
+    if (requestType === "outside_company" && !selectedApprover)
+      return setError("Please select an approver.");
     if (requestType === "overtime" && !isOtRequestWindowOpen())
       return setError(
         "OT requests can be submitted only from 08:00 to 17:00 (Thailand time).",
@@ -152,11 +153,11 @@ export default function NewEmailRequestForm() {
         requesterId: user.id,
         requesterName: user.fullName,
         department: user.department,
-        status: "pending_approval",
+        status: requestType === "overtime" ? "pending_ot_verification" : "pending_approval",
         requestType,
-        approverId: selectedApprover.id,
-        approverName: selectedApprover.fullName,
-        approverEmail: selectedApprover.email,
+        approverId: requestType === "outside_company" ? selectedApprover?.id : undefined,
+        approverName: requestType === "outside_company" ? selectedApprover?.fullName : undefined,
+        approverEmail: requestType === "outside_company" ? selectedApprover?.email : undefined,
         category:
           requestType === "overtime" ? "overtime_transport" : "business_trip",
         usingDate,
@@ -240,7 +241,7 @@ export default function NewEmailRequestForm() {
             ? "OVERTIME / HOLIDAY WORK"
             : "CAR SERVICE REQUISITION"
         }
-        description="The selected approver will receive this request by email after the Power Automate integration is enabled."
+        description={requestType === "overtime" ? "Submit OT transportation for Tiger Space verification and GA planning." : "The selected approver will receive a secure approval link by email."}
       />
       <form onSubmit={submit} className="space-y-5">
         <Card className="p-5">
@@ -269,6 +270,7 @@ export default function NewEmailRequestForm() {
                 onChange={(e) => setUsingDate(e.target.value)}
               />
             </Field>
+            {requestType === "outside_company" && (
             <Field label="Approver">
               <Select
                 required
@@ -283,6 +285,7 @@ export default function NewEmailRequestForm() {
                 ))}
               </Select>
             </Field>
+            )}
             {requestType === "outside_company" && (
               <>
                 <Field label="Start time">
@@ -640,7 +643,7 @@ export default function NewEmailRequestForm() {
               submitting || (requestType === "overtime" && !otWindowOpen)
             }
           >
-            {submitting ? "Submitting..." : "Submit for approval"}
+            {submitting ? "Submitting..." : requestType === "overtime" ? "Submit OT request" : "Submit for approval"}
           </Button>
         </div>
       </form>
@@ -663,7 +666,7 @@ function Choice({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-xl border border-line bg-white p-7 text-left shadow-panel transition hover:border-brand hover:bg-blue-50"
+      className="rounded-lg border border-line bg-white p-7 text-left shadow-panel transition hover:border-brand hover:bg-blue-50"
     >
       <span className="mb-5 grid h-12 w-12 place-items-center rounded-lg bg-blue-100 text-brand">
         {icon}

@@ -69,7 +69,7 @@ export default {
         },
       },
       fontFamily: {
-        display: ['Plus Jakarta Sans', 'Inter', 'Segoe UI', 'system-ui', 'sans-serif'],
+        display: ['Inter', 'Sarabun', 'Segoe UI', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'Sarabun', 'Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'monospace'],
       },

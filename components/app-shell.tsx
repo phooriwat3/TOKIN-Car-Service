@@ -2,26 +2,25 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  BarChart3, Bell, CalendarDays, CarFront, ChevronRight, ClipboardCheck,
-  ClipboardList, LayoutDashboard, LogOut, Menu, Plus, X,
+  BarChart3, CalendarDays, CarFront, ChevronRight,
+  ClipboardList, LayoutDashboard, LogOut, Menu, Plus, UserPlus, X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from './app-provider';
 import { Button, SectionLabel } from './ui';
 import { cn } from '@/lib/utils';
 import { Role } from '@/lib/types';
+import { BrandLogo } from './brand';
 
 const links: Record<Role, { href: string; label: string; icon: any }[]> = {
   requester: [
     { href: '/bookings/new', label: 'Request transport', icon: Plus },
     { href: '/bookings', label: 'My requests', icon: ClipboardList },
   ],
-  approver: [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/approvals', label: 'Approval queue', icon: ClipboardCheck },
-  ],
+  approver: [],
   admin: [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/bookings/new', label: 'Create employee OT ride', icon: UserPlus },
     { href: '/admin/bookings', label: 'All bookings', icon: ClipboardList },
     { href: '/admin/calendar', label: 'Schedule', icon: CalendarDays },
     { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
@@ -34,7 +33,7 @@ const links: Record<Role, { href: string; label: string; icon: any }[]> = {
 
 const portalLabel: Record<Role, string> = {
   requester: 'Request Portal',
-  approver: 'Approver Portal',
+  approver: 'Approval by secure link',
   admin: 'Administration',
   driver: 'Driver Portal',
 };
@@ -74,11 +73,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (
         path !== '/' &&
         path !== '/login' &&
-        path !== '/approver/login' &&
+
         path !== '/admin/login' &&
         !path.startsWith('/request')
       ) {
-        router.replace(path.startsWith('/approvals') ? '/approver/login' : '/admin/login');
+        router.replace('/admin/login');
       }
     }
   }, [configured, loading, authenticated, path, router]);
@@ -86,16 +85,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (
     path === '/' ||
     path === '/login' ||
-    path === '/approver/login' ||
+
     path === '/admin/login' ||
     path.startsWith('/request')
   ) return <>{children}</>;
-  const loginPath =
-    role === 'approver'
-      ? '/approver/login'
-      : role === 'admin'
-        ? '/admin/login'
-        : '/request';
+  const loginPath = role === 'admin' ? '/admin/login' : '/request';
 
   if (configured && loading)
     return (
@@ -130,20 +124,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const rolePath: Record<Role, string> = {
     requester: '/bookings',
-    approver: '/approvals',
+    approver: '/__retired_approver_portal__',
     admin: '/admin',
     driver: '/driver',
   };
 
-  const allowed = path === '/' || path === '/dashboard' || path.startsWith(rolePath[role]);
+  const allowed = role !== 'approver' && (path === '/' || path === '/dashboard' || path.startsWith(rolePath[role]));
   if (configured && !allowed)
     return (
       <div className="grid min-h-screen place-items-center bg-canvas p-6">
         <div className="text-center">
-          <h1 className="text-xl font-bold">Access denied</h1>
-          <p className="mt-2 text-sm text-gray-500">Your account cannot open this workspace.</p>
-          <Link className="mt-4 inline-block font-semibold text-brand hover:text-brand-dark" href="/dashboard">
-            Return to dashboard
+          <h1 className="text-xl font-bold">{role === 'approver' ? 'Approver account access has been retired' : 'Access denied'}</h1>
+          <p className="mt-2 text-sm text-gray-500">{role === 'approver' ? 'Requests are now approved from the secure link in the approval email.' : 'Your account cannot open this workspace.'}</p>
+          <Link className="mt-4 inline-block font-semibold text-brand hover:text-brand-dark" href={role === 'approver' ? '/request' : '/dashboard'}>
+            {role === 'approver' ? 'Return to request form' : 'Return to dashboard'}
           </Link>
         </div>
       </div>
@@ -163,21 +157,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      <div className="relative flex h-[68px] shrink-0 items-center gap-3 px-5">
-        <div className="flex h-9 items-center justify-center rounded-md bg-white px-2 shadow-sm">
-          <img src="/tokin-logo.png" alt="TOKIN Logo" className="h-8 w-auto object-contain" />
+      <div className="relative flex h-[72px] shrink-0 items-center gap-3 px-5">
+        <div className="flex h-10 items-center justify-center rounded-md bg-white px-2">
+          <BrandLogo compact />
         </div>
-        <div className="h-7 w-px bg-white/15" />
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold leading-tight text-white">Transport operations</p>
-          <div className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#f59e0b]" aria-hidden="true" />
-            <span className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-300">
-              {portalLabel[role]}
-            </span>
-          </div>
+          <p className="mt-1 truncate text-[11px] font-medium text-slate-400">{portalLabel[role]}</p>
         </div>
-        <div className="absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+        <div className="absolute inset-x-5 bottom-0 h-px bg-white/10" />
       </div>
       <nav className="flex-1 space-y-1 px-3 py-5">
         <SectionLabel className="mb-2 px-3 text-white/30">
@@ -192,14 +180,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href={x.href}
               onClick={() => setOpen(false)}
               className={cn(
-                'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                'group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-150',
                 isActive
-                  ? 'bg-white/[0.09] text-white ring-1 ring-inset ring-white/[0.08]'
+                  ? 'bg-white/[0.10] text-white'
                   : 'text-white/70 hover:bg-white/[0.055] hover:text-white/90',
               )}
             >
               {isActive && (
-                <span className="absolute left-0 top-1/2 h-[18px] w-[3px] -translate-y-1/2 rounded-full bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.45)]" />
+                <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-[#f59e0b]" />
               )}
               <I size={17} className={cn('flex-shrink-0', isActive ? 'text-white' : 'text-slate-400 group-hover:text-white')} />
               <span className="flex-1">{x.label}</span>
@@ -209,7 +197,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
       <div className="border-t border-white/[0.07] p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white ring-2 ring-white/15">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-white/10 text-xs font-bold text-white">
             {getInitials(user.fullName)}
           </div>
           <div className="min-w-0 flex-1">
@@ -221,7 +209,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             title="Sign out"
             aria-label="Sign out"
             onClick={handleSignOut}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/[0.07] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-white/[0.07] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
           >
             <LogOut size={16} />
           </button>
@@ -233,8 +221,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-canvas">
       <aside
-        className="fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-white/[0.06] shadow-sidebar lg:flex"
-        style={{ background: 'linear-gradient(175deg, var(--sidebar-bg-from) 0%, var(--sidebar-bg-to) 100%)' }}
+        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-white/[0.06] shadow-sidebar lg:flex"
+        style={{ background: 'var(--sidebar-bg-from)' }}
       >
         <SidebarContent />
       </aside>
@@ -247,8 +235,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onClick={() => setOpen(false)}
           />
           <aside
-            className="relative flex h-full w-[260px] flex-col border-r border-white/[0.06] shadow-modal animate-slide-in"
-            style={{ background: 'linear-gradient(175deg, var(--sidebar-bg-from) 0%, var(--sidebar-bg-to) 100%)' }}
+            className="relative flex h-full w-64 flex-col border-r border-white/[0.06] shadow-modal animate-slide-in"
+            style={{ background: 'var(--sidebar-bg-from)' }}
           >
             <SidebarContent />
             <button
@@ -262,17 +250,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </aside>
         </div>
       )}
-      <div className="lg:pl-[260px]">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/70 bg-white/[0.92] px-4 shadow-header backdrop-blur-md backdrop-saturate-150 md:px-7">
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-header md:px-7">
           <div className="flex items-center gap-3">
             <button
               type="button"
               aria-label="Open navigation menu"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 lg:hidden transition"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 lg:hidden transition"
               onClick={() => setOpen(true)}
             >
               <Menu size={18} />
             </button>
+            <span className="max-w-[180px] truncate text-sm font-semibold text-slate-900 sm:hidden">{currentPageLabel}</span>
             <div className="hidden items-center gap-1.5 text-sm font-medium sm:flex" aria-label="Breadcrumb">
               <span className="font-semibold text-slate-900">TOKIN</span>
               <ChevronRight size={14} className="text-slate-400" />
@@ -292,27 +281,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     router.push('/dashboard');
                   }}
                   aria-label="Switch demo role"
-                  className="h-8 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold capitalize text-slate-700 shadow-xs outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20"
+                  className="h-8 rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold capitalize text-slate-700 shadow-xs outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20"
                 >
-                  {(['requester', 'approver', 'admin', 'driver'] as Role[]).map((r) => (
+                  {(['requester', 'admin', 'driver'] as Role[]).map((r) => (
                     <option key={r}>{r}</option>
                   ))}
                 </select>
               </>
             )}
-            <button
-              type="button"
-              title="Notifications"
-              aria-label="Notifications, 3 unread"
-              className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/40"
-            >
-              <Bell size={18} />
-              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-[#f59e0b] px-0.5 text-[9px] font-bold leading-none text-white">
-                3
-              </span>
-            </button>
-            <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 py-1 pl-1 pr-2.5 shadow-xs">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-700 ring-1 ring-brand-200">
+            <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white py-1 pl-1 pr-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-100 text-[10px] font-bold text-brand-700">
                 {getInitials(user.fullName)}
               </div>
               <span className="hidden max-w-28 truncate text-xs font-semibold text-slate-700 md:block">
@@ -321,7 +299,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-[1380px] animate-fade-in p-4 md:p-8">
+        <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {children}
         </main>
       </div>

@@ -102,10 +102,17 @@ export function BookingDetail({
               <strong>Urgent:</strong> {b.urgentReason}
             </div>
           )}
+          {b.requestOrigin === "hr_direct" && (
+            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+              <strong>HR-created OT transport:</strong> This ride was created by {b.createdByName || "HR / GA"} on behalf of the employee. {b.otVerificationMode === "manager_exception" ? "HR recorded it as a manager exception, so no Tiger OpenSpace entry is expected." : "The vehicle can be arranged now and the Tiger OpenSpace record can be verified later."}
+            </div>
+          )}
           {isOt && (
             <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
               <strong>Tiger Space transport request:</strong>{" "}
-              {b.otVerificationStatus === "verified"
+              {b.otVerificationMode === "manager_exception"
+                ? "Manager exception recorded by HR; Tiger OpenSpace verification is not required."
+                : b.otVerificationStatus === "verified"
                 ? "OT has been matched against the Tiger Space report."
                 : b.otVerificationStatus === "not_found"
                   ? "No matching approved OT was found yet; this request remains pending."

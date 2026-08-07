@@ -106,8 +106,11 @@ function mapBooking(row: any): Booking {
     sourceSystem: row.source_system ?? "transport_portal",
     sourceReference: row.source_reference ?? undefined,
     sourceConfirmed: row.source_confirmed ?? false,
+    requestOrigin: row.request_origin ?? "employee",
+    createdByName: row.created_by_name ?? "",
     otVerificationStatus: row.ot_verification_status ??
       (row.request_type === "overtime" ? "pending" : "not_required"),
+    otVerificationMode: row.ot_verification_mode ?? "tiger_space",
     otVerifiedAt: row.ot_verified_at ?? undefined,
     otVerificationNote: row.ot_verification_note ?? undefined,
     createdAt: row.created_at,
@@ -220,6 +223,27 @@ export async function insertBooking(
   supabase: SupabaseClient,
   booking: Booking,
 ): Promise<Booking> {
+  if (booking.requestOrigin === "hr_direct") {
+    const { data, error } = await supabase.rpc("create_admin_transport_booking", {
+      p_employee_profile_id: booking.requesterId,
+      p_using_date: booking.usingDate,
+      p_start_time: booking.startTime,
+      p_end_time: booking.endTime,
+      p_pickup_location: booking.pickupLocation,
+      p_destination: booking.destination,
+      p_purpose: booking.purpose,
+      p_meeting_point: booking.meetingPoint,
+      p_urgent: booking.urgent,
+      p_urgent_reason: booking.urgentReason ?? null,
+      p_verification_mode: booking.otVerificationMode ?? "tiger_space",
+    });
+    throwIfError(error);
+    if (!data) throw new Error("HR transport booking was not created.");
+    const refreshed = await loadAppData(supabase);
+    const created = refreshed.bookings.find((item) => item.id === data);
+    if (!created) throw new Error("Created HR transport booking was not found.");
+    return created;
+  }
   const { data: authData, error: authError } = await supabase.auth.getUser();
   throwIfError(authError);
   if (!authData.user) throw new Error("No authenticated user.");

@@ -91,7 +91,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const saved = localStorage.getItem(DATA_KEY);
         if (saved) setData(JSON.parse(saved));
         const savedRole = localStorage.getItem(ROLE_KEY) as Role | null;
-        if (savedRole) {
+        if (savedRole && savedRole !== "approver") {
           setRoleState(savedRole);
           setUser(
             demoUsers.find((item) => item.role === savedRole) ?? demoUsers[0],
@@ -206,7 +206,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const { error: signInError } = await supabase.auth.signInWithOAuth({
       provider: "azure",
       options: {
-        scopes: "email",
+        scopes: "openid profile email offline_access User.Read",
         redirectTo: redirectUrl.toString(),
       },
     });

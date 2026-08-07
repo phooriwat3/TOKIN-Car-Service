@@ -8,7 +8,7 @@ export async function resubmitBooking(
   const { error } = await supabase.rpc("resubmit_booking", {
     p_booking_id: booking.id,
     p_request_type: booking.requestType ?? "outside_company",
-    p_approver_id: booking.approverId,
+    p_approver_id: booking.requestType === "overtime" ? null : booking.approverId,
     p_using_date: booking.usingDate,
     p_start_time: booking.startTime,
     p_end_time: booking.endTime,

@@ -8,14 +8,16 @@ import type { Role } from "@/lib/types";
 import { landingPathForRole } from "@/lib/role-routes";
 import { useApp } from "@/components/app-provider";
 import { Button, Field, Input } from "@/components/ui";
+import { BrandLogo } from "@/components/brand";
 
-type LoginPortalProps = {
-  portal: "approver" | "admin";
-};
+const loginNotes = [
+  "Track each request from submission to completion",
+  "Keep approvals and assignments in one record",
+  "Receive route and vehicle updates by email",
+];
 
-export function LoginPortal({ portal }: LoginPortalProps) {
-  const admin = portal === "admin";
-  const expectedRole: Role = admin ? "admin" : "approver";
+export function LoginPortal() {
+  const expectedRole: Role = "admin";
   const {
     configured,
     authenticated,
@@ -54,7 +56,7 @@ export function LoginPortal({ portal }: LoginPortalProps) {
   const submitMicrosoft = async () => {
     setMicrosoftSubmitting(true);
     try {
-      await signInWithMicrosoft(admin ? "/admin/bookings" : "/approvals");
+      await signInWithMicrosoft("/admin/bookings");
     } catch {
       setMicrosoftSubmitting(false);
     }
@@ -70,17 +72,17 @@ export function LoginPortal({ portal }: LoginPortalProps) {
   if (configured && authenticated && !loading && role !== expectedRole) {
     return (
       <main className="grid min-h-screen place-items-center bg-[#edf1f4] p-6">
-        <section className="w-full max-w-md border border-slate-300 bg-white p-8 shadow-[0_20px_60px_rgba(15,35,50,0.12)]">
-          <img src="/tokin-logo.png" alt="TOKIN" className="h-9 w-auto object-contain" />
+        <section className="w-full max-w-md border border-slate-300 bg-white p-8 shadow-lg">
+          <BrandLogo />
           <p className="mt-8 text-xs font-semibold uppercase tracking-[0.16em] text-brand">
-            {admin ? "Administration access" : "Department approval access"}
+            Administration access
           </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-ink">
+          <h1 className="mt-2 text-2xl font-bold text-ink">
             A different account is currently signed in
           </h1>
           <p className="mt-3 text-sm leading-6 text-gray-600">
             You are signed in as <strong>{role}</strong>. Sign out before continuing
-            to the {admin ? "Administration" : "Approver"} portal.
+            to the Administration portal.
           </p>
           <Button
             type="button"
@@ -107,218 +109,156 @@ export function LoginPortal({ portal }: LoginPortalProps) {
   if (configured && authenticated && !loading) return null;
 
   return (
-    <main className="min-h-screen bg-[#edf1f4] p-3 sm:p-6 lg:grid lg:place-items-center">
-      <div className="mx-auto grid min-h-[calc(100vh-24px)] w-full max-w-6xl overflow-hidden border border-slate-300 bg-white shadow-[0_24px_80px_rgba(15,35,50,0.12)] sm:min-h-[calc(100vh-48px)] sm:rounded-2xl lg:grid-cols-[0.9fr_1.1fr]">
-        <section className="relative hidden overflow-hidden bg-[#102d44] p-10 text-white lg:flex lg:flex-col lg:justify-between">
-          <div className="absolute inset-y-0 right-0 w-px bg-white/10" />
-          <div className="absolute -bottom-28 -right-24 h-72 w-72 rounded-full border border-white/10" />
-          <div className="absolute -bottom-16 -right-10 h-52 w-52 rounded-full border border-white/10" />
-          <div className="relative">
-            <div className="inline-flex h-12 items-center rounded-lg bg-white px-3 shadow-sm">
-              <img
-                src="/tokin-logo.png"
-                alt="TOKIN"
-                className="h-8 w-auto object-contain"
-              />
-            </div>
-            <p className="mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Transport operations
-            </p>
-            <h1 className="mt-3 max-w-md text-3xl font-semibold leading-tight tracking-[-0.02em]">
-              One place to request, approve, and coordinate company transport.
-            </h1>
-            <p className="mt-4 max-w-sm text-sm leading-6 text-slate-300">
-              Built for clear handoffs between employees, department approvers,
-              transport administration, and drivers.
-            </p>
-          </div>
-          <ul className="relative space-y-3 text-sm text-slate-200">
-            {[
-              "Track each request from submission to completion",
-              "Keep approvals and assignments in one record",
-              "Receive route and vehicle updates by email",
-            ].map((item) => (
-              <li key={item} className="flex items-center gap-3">
-                <span className="grid h-5 w-5 place-items-center rounded-full bg-white/10 text-[#f0a34a]">
-                  <Check size={12} />
+    <main className="grid min-h-screen place-items-center bg-[#edf1f4] p-4 sm:p-6">
+      <section className="w-full max-w-md border border-slate-300 bg-white px-6 py-9 shadow-lg sm:rounded-lg sm:px-10">
+        <div className="mb-9 flex items-center justify-between gap-4">
+          <BrandLogo />
+          <span className="text-xs font-semibold text-gray-500">
+            Transport operations
+          </span>
+        </div>
+
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">
+          Operations access
+        </p>
+        <h2 className="mt-2 text-3xl font-bold text-ink">
+          {configured ? "Sign in to administration" : "Preview the workspace"}
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-gray-500">
+          {configured
+            ? "Use your authorized administration account to continue."
+            : "The live data service is not connected. Preview the administration workspace with sample data."}
+        </p>
+
+        {configured ? (
+          <div className="mt-8">
+            <Button
+              size="lg"
+              type="button"
+              variant="outline"
+              className="w-full border-slate-300 bg-white text-ink hover:bg-slate-50"
+              disabled={microsoftSubmitting || loading}
+              onClick={submitMicrosoft}
+            >
+              {microsoftSubmitting ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-brand" />
+              ) : (
+                <span aria-hidden="true" className="grid grid-cols-2 gap-[2px]">
+                  <span className="h-[7px] w-[7px] bg-[#f25022]" />
+                  <span className="h-[7px] w-[7px] bg-[#7fba00]" />
+                  <span className="h-[7px] w-[7px] bg-[#00a4ef]" />
+                  <span className="h-[7px] w-[7px] bg-[#ffb900]" />
                 </span>
-                {item}
+              )}
+              Continue with Microsoft 365
+            </Button>
+
+            <div className="my-6 flex items-center gap-3">
+              <span className="h-px flex-1 bg-line" />
+              <span className="text-xs font-medium uppercase tracking-[0.12em] text-gray-400">
+                Or use password
+              </span>
+              <span className="h-px flex-1 bg-line" />
+            </div>
+
+            <form className="space-y-5" onSubmit={submit}>
+            <Field label="Company email">
+              <div className="relative">
+                <Mail
+                  size={16}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="h-11 pl-10"
+                  placeholder="name@yageo.com"
+                />
+              </div>
+            </Field>
+            <Field label="Password">
+              <div className="relative">
+                <Lock
+                  size={16}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <Input
+                  type={showPass ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="h-11 pl-10 pr-11"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  aria-label={showPass ? "Hide password" : "Show password"}
+                  onClick={() => setShowPass((visible) => !visible)}
+                  className="absolute right-3 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                >
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </Field>
+            {error && (
+              <div
+                role="alert"
+                className="rounded-lg border border-danger/20 bg-danger-light px-3.5 py-3 text-sm text-danger"
+              >
+                {error}
+              </div>
+            )}
+            <Button
+              size="lg"
+              className="w-full"
+              disabled={submitting || microsoftSubmitting || loading}
+            >
+              {submitting ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign in"
+              )}
+            </Button>
+            </form>
+          </div>
+        ) : (
+          <Button
+            size="lg"
+            type="button"
+            className="mt-8 w-full"
+            onClick={() => enterDemo(expectedRole)}
+          >
+            Continue as administrator
+          </Button>
+        )}
+
+        <div className="mt-8 space-y-4 border-t border-line pt-5 text-sm">
+          <Link
+            className="block font-medium text-gray-500 hover:text-brand"
+            href="/request"
+          >
+            Return to employee request form
+          </Link>
+          <ul className="space-y-2 text-xs leading-5 text-slate-500">
+            {loginNotes.map((item) => (
+              <li key={item} className="flex gap-2">
+                <Check size={14} className="mt-0.5 shrink-0 text-brand" />
+                <span>{item}</span>
               </li>
             ))}
           </ul>
-        </section>
-
-        <section className="flex items-center justify-center px-6 py-10 sm:px-12 lg:px-16">
-          <div className="w-full max-w-md">
-            <div className="mb-9 flex items-center justify-between lg:hidden">
-              <img
-                src="/tokin-logo.png"
-                alt="TOKIN"
-                className="h-9 w-auto object-contain"
-              />
-              <span className="text-xs font-semibold text-gray-500">
-                Transport operations
-              </span>
-            </div>
-
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">
-              {admin ? "Operations access" : "Department approval access"}
-            </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-ink">
-              {configured
-                ? admin
-                  ? "Sign in to administration"
-                  : "Sign in to approve requests"
-                : "Preview the workspace"}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-gray-500">
-              {configured
-                ? admin
-                  ? "Use your authorized administration account to continue."
-                  : "Use your registered company account to review requests for your department."
-                : "The live data service is not connected. Choose a role to explore the interface with sample data."}
-            </p>
-
-            {configured ? (
-              <div className="mt-8">
-                <Button
-                  size="lg"
-                  type="button"
-                  variant="outline"
-                  className="w-full border-slate-300 bg-white text-ink hover:bg-slate-50"
-                  disabled={microsoftSubmitting || loading}
-                  onClick={submitMicrosoft}
-                >
-                  {microsoftSubmitting ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-brand" />
-                  ) : (
-                    <span aria-hidden="true" className="grid grid-cols-2 gap-[2px]">
-                      <span className="h-[7px] w-[7px] bg-[#f25022]" />
-                      <span className="h-[7px] w-[7px] bg-[#7fba00]" />
-                      <span className="h-[7px] w-[7px] bg-[#00a4ef]" />
-                      <span className="h-[7px] w-[7px] bg-[#ffb900]" />
-                    </span>
-                  )}
-                  Continue with Microsoft 365
-                </Button>
-
-                <div className="my-6 flex items-center gap-3">
-                  <span className="h-px flex-1 bg-line" />
-                  <span className="text-xs font-medium uppercase tracking-[0.12em] text-gray-400">
-                    Or use password
-                  </span>
-                  <span className="h-px flex-1 bg-line" />
-                </div>
-
-                <form className="space-y-5" onSubmit={submit}>
-                <Field label="Company email">
-                  <div className="relative">
-                    <Mail
-                      size={16}
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                    <Input
-                      type="email"
-                      autoComplete="email"
-                      required
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      className="h-11 pl-10"
-                      placeholder="name@yageo.com"
-                    />
-                  </div>
-                </Field>
-                <Field label="Password">
-                  <div className="relative">
-                    <Lock
-                      size={16}
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                    <Input
-                      type={showPass ? "text" : "password"}
-                      autoComplete="current-password"
-                      required
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      className="h-11 pl-10 pr-11"
-                      placeholder="Enter your password"
-                    />
-                    <button
-                      type="button"
-                      aria-label={showPass ? "Hide password" : "Show password"}
-                      onClick={() => setShowPass((visible) => !visible)}
-                      className="absolute right-3 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                    >
-                      {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </Field>
-                {error && (
-                  <div
-                    role="alert"
-                    className="rounded-lg border border-danger/20 bg-danger-light px-3.5 py-3 text-sm text-danger"
-                  >
-                    {error}
-                  </div>
-                )}
-                <Button
-                  size="lg"
-                  className="w-full"
-                  disabled={submitting || microsoftSubmitting || loading}
-                >
-                  {submitting ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />{" "}
-                      Signing in…
-                    </>
-                  ) : (
-                    "Sign in"
-                  )}
-                </Button>
-                </form>
-              </div>
-            ) : (
-              <Button
-                size="lg"
-                type="button"
-                className="mt-8 w-full"
-                onClick={() => enterDemo(expectedRole)}
-              >
-                {admin
-                  ? "Continue as administrator"
-                  : "Continue as department approver"}
-              </Button>
-            )}
-
-            <div className="mt-8 space-y-3 border-t border-line pt-5 text-sm">
-              {admin ? (
-                <Link
-                  className="block font-semibold text-brand hover:text-brand-dark"
-                  href="/approver/login"
-                >
-                  Approver sign in
-                </Link>
-              ) : (
-                <Link
-                  className="block font-semibold text-brand hover:text-brand-dark"
-                  href="/admin/login"
-                >
-                  Administration sign in
-                </Link>
-              )}
-              <Link
-                className="block font-medium text-gray-500 hover:text-brand"
-                href="/request"
-              >
-                Return to employee request form
-              </Link>
-            </div>
-            <p className="mt-10 text-xs text-gray-400">
-              TOKIN Industrial · Internal transport service
-            </p>
-          </div>
-        </section>
-      </div>
+        </div>
+        <p className="mt-10 text-xs text-gray-400">
+          TOKIN Industrial - Internal transport service
+        </p>
+      </section>
     </main>
   );
 }
