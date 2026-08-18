@@ -19,7 +19,6 @@ import {
   Textarea,
   TimeMaskInput,
 } from "@/components/ui";
-import { OtGuidelines } from "@/components/ot-guidelines";
 import { GoogleMapLinks } from "@/components/google-map-links";
 import { CompanyUserField } from "@/components/company-user-field";
 import { isOtRequestWindowOpen } from "@/lib/request-window";
@@ -122,7 +121,6 @@ export default function PublicManageRequest({
     initialToken ? "" : "Request link is missing.",
   );
   const [saving, setSaving] = useState(false);
-  const [showGuidelines, setShowGuidelines] = useState(false);
   const otWindowOpen = useMemo(() => isOtRequestWindowOpen(), []);
 
   useEffect(() => {
@@ -848,46 +846,6 @@ export default function PublicManageRequest({
 
       {request && request.requestType === "overtime" && (
         <>
-          {/* Floating Guidelines Sidebar Tab */}
-          <button
-            type="button"
-            onClick={() => setShowGuidelines(true)}
-            className="fixed bottom-6 left-4 z-40 flex items-center gap-2 border border-brand-dark bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-modal transition hover:bg-brand-dark"
-          >
-            <Clock3 size={17} />
-            <span>OT rules</span>
-          </button>
-
-          {/* Guidelines Modal Popup */}
-          {showGuidelines && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 animate-fade-in">
-              <div className="relative w-full max-w-5xl overflow-hidden border border-white/20 bg-white shadow-modal">
-                <button
-                  type="button"
-                  onClick={() => setShowGuidelines(false)}
-                  aria-label="Close OT rules"
-                  className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center border border-white/20 bg-black/10 text-xl font-medium leading-none text-white transition hover:bg-white/15"
-                >
-                  &times;
-                </button>
-
-                <div className="max-h-[82vh] overflow-y-auto">
-                  <OtGuidelines />
-                </div>
-
-                <div className="flex justify-end border-t border-line bg-white px-5 py-3 sm:px-7">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowGuidelines(false)}
-                    className="px-5"
-                  >
-                    Close
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
         </>
       )}
     </main>

@@ -90,7 +90,6 @@ export function OtGuidelines() {
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-2xl">
             <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-100">
-              <ShieldCheck size={15} strokeWidth={2} />
               <span>{text.eyebrow}</span>
             </div>
             <h2 className="text-xl font-semibold leading-tight sm:text-2xl">{text.title}</h2>
@@ -136,14 +135,9 @@ export function OtGuidelines() {
 
       <div className="grid xl:grid-cols-[1.12fr_.88fr]">
         <div className="border-b border-line p-5 sm:p-7 xl:border-b-0 xl:border-r">
-          <div className="mb-4 flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-brand-light text-brand">
-              <Clock3 size={16} strokeWidth={2} />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-ink">{text.referenceTitle}</h3>
-              <p className="mt-0.5 text-xs leading-5 text-gray-500">{text.referenceDescription}</p>
-            </div>
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-ink">{text.referenceTitle}</h3>
+            <p className="mt-0.5 text-xs leading-5 text-gray-500">{text.referenceDescription}</p>
           </div>
 
           <div className="overflow-x-auto border border-line">
