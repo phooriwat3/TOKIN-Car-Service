@@ -320,7 +320,7 @@ export default function PublicRequestForm() {
         employeeId: employeeId.trim(),
         employeeName: requesterName.trim(),
         employeeEmail: requesterEmail.trim(),
-        workDescription: employee.workDescription.trim() || "Overtime Work",
+        workDescription: employee.workDescription.trim(),
       };
       const response = await fetch(
         `${supabaseUrl}/functions/v1/public-submit-request`,
@@ -350,10 +350,10 @@ export default function PublicRequestForm() {
               requestType === "overtime" ? "Employee bus stops" : destination,
             purpose:
               requestType === "overtime"
-                ? `Overtime / Holiday Work: ${overtimeEmployee.workDescription}`.slice(
-                    0,
-                    2000,
-                  )
+                ? (employee.workDescription.trim()
+                    ? `Overtime / Holiday Work: ${employee.workDescription.trim()}`
+                    : "Overtime / Holiday Work"
+                  ).slice(0, 2000)
                 : purpose,
             meetingPoint,
             withStaff,

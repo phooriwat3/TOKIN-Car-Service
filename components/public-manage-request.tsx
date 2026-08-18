@@ -509,7 +509,7 @@ export default function PublicManageRequest({
                         <Field label="OT / holiday work date"><Input required disabled={disabled} type="date" lang="en-US" value={request.usingDate} onChange={(event) => update("usingDate", event.target.value)} /></Field>
                       </div>
                       <div className="sm:col-span-2">
-                        <Field label="Work description (optional)"><Textarea disabled={disabled} value={overtimeEmployee.workDescription} onChange={(event) => { updateEmployee(0, "workDescription", event.target.value); update("purpose", `Overtime / Holiday Work: ${event.target.value}`); }} /></Field>
+                        <Field label="Work description (optional)"><Textarea disabled={disabled} placeholder="Optional: briefly describe the overtime or holiday work" value={overtimeEmployee.workDescription} onChange={(event) => { const val = event.target.value; updateEmployee(0, "workDescription", val); update("purpose", val.trim() ? `Overtime / Holiday Work: ${val.trim()}` : "Overtime / Holiday Work"); }} /></Field>
                       </div>
                       <Field label="OT start time"><TimeMaskInput required disabled={disabled} value={overtimeEmployee.workStart} onChange={(value) => { updateEmployee(0, "workStart", value); update("startTime", value); }} quickTimes={["08:00", "17:20"]} /></Field>
                       <Field label="OT end time"><TimeMaskInput required disabled={disabled} value={overtimeEmployee.workEnd} onChange={(value) => { updateEmployee(0, "workEnd", value); update("endTime", value); }} quickTimes={["16:45", "19:00", "20:00"]} /></Field>
@@ -521,18 +521,18 @@ export default function PublicManageRequest({
                     <fieldset>
                       <legend className="text-[13px] font-semibold text-gray-700">Transportation requirement</legend>
                       <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                        <label className={`flex min-h-[72px] gap-3 border p-3.5 ${overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300"}`}>
-                          <input type="radio" name="manage-transport" disabled={disabled} checked={overtimeEmployee.transportRequired} onChange={() => updateEmployee(0, "transportRequired", true)} className="mt-1 h-4 w-4 accent-brand" />
-                          <span><strong className="block text-sm text-ink">Transportation required</strong><span className="mt-1 block text-xs text-gray-500">GA can plan now and confirm transport after OT verification.</span></span>
+                        <label className={`flex min-h-[72px] cursor-pointer gap-3 border p-3.5 transition-colors ${overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300 bg-white"}`}>
+                          <input type="radio" name="manage-transport" disabled={disabled} checked={overtimeEmployee.transportRequired} onChange={() => updateEmployee(0, "transportRequired", true)} className="mt-1 h-4 w-4 shrink-0 accent-brand" />
+                          <div><strong className="block text-sm font-semibold text-ink">Transportation required</strong><span className="mt-1 block text-xs leading-5 text-gray-500">Admin will assign a vehicle and driver after approval.</span></div>
                         </label>
-                        <label className={`flex min-h-[72px] gap-3 border p-3.5 ${!overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300"}`}>
-                          <input type="radio" name="manage-transport" disabled={disabled} checked={!overtimeEmployee.transportRequired} onChange={() => updateEmployee(0, "transportRequired", false)} className="mt-1 h-4 w-4 accent-brand" />
-                          <span><strong className="block text-sm text-ink">No transportation required</strong><span className="mt-1 block text-xs text-gray-500">No vehicle assignment will be created.</span></span>
+                        <label className={`flex min-h-[72px] cursor-pointer gap-3 border p-3.5 transition-colors ${!overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300 bg-white"}`}>
+                          <input type="radio" name="manage-transport" disabled={disabled} checked={!overtimeEmployee.transportRequired} onChange={() => updateEmployee(0, "transportRequired", false)} className="mt-1 h-4 w-4 shrink-0 accent-brand" />
+                          <div><strong className="block text-sm font-semibold text-ink">No transportation required</strong><span className="mt-1 block text-xs leading-5 text-gray-500">Submit the OT record without a vehicle assignment.</span></div>
                         </label>
                       </div>
                     </fieldset>
                     {overtimeEmployee.transportRequired ? (
-                      <Field label="Drop-off location"><Input required disabled={disabled} value={overtimeEmployee.busStop} onChange={(event) => updateEmployee(0, "busStop", event.target.value)} /></Field>
+                      <Field label="Drop-off location / bus stop"><Input required disabled={disabled} placeholder="Enter your usual bus stop or drop-off point" value={overtimeEmployee.busStop} onChange={(event) => updateEmployee(0, "busStop", event.target.value)} /></Field>
                     ) : (
                       <p className="border border-green-200 bg-green-50 px-3.5 py-3 text-sm text-green-800">No vehicle assignment is required for this request.</p>
                     )}
