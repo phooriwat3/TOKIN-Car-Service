@@ -168,7 +168,7 @@ Deno.serve(async (request) => {
     }
 
     const passengerCount = payload.requestType === 'overtime'
-      ? otRows.filter(row => row.transport_required).length
+      ? Math.max(1, otRows.filter(row => row.transport_required).length)
       : Math.max(1, passengers.length);
     if (passengerCount < 1 || passengerCount > 20) {
       throw new Error('Passenger count must be between 1 and 20.');
