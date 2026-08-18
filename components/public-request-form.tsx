@@ -494,7 +494,7 @@ export default function PublicRequestForm() {
     );
   if (!requestType)
     return (
-      <PublicFrame>
+      <PublicFrame showAdminLink>
         <div className="mx-auto max-w-5xl">
           <div className="mb-8 border-b border-line pb-7 sm:mb-10 sm:flex sm:items-end sm:justify-between sm:gap-10">
             <div className="max-w-2xl">
@@ -1035,7 +1035,13 @@ function FormActions({
     </div>
   );
 }
-function PublicFrame({ children }: { children: React.ReactNode }) {
+function PublicFrame({
+  children,
+  showAdminLink = false,
+}: {
+  children: React.ReactNode;
+  showAdminLink?: boolean;
+}) {
   return (
     <main className="min-h-screen bg-canvas">
       <header className="border-b border-line bg-white px-4 sm:px-6 shadow-sm">
@@ -1052,12 +1058,14 @@ function PublicFrame({ children }: { children: React.ReactNode }) {
               </p>
             </div>
           </div>
-          <a
-            href="/admin/login"
-            className="shrink-0 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:border-gray-400 hover:bg-gray-50 hover:text-brand sm:px-3 sm:text-xs"
-          >
-            Admin portal
-          </a>
+          {showAdminLink && (
+            <a
+              href="/admin/login"
+              className="shrink-0 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:border-gray-400 hover:bg-gray-50 hover:text-brand sm:px-3 sm:text-xs"
+            >
+              Admin portal
+            </a>
+          )}
         </div>
       </header>
       <div className="mx-auto min-w-0 max-w-[1080px] px-4 py-6 sm:px-6 sm:py-8">
