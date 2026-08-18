@@ -368,10 +368,7 @@ export default function PublicManageRequest({
 
   return (
     <main className="min-h-screen bg-canvas">
-      <PublicHeader
-        context="Request management"
-        action={<a href="/request" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-brand-300 hover:text-brand-600">New request</a>}
-      />
+      <PublicHeader context="Request management" />
 
       <div className="mx-auto max-w-[1080px] p-4 py-6 sm:p-6 sm:py-8">
         {state === "loading" && (
@@ -408,9 +405,17 @@ export default function PublicManageRequest({
                   Revision {request.revisionNo}
                 </p>
               </div>
-              <Badge status={request.status}>
-                {statusText[request.status] ?? request.status}
-              </Badge>
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <Badge status={request.status}>
+                  {statusText[request.status] ?? request.status}
+                </Badge>
+                <a
+                  href="/request"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:bg-slate-50 hover:text-brand-600"
+                >
+                  + New request
+                </a>
+              </div>
             </div>
 
             {request.rejectReason && (
