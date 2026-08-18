@@ -5,7 +5,7 @@ import { assignmentEmail } from "../_shared/email-template.ts";
 
 const appBaseUrl = () => {
   const configured = Deno.env.get("APP_BASE_URL")?.trim().replace(/\/+$/, "");
-  return configured || "https://tokin-car-service.vercel.app";
+  return configured || "https://carservice.tokin.co.th";
 };
 
 Deno.serve(async (request: Request) => {

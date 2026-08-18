@@ -27,7 +27,7 @@ const esc = (value: unknown) => String(value ?? "")
   .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 
 const appBaseUrl = () => Deno.env.get("APP_BASE_URL")?.trim().replace(/\/+$/, "") ||
-  "https://tokin-car-service.vercel.app";
+  "https://carservice.tokin.co.th";
 
 const bangkokDate = () => new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit",

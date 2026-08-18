@@ -27,7 +27,7 @@ The application will call the Flow trigger with a server-side secret; the trigge
     "purpose": "OT production support",
     "employeeCount": 4
   },
-  "detailUrl": "https://tokin-car-service.vercel.app/approvals/uuid",
+  "detailUrl": "https://carservice.tokin.co.th/approvals/uuid",
   "callbackUrl": "https://PROJECT.supabase.co/functions/v1/power-automate-callback"
 }
 ```
@@ -63,7 +63,7 @@ After Admin saves the vehicle schedule, the application sends:
   "dropoffLocation": "Bang Na",
   "vehicle": "Toyota Commuter / 1 AB 1234",
   "driver": "Somchai Dee",
-  "detailUrl": "https://tokin-car-service.vercel.app/bookings/uuid"
+  "detailUrl": "https://carservice.tokin.co.th/bookings/uuid"
 }
 ```
 

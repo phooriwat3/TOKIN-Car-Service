@@ -46,8 +46,9 @@ type PublicRequest = {
 
 const appBaseUrl = () => {
   const configured = Deno.env.get("APP_BASE_URL")?.trim().replace(/\/+$/, "");
-  return configured || "https://tokin-car-service.vercel.app";
+  return configured || "https://carservice.tokin.co.th";
 };
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS")
     return new Response("ok", { headers: corsHeaders });

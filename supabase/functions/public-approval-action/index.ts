@@ -11,7 +11,7 @@ const outcomes: Record<string, 'approved' | 'rejected' | 'changes_requested'> = 
 
 const appBaseUrl = () => {
   const configured = Deno.env.get('APP_BASE_URL')?.trim().replace(/\/+$/, '');
-  return configured || 'https://tokin-car-service.vercel.app';
+  return configured || 'https://carservice.tokin.co.th';
 };
 
 Deno.serve(async (request) => {
