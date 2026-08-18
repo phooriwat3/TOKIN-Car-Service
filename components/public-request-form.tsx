@@ -219,13 +219,15 @@ export default function PublicRequestForm() {
   const failValidation = (message: string, fieldId?: string) => {
     setError(message);
     setErrorField(fieldId);
-    window.setTimeout(() => {
-      const target = fieldId
-        ? document.getElementById(fieldId)
-        : document.getElementById("validation-summary");
-      target?.focus();
-      target?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 0);
+    if (fieldId) {
+      window.setTimeout(() => {
+        const target = document.getElementById(fieldId);
+        if (target) {
+          target.focus();
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 50);
+    }
   };
 
   const submit = async (event?: React.FormEvent, confirmed = false) => {

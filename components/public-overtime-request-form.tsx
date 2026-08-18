@@ -233,9 +233,6 @@ export function PublicOvertimeRequestForm(
         employeeComplete={employeeComplete}
         detailsComplete={detailsComplete}
       />
-      {props.error && (
-        <ErrorSummary message={props.error} fieldId={props.errorField} />
-      )}
 
       <section
         className="rounded-lg border border-line bg-white"
@@ -259,18 +256,29 @@ export function PublicOvertimeRequestForm(
               onSelectUser={props.onDirectorySelect}
               describedBy="employee-search-help"
             />
-            <p
-              id="employee-search-help"
-              className="mt-1.5 text-xs text-gray-500"
-            >
-              Select your directory result to fill your employee details.
-            </p>
+            {props.errorField === "employee-search" ? (
+              <p className="mt-1.5 text-xs font-semibold text-danger">
+                ⚠️ {props.error}
+              </p>
+            ) : (
+              <p
+                id="employee-search-help"
+                className="mt-1.5 text-xs text-gray-500"
+              >
+                Select your directory result to fill your employee details.
+              </p>
+            )}
           </div>
           <Field label="Company email">
             <Input
               id="company-email"
               required
               type="email"
+              className={
+                props.errorField === "company-email"
+                  ? "border-danger ring-2 ring-danger/20"
+                  : ""
+              }
               value={props.requesterEmail}
               readOnly={
                 props.directorySelected && Boolean(props.requesterEmail)
@@ -279,6 +287,11 @@ export function PublicOvertimeRequestForm(
                 props.onRequesterChange("email", event.target.value)
               }
             />
+            {props.errorField === "company-email" && (
+              <p className="mt-1.5 text-xs font-semibold text-danger">
+                ⚠️ {props.error}
+              </p>
+            )}
           </Field>
           <Field label="Employee number">
             <Input
@@ -287,6 +300,11 @@ export function PublicOvertimeRequestForm(
               inputMode="numeric"
               maxLength={7}
               pattern="[0-9]{7}"
+              className={
+                props.errorField === "employee-number"
+                  ? "border-danger ring-2 ring-danger/20"
+                  : ""
+              }
               placeholder="7-digit employee number"
               value={props.employeeId}
               onChange={(event) =>
@@ -296,11 +314,21 @@ export function PublicOvertimeRequestForm(
                 )
               }
             />
+            {props.errorField === "employee-number" && (
+              <p className="mt-1.5 text-xs font-semibold text-danger">
+                ⚠️ {props.error}
+              </p>
+            )}
           </Field>
           <Field label="Department">
             <Select
               id="department"
               required
+              className={
+                props.errorField === "department"
+                  ? "border-danger ring-2 ring-danger/20"
+                  : ""
+              }
               value={props.department}
               onChange={(event) =>
                 props.onRequesterChange("department", event.target.value)
@@ -316,13 +344,25 @@ export function PublicOvertimeRequestForm(
                 <option value={props.department}>{props.department}</option>
               )}
             </Select>
-            <p className="mt-1.5 text-xs text-gray-500">
-              Automatically filled from the directory. Change it if the
-              department is incorrect.
-            </p>
+            {props.errorField === "department" ? (
+              <p className="mt-1.5 text-xs font-semibold text-danger">
+                ⚠️ {props.error}
+              </p>
+            ) : (
+              <p className="mt-1.5 text-xs text-gray-500">
+                Automatically filled from the directory. Change it if the
+                department is incorrect.
+              </p>
+            )}
           </Field>
           <div className="sm:col-span-2">
-            <label className="flex min-h-11 cursor-pointer items-start gap-3 border border-line bg-[#fafbfc] px-3.5 py-3 text-sm text-gray-700">
+            <label
+              className={`flex min-h-11 cursor-pointer items-start gap-3 border px-3.5 py-3 text-sm text-gray-700 transition-colors ${
+                props.errorField === "confirm-self"
+                  ? "border-danger bg-danger-light/40 text-danger ring-2 ring-danger/20"
+                  : "border-line bg-[#fafbfc]"
+              }`}
+            >
               <input
                 id="confirm-self"
                 type="checkbox"
@@ -340,6 +380,11 @@ export function PublicOvertimeRequestForm(
                 transportation notifications.
               </span>
             </label>
+            {props.errorField === "confirm-self" && (
+              <p className="mt-1.5 text-xs font-semibold text-danger">
+                ⚠️ {props.error}
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -362,12 +407,22 @@ export function PublicOvertimeRequestForm(
                 required
                 type="date"
                 lang="en-US"
+                className={
+                  props.errorField === "using-date"
+                    ? "border-danger ring-2 ring-danger/20"
+                    : ""
+                }
                 min={props.minimumDate}
                 value={props.usingDate}
                 onChange={(event) =>
                   props.onUsingDateChange(event.target.value)
                 }
               />
+              {props.errorField === "using-date" && (
+                <p className="mt-1.5 text-xs font-semibold text-danger">
+                  ⚠️ {props.error}
+                </p>
+              )}
             </Field>
             <div className="sm:col-span-2">
               <Field label="Work description (optional)">
@@ -393,6 +448,11 @@ export function PublicOvertimeRequestForm(
                 onChange={(value) => props.onEmployeeChange("workStart", value)}
                 quickTimes={["08:00", "17:20"]}
               />
+              {props.errorField === "ot-start" && (
+                <p className="mt-1.5 text-xs font-semibold text-danger">
+                  ⚠️ {props.error}
+                </p>
+              )}
             </Field>
             <Field label="OT end time">
               <TimeMaskInput
@@ -402,6 +462,11 @@ export function PublicOvertimeRequestForm(
                 onChange={(value) => props.onEmployeeChange("workEnd", value)}
                 quickTimes={["16:45", "19:00", "20:00"]}
               />
+              {props.errorField === "ot-end" && (
+                <p className="mt-1.5 text-xs font-semibold text-danger">
+                  ⚠️ {props.error}
+                </p>
+              )}
             </Field>
           </div>
           <div className="flex items-center justify-between border-y border-line bg-[#fafbfc] px-3.5 py-3 text-sm">
@@ -411,12 +476,18 @@ export function PublicOvertimeRequestForm(
             </strong>
           </div>
 
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+          <div
+            className={`rounded-lg border p-4 text-sm transition-colors ${
+              props.errorField === "tiger-space-confirmed"
+                ? "border-danger bg-danger-light/40 text-danger ring-2 ring-danger/20"
+                : "border-blue-200 bg-blue-50 text-blue-950"
+            }`}
+          >
             <p className="font-semibold">Transport request only</p>
             <p className="mt-1 text-xs leading-5 text-blue-800">
               Tiger Space remains the source of truth for OT. Submit this form only when you need transportation.
             </p>
-            <label className="mt-3 flex items-start gap-2">
+            <label className="mt-3 flex items-start gap-2 cursor-pointer">
               <input
                 id="tiger-space-confirmed"
                 type="checkbox"
@@ -424,7 +495,7 @@ export function PublicOvertimeRequestForm(
                 onChange={(event) =>
                   props.onTigerSpaceConfirmedChange(event.target.checked)
                 }
-                className="mt-0.5 h-4 w-4 accent-brand"
+                className="mt-0.5 h-4 w-4 accent-brand shrink-0"
               />
               <span>
                 I confirm that I have submitted this OT in Tiger Space and I require
@@ -432,18 +503,33 @@ export function PublicOvertimeRequestForm(
                 can verify the approved OT from the Tiger Space report.
               </span>
             </label>
+            {props.errorField === "tiger-space-confirmed" && (
+              <p className="mt-2 text-xs font-semibold text-danger">
+                ⚠️ {props.error}
+              </p>
+            )}
           </div>
 
           <Field label="Drop-off location / bus stop">
             <Input
               id="drop-off-location"
               required
+              className={
+                props.errorField === "drop-off-location"
+                  ? "border-danger ring-2 ring-danger/20"
+                  : ""
+              }
               placeholder="Enter your usual bus stop or drop-off point"
               value={props.employee.busStop}
               onChange={(event) =>
                 props.onEmployeeChange("busStop", event.target.value)
               }
             />
+            {props.errorField === "drop-off-location" && (
+              <p className="mt-1.5 text-xs font-semibold text-danger">
+                ⚠️ {props.error}
+              </p>
+            )}
           </Field>
         </div>
       </section>
