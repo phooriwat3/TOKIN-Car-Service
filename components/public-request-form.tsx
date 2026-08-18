@@ -241,6 +241,8 @@ export default function PublicRequestForm() {
         "Select your English name from the company directory, or enter it if the directory is unavailable.",
         "employee-search",
       );
+    if (!employeeId.trim())
+      return failValidation("Employee number is required.", "employee-number");
     if (!/^\d{7}$/.test(employeeId.trim()))
       return failValidation(
         "Employee number must contain exactly 7 digits.",
@@ -285,6 +287,11 @@ export default function PublicRequestForm() {
         return failValidation(
           "Drop-off location is required when transportation is requested.",
           "drop-off-location",
+        );
+      if (!tigerSpaceConfirmed)
+        return failValidation(
+          "Please confirm that you have submitted this OT in Tiger Space by checking the box.",
+          "tiger-space-confirmed",
         );
     } else if (!purpose.trim()) {
       return failValidation("Purpose is required.");
