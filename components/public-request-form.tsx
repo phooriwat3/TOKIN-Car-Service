@@ -320,7 +320,7 @@ export default function PublicRequestForm() {
         employeeId: employeeId.trim(),
         employeeName: requesterName.trim(),
         employeeEmail: requesterEmail.trim(),
-        workDescription: employee.workDescription.trim(),
+        workDescription: employee.workDescription.trim() || "Transport Request",
       };
       const response = await fetch(
         `${supabaseUrl}/functions/v1/public-submit-request`,

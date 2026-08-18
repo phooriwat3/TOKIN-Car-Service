@@ -189,7 +189,7 @@ export default function PublicManageRequest({
           request.requestType === "overtime"
             ? request.overtimeEmployees.map((emp) => ({
                 ...emp,
-                workDescription: emp.workDescription.trim() || "Overtime Work",
+                workDescription: emp.workDescription.trim() || "Transport Request",
               }))
             : [],
       };
@@ -359,7 +359,9 @@ export default function PublicManageRequest({
   const overtimeEmployee = {
     ...rawOvertimeEmployee,
     workDescription:
-      rawOvertimeEmployee.workDescription === "Overtime Work"
+      ["Overtime Work", "Transport Request", "Overtime / Transport Request"].includes(
+        rawOvertimeEmployee.workDescription.trim(),
+      )
         ? ""
         : rawOvertimeEmployee.workDescription,
   };
