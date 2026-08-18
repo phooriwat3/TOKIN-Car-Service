@@ -93,8 +93,8 @@ export function PublicHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="border-b border-slate-200/80 bg-white px-4 py-3 sm:px-6 shadow-sm">
-      <div className="flex min-h-12 w-full items-center justify-between gap-4">
+    <header className="border-b border-slate-200/80 bg-white px-4 sm:px-6 shadow-sm">
+      <div className="mx-auto flex h-16 min-w-0 max-w-[1080px] items-center justify-between gap-3">
         <Link
           href="/request"
           className="flex min-w-0 items-center gap-3 sm:gap-4 transition-opacity hover:opacity-90"
@@ -112,7 +112,7 @@ export function PublicHeader({
           </span>
         </Link>
         {action && (
-          <div className="flex shrink-0 items-start justify-end gap-2 pt-0.5">
+          <div className="flex shrink-0 items-center justify-end gap-2">
             {action}
           </div>
         )}
