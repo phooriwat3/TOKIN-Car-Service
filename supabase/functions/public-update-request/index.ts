@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/http.ts';
 import {
-  bangkokMinutes, date, email, randomToken, requiredText, sha256Hex, time, token,
+  bangkokMinutes, date, email, optionalText, randomToken, requiredText, sha256Hex, time, token,
 } from '../_shared/request-access.ts';
 import { approvalEmail } from '../_shared/email-template.ts';
 
@@ -155,19 +155,16 @@ Deno.serve(async (request) => {
       booking_id: current.id,
       employee_id: requiredText(employee.employeeId, 'Employee number', 100),
       employee_name: requiredText(employee.employeeName, 'Employee name', 200),
-      work_description: requiredText(employee.workDescription, 'Work description', 500),
+      work_description: optionalText(employee.workDescription, 500),
       work_start: time(employee.workStart, 'OT start'),
       work_end: time(employee.workEnd, 'OT end'),
-      total_weekly_hours: Number(employee.totalWeeklyHours),
+      total_weekly_hours: Number(employee.totalWeeklyHours || 0),
       transport_required: Boolean(employee.transportRequired),
       bus_stop: employee.transportRequired ? requiredText(employee.busStop, 'Bus stop', 500) : null,
       seq,
     }));
     if (otRows.some(row => row.work_end <= row.work_start)) {
       throw new Error('Every OT end time must be after its start time.');
-    }
-    if (otRows.some(row => !Number.isFinite(row.total_weekly_hours) || row.total_weekly_hours < 0 || row.total_weekly_hours > 60)) {
-      throw new Error('Weekly hours must be between 0 and 60.');
     }
 
     const passengerCount = payload.requestType === 'overtime'

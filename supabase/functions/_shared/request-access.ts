@@ -4,6 +4,12 @@ const requiredText = (value: unknown, label: string, max = 500) => {
   return text;
 };
 
+const optionalText = (value: unknown, max = 500) => {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (text.length > max) throw new Error("Text exceeds maximum allowed length.");
+  return text;
+};
+
 const email = (value: unknown, label: string) => {
   const text = requiredText(value, label, 240).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text))
@@ -68,6 +74,7 @@ export {
   bangkokMinutes,
   date,
   email,
+  optionalText,
   randomToken,
   requiredText,
   sha256Hex,

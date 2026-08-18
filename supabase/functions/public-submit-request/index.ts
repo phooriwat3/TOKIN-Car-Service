@@ -4,6 +4,7 @@ import {
   bangkokMinutes,
   date,
   email,
+  optionalText,
   randomToken,
   requiredText,
   sha256Hex,
@@ -266,11 +267,7 @@ Deno.serve(async (request: Request) => {
           employee.transportRequired || employee.employeeEmail
             ? email(employee.employeeEmail, "Employee email")
             : null,
-        work_description: requiredText(
-          employee.workDescription,
-          "Work description",
-          500,
-        ),
+        work_description: optionalText(employee.workDescription, 500),
         work_start: time(employee.workStart, "OT start"),
         work_end: time(employee.workEnd, "OT end"),
         total_weekly_hours: Number(employee.totalWeeklyHours),
