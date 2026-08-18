@@ -131,9 +131,18 @@ export function PublicOvertimeRequestForm(
             />
             <Summary label="Department" value={props.department} />
             <Summary label="Company email" value={props.requesterEmail} />
-            <Summary label="OT source" value="Tiger Space (no duplicate OT approval)" />
-            <Summary label="OT verification" value="Waiting for HR/GA verification" />
-            <Summary label="OT / holiday work date" value={formatUsDate(props.usingDate)} />
+            <Summary
+              label="OT source"
+              value="Tiger Space (no duplicate OT approval)"
+            />
+            <Summary
+              label="OT verification"
+              value="Waiting for HR/GA verification"
+            />
+            <Summary
+              label="OT / holiday work date"
+              value={formatUsDate(props.usingDate)}
+            />
             <Summary
               label="Work description"
               value={props.employee.workDescription.trim() || "Not provided"}
@@ -206,8 +215,8 @@ export function PublicOvertimeRequestForm(
             </p>
             <p className="mt-0.5 text-xs leading-5 text-amber-800">
               Requests received by {OT_NORMAL_REQUEST_CUTOFF} enter the normal
-              transport-planning batch. OT verification may continue after this cutoff.
-              Current Thailand time: {bangkokTime()}.
+              transport-planning batch. OT verification may continue after this
+              cutoff. Current Thailand time: {bangkokTime()}.
             </p>
           </div>
         </div>
@@ -223,8 +232,9 @@ export function PublicOvertimeRequestForm(
       <div className="border-l-[3px] border-brand bg-brand-light/60 px-4 py-3 text-sm text-gray-700">
         <p>
           <strong className="text-ink">Before you begin:</strong> Submit your OT
-          request in Tiger Space, then submit this transport request for yourself.
-          You do not need to wait for OT approval before requesting transport.
+          request in Tiger Space, then submit this transport request for
+          yourself. You do not need to wait for OT approval before requesting
+          transport.
         </p>
       </div>
 
@@ -349,10 +359,7 @@ export function PublicOvertimeRequestForm(
                 ⚠️ {props.error}
               </p>
             ) : (
-              <p className="mt-1.5 text-xs text-gray-500">
-                Automatically filled from the directory. Change it if the
-                department is incorrect.
-              </p>
+              <p className="mt-1.5 text-xs text-gray-500"></p>
             )}
           </Field>
           <div className="sm:col-span-2">
@@ -485,7 +492,8 @@ export function PublicOvertimeRequestForm(
           >
             <p className="font-semibold">Transport request only</p>
             <p className="mt-1 text-xs leading-5 text-blue-800">
-              Tiger Space remains the source of truth for OT. Submit this form only when you need transportation.
+              Tiger Space remains the source of truth for OT. Submit this form
+              only when you need transportation.
             </p>
             <label className="mt-3 flex items-start gap-2 cursor-pointer">
               <input
@@ -498,9 +506,10 @@ export function PublicOvertimeRequestForm(
                 className="mt-0.5 h-4 w-4 accent-brand shrink-0"
               />
               <span>
-                I confirm that I have submitted this OT in Tiger Space and I require
-                transportation. The transport request will remain pending until HR/GA
-                can verify the approved OT from the Tiger Space report.
+                I confirm that I have submitted this OT in Tiger Space and I
+                require transportation. The transport request will remain
+                pending until HR/GA can verify the approved OT from the Tiger
+                Space report.
               </span>
             </label>
             {props.errorField === "tiger-space-confirmed" && (
@@ -639,7 +648,9 @@ function QuickTime({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-2">
-      <span className="mr-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Quick time</span>
+      <span className="mr-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+        Quick time
+      </span>
       {options.map((time) => (
         <button
           key={time}
