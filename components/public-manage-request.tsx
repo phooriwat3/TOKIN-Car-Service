@@ -17,7 +17,6 @@ import {
   Input,
   Select,
   Textarea,
-  WeeklyHoursInput,
   TimeMaskInput,
 } from "@/components/ui";
 import { OtGuidelines } from "@/components/ot-guidelines";
@@ -506,8 +505,9 @@ export default function PublicManageRequest({
                   </div>
                   <div className="space-y-6 px-5 py-5 sm:px-6">
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="OT / holiday work date"><Input required disabled={disabled} type="date" lang="en-US" value={request.usingDate} onChange={(event) => update("usingDate", event.target.value)} /></Field>
-                      <Field label="Weekly total working hours"><WeeklyHoursInput required disabled={disabled} value={overtimeEmployee.totalWeeklyHours} onChange={(value) => updateEmployee(0, "totalWeeklyHours", value)} /></Field>
+                      <div className="sm:col-span-2">
+                        <Field label="OT / holiday work date"><Input required disabled={disabled} type="date" lang="en-US" value={request.usingDate} onChange={(event) => update("usingDate", event.target.value)} /></Field>
+                      </div>
                       <div className="sm:col-span-2">
                         <Field label="Work description (optional)"><Textarea disabled={disabled} value={overtimeEmployee.workDescription} onChange={(event) => { updateEmployee(0, "workDescription", event.target.value); update("purpose", `Overtime / Holiday Work: ${event.target.value}`); }} /></Field>
                       </div>
