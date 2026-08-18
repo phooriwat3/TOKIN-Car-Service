@@ -16,7 +16,7 @@ type OvertimeEmployee = {
   busStop?: string;
 };
 
-const editableStatuses = ['pending_approval', 'pending_ot_verification', 'changes_requested', 'approved'];
+const editableStatuses = ['pending_approval', 'pending_ot_verification', 'changes_requested', 'approved', 'assigned'];
 const appBaseUrl = () => {
   const configured = Deno.env.get('APP_BASE_URL')?.trim().replace(/\/+$/, '');
   return configured || 'https://carservice.tokin.co.th';
