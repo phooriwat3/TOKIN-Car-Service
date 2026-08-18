@@ -313,17 +313,28 @@ export default function PublicManageRequest({
     key: K,
     value: OvertimeEmployee[K],
   ) => {
-    setRequest((current) =>
-      current
-        ? {
-            ...current,
-            overtimeEmployees: current.overtimeEmployees.map(
-              (item, itemIndex) =>
-                itemIndex === index ? { ...item, [key]: value } : item,
-            ),
-          }
-        : current,
-    );
+    setRequest((current) => {
+      if (!current) return current;
+      const list = [...(current.overtimeEmployees ?? [])];
+      if (!list[index]) {
+        list[index] = {
+          employeeId: current.requester.employeeId ?? "",
+          employeeName: current.requester.name ?? "",
+          employeeEmail: current.requester.email ?? "",
+          workDescription: "",
+          workStart: current.startTime || "17:20",
+          workEnd: current.endTime || "20:00",
+          totalWeeklyHours: 0,
+          transportRequired: true,
+          busStop: "",
+        };
+      }
+      list[index] = { ...list[index], [key]: value };
+      return {
+        ...current,
+        overtimeEmployees: list,
+      };
+    });
   };
 
   function switchRequestType(nextType: RequestType) {
@@ -524,12 +535,32 @@ export default function PublicManageRequest({
                     <fieldset>
                       <legend className="text-[13px] font-semibold text-gray-700">Transportation requirement</legend>
                       <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                        <label className={`flex min-h-[72px] cursor-pointer gap-3 border p-3.5 transition-colors ${overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300 bg-white"}`}>
-                          <input type="radio" name="manage-transport" disabled={disabled} checked={overtimeEmployee.transportRequired} onChange={() => updateEmployee(0, "transportRequired", true)} className="mt-1 h-4 w-4 shrink-0 accent-brand" />
+                        <label
+                          onClick={() => !disabled && updateEmployee(0, "transportRequired", true)}
+                          className={`flex min-h-[72px] cursor-pointer gap-3 border p-3.5 transition-colors ${overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300 bg-white"}`}
+                        >
+                          <input
+                            type="radio"
+                            name="manage-transport"
+                            disabled={disabled}
+                            checked={Boolean(overtimeEmployee.transportRequired)}
+                            onChange={(e) => { e.stopPropagation(); updateEmployee(0, "transportRequired", true); }}
+                            className="mt-1 h-4 w-4 shrink-0 accent-brand"
+                          />
                           <div><strong className="block text-sm font-semibold text-ink">Transportation required</strong><span className="mt-1 block text-xs leading-5 text-gray-500">Admin will assign a vehicle and driver after approval.</span></div>
                         </label>
-                        <label className={`flex min-h-[72px] cursor-pointer gap-3 border p-3.5 transition-colors ${!overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300 bg-white"}`}>
-                          <input type="radio" name="manage-transport" disabled={disabled} checked={!overtimeEmployee.transportRequired} onChange={() => updateEmployee(0, "transportRequired", false)} className="mt-1 h-4 w-4 shrink-0 accent-brand" />
+                        <label
+                          onClick={() => !disabled && updateEmployee(0, "transportRequired", false)}
+                          className={`flex min-h-[72px] cursor-pointer gap-3 border p-3.5 transition-colors ${!overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300 bg-white"}`}
+                        >
+                          <input
+                            type="radio"
+                            name="manage-transport"
+                            disabled={disabled}
+                            checked={!overtimeEmployee.transportRequired}
+                            onChange={(e) => { e.stopPropagation(); updateEmployee(0, "transportRequired", false); }}
+                            className="mt-1 h-4 w-4 shrink-0 accent-brand"
+                          />
                           <div><strong className="block text-sm font-semibold text-ink">No transportation required</strong><span className="mt-1 block text-xs leading-5 text-gray-500">Submit the OT record without a vehicle assignment.</span></div>
                         </label>
                       </div>
