@@ -348,7 +348,14 @@ export default function PublicManageRequest({
     });
   }
 
-  const overtimeEmployee = request?.overtimeEmployees[0] ?? emptyEmployee();
+  const rawOvertimeEmployee = request?.overtimeEmployees[0] ?? emptyEmployee();
+  const overtimeEmployee = {
+    ...rawOvertimeEmployee,
+    workDescription:
+      rawOvertimeEmployee.workDescription === "Overtime Work"
+        ? ""
+        : rawOvertimeEmployee.workDescription,
+  };
 
   return (
     <main className="min-h-screen bg-canvas">
