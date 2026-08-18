@@ -156,7 +156,7 @@ Deno.serve(async (request: Request) => {
         : [];
     if (payload.requestType === "overtime" && !overtimeEmployees.length)
       throw new Error("At least one OT employee is required.");
-    if (payload.requestType === "overtime" && !payload.tigerSpaceConfirmed)
+    if (payload.requestType === "overtime" && payload.tigerSpaceConfirmed === false)
       throw new Error("Confirm that you submitted this OT in Tiger Space.");
     if (
       payload.requestType === "overtime" &&

@@ -887,13 +887,10 @@ function validate(request: ManagedRequest) {
         !item.employeeId.trim() ||
         !item.employeeName.trim() ||
         item.workEnd <= item.workStart ||
-        !Number.isFinite(item.totalWeeklyHours) ||
-        item.totalWeeklyHours < 0 ||
-        item.totalWeeklyHours > 60 ||
         (item.transportRequired && !item.busStop.trim()),
     );
     if (incomplete)
-      return "Complete every OT employee row, including valid time, weekly hours, and bus stop when transportation is required.";
+      return "Complete every OT employee row, including valid time and bus stop when transportation is required.";
   }
   return "";
 }

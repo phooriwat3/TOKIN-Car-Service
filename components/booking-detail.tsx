@@ -5,6 +5,7 @@ import { CalendarDays, Clock, MapPin, Users, Mail, Car } from "lucide-react";
 import { useApp } from "./app-provider";
 import { Badge, Card, Empty } from "./ui";
 import { statusLabel, totalCost } from "@/lib/business";
+import { formatThaiDateTime } from "@/lib/date-format";
 
 export function BookingDetail({
   id,
@@ -240,7 +241,7 @@ export function BookingDetail({
           <p className="mt-2 text-sm text-gray-700">{b.approval.comments}</p>
           <p className="mt-1 text-xs text-gray-500">
             {b.approval.approverName} ·{" "}
-            {new Date(b.approval.actedAt).toLocaleString()}
+            {formatThaiDateTime(b.approval.actedAt)}
           </p>
         </Card>
       )}
@@ -249,8 +250,7 @@ export function BookingDetail({
         <Card className="p-5">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-bold text-ink flex items-center gap-2">
-              <Car className="text-brand" size={18} /> Primary Assignment
-              Details
+              <Car className="text-brand" size={18} /> Primary Assignment Details
             </h2>
             {admin && (
               <Link
@@ -269,7 +269,7 @@ export function BookingDetail({
                     Vehicle and driver {index + 1}
                   </p>
                   <p className="mt-2 font-bold text-ink">
-                    {unit.licensePlate} ? {unit.brand} {unit.vehicleType}
+                    {unit.licensePlate} · {unit.brand} {unit.vehicleType}
                   </p>
                   <p className="mt-1 text-sm text-gray-700">
                     {unit.driverName}
@@ -288,17 +288,19 @@ export function BookingDetail({
                             : employeeId),
                       )
                       .join(", ") || "-"}
-                    {isOt && <div className="mt-1">
-                      Drop-offs:{" "}
-                      {(unit.employeeIds ?? [])
-                        .map(
-                          (employeeId) =>
-                            b.overtimeEmployees?.find(
-                              (employee) => employee.employeeId === employeeId,
-                            )?.busStop || "-",
-                        )
-                        .join(", ") || "-"}
-                    </div>}
+                    {isOt && (
+                      <div className="mt-1">
+                        Drop-offs:{" "}
+                        {(unit.employeeIds ?? [])
+                          .map(
+                            (employeeId) =>
+                              b.overtimeEmployees?.find(
+                                (employee) => employee.employeeId === employeeId,
+                              )?.busStop || "-",
+                          )
+                          .join(", ") || "-"}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -329,7 +331,7 @@ export function BookingDetail({
                 ],
                 [
                   "Assigned time",
-                  new Date(b.assignment.assignedAt).toLocaleString(),
+                  formatThaiDateTime(b.assignment.assignedAt),
                 ],
               ]}
             />
@@ -345,15 +347,11 @@ export function BookingDetail({
               items={[
                 [
                   "Departure",
-                  b.tripLog.actualTimeOut
-                    ? new Date(b.tripLog.actualTimeOut).toLocaleString()
-                    : "-",
+                  formatThaiDateTime(b.tripLog.actualTimeOut),
                 ],
                 [
                   "Return",
-                  b.tripLog.actualTimeIn
-                    ? new Date(b.tripLog.actualTimeIn).toLocaleString()
-                    : "-",
+                  formatThaiDateTime(b.tripLog.actualTimeIn),
                 ],
               ]}
             />

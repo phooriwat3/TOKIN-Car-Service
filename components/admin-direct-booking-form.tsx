@@ -8,9 +8,10 @@ import { PageHeader } from "@/components/page-header";
 import { Button, Card, Field, Input, Select, Textarea, TimeMaskInput } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { demoUsers } from "@/lib/mock-data";
+import { getBangkokDateString } from "@/lib/date-format";
 import type { Booking, OtVerificationMode, User } from "@/lib/types";
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => getBangkokDateString();
 
 export function AdminDirectBookingForm() {
   const { addBooking, configured, data, user } = useApp();

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getBangkokDateString } from "@/lib/date-format";
 export const bookingSchema = z
   .object({
     category: z.enum([
@@ -50,10 +51,8 @@ export const bookingSchema = z
         path: ["passengerNames"],
         message: "Passenger list is required",
       });
-    const min = new Date();
-    min.setHours(0, 0, 0, 0);
-    min.setDate(min.getDate() + 1);
-    if (!d.urgent && new Date(d.usingDate) <= min)
+    const todayStr = getBangkokDateString();
+    if (!d.urgent && d.usingDate <= todayStr)
       ctx.addIssue({
         code: "custom",
         path: ["usingDate"],

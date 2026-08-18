@@ -1,6 +1,7 @@
 "use client";
-import { formatUsDate } from "@/lib/date-format";
-import { PublicHeader } from "@/components/brand";
+import { formatUsDate, getBangkokDateString } from "@/lib/date-format";
+
+const getTodayString = () => getBangkokDateString();
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -10,7 +11,6 @@ import {
   Clock3,
   MailCheck,
   ShieldCheck,
-  Trash2,
 } from "lucide-react";
 import {
   Button,
@@ -35,6 +35,7 @@ import {
   type RequesterField,
 } from "@/components/public-overtime-request-form";
 import { overtimeDuration } from "@/lib/overtime";
+import { BrandLogo } from "@/components/brand";
 
 const emptyEmployee = (): OvertimeEmployee => ({
   employeeId: "",
@@ -126,33 +127,17 @@ const normalizeDepartment = (
   return dept || "";
 };
 
-type PassengerEntry = {
-  name: string;
-  department: string;
-  email: string;
-};
 
-const createPassengerEntries = (count = 1): PassengerEntry[] =>
-  Array.from({ length: count }, () => ({ name: "", department: "", email: "" }));
-const getTodayString = () => {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const date = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${date}`;
-};
 
 export default function PublicRequestForm() {
   const [requestType, setRequestType] = useState<RequestType | null>(null);
   const [requesterName, setRequesterName] = useState("");
   const [directorySelected, setDirectorySelected] = useState(false);
   const [confirmedSelf, setConfirmedSelf] = useState(false);
-  const [tigerSpaceConfirmed, setTigerSpaceConfirmed] = useState(false);
+  const [tigerSpaceConfirmed, setTigerSpaceConfirmed] = useState(true);
   const [requesterEmail, setRequesterEmail] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [department, setDepartment] = useState("");
-  const [approverName, setApproverName] = useState("");
-  const [approverEmail, setApproverEmail] = useState("");
   const [usingDate, setUsingDate] = useState(getTodayString);
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("17:00");
@@ -163,7 +148,7 @@ export default function PublicRequestForm() {
     "front_area" | "loading_area"
   >("front_area");
   const [withStaff, setWithStaff] = useState(false);
-  const [passengers, setPassengers] = useState<PassengerEntry[]>(createPassengerEntries);
+  const [passengers, setPassengers] = useState("");
   const [employees, setEmployees] = useState<OvertimeEmployee[]>([
     emptyEmployee(),
   ]);
@@ -185,57 +170,6 @@ export default function PublicRequestForm() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [requestType]);
-
-  useEffect(() => {
-    const restoreRequestType = (state: unknown) => {
-      const historyType =
-        state && typeof state === "object" && "tokinRequestType" in state
-          ? state.tokinRequestType
-          : null;
-      if (historyType === "overtime" || historyType === "outside_company") {
-        setRequestType(historyType);
-        return;
-      }
-      setRequestType(null);
-      setShowSubmitConfirmation(false);
-      setSuccess(null);
-      setError("");
-      setErrorField(undefined);
-    };
-
-    const handlePopState = (event: PopStateEvent) => {
-      restoreRequestType(event.state);
-    };
-
-    restoreRequestType(window.history.state);
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
-  const openRequestType = (type: RequestType) => {
-    const currentState = window.history.state;
-    window.history.pushState(
-      {
-        ...(currentState && typeof currentState === "object"
-          ? currentState
-          : {}),
-        tokinRequestType: type,
-      },
-      "",
-      window.location.href,
-    );
-    setRequestType(type);
-  };
-
-  const backToRequestTypes = () => {
-    const historyType = window.history.state?.tokinRequestType;
-    if (historyType === "overtime" || historyType === "outside_company") {
-      window.history.back();
-      return;
-    }
-    setRequestType(null);
-    setShowSubmitConfirmation(false);
-  };
   const updateEmployee = <K extends keyof OvertimeEmployee>(
     index: number,
     key: K,
@@ -252,11 +186,10 @@ export default function PublicRequestForm() {
     setUsingDate(getTodayString());
     setDestination("");
     setPurpose("");
-    setPassengers(createPassengerEntries());
+    setPassengers("");
     setEmployees([emptyEmployee()]);
     setDirectorySelected(false);
     setConfirmedSelf(false);
-    setTigerSpaceConfirmed(false);
     setSuccess(null);
     setShowSubmitConfirmation(false);
     setError("");
@@ -268,20 +201,17 @@ export default function PublicRequestForm() {
     setRequesterEmail("");
     setEmployeeId("");
     setDepartment("");
-    setApproverName("");
-    setApproverEmail("");
     setStartTime("08:00");
     setEndTime("17:00");
     setPickupLocation("Tokin factory");
     setDestination("");
     setMeetingPoint("front_area");
     setPurpose("");
-    setPassengers(createPassengerEntries());
+    setPassengers("");
     setWithStaff(false);
     setEmployees([emptyEmployee()]);
     setDirectorySelected(false);
     setConfirmedSelf(false);
-    setTigerSpaceConfirmed(false);
     setShowSubmitConfirmation(false);
     setError("");
   };
@@ -350,20 +280,14 @@ export default function PublicRequestForm() {
           "OT end time must be after the start time.",
           "ot-end",
         );
-      if (!tigerSpaceConfirmed)
+
+      if (employee.transportRequired && !employee.busStop.trim())
         return failValidation(
-          "Confirm that you submitted this OT in Tiger Space.",
-          "tiger-space-confirmed",
-        );
-      if (!employee.busStop.trim())
-        return failValidation(
-          "Drop-off location is required.",
+          "Drop-off location is required when transportation is requested.",
           "drop-off-location",
         );
-    } else {
-      if (!approverName.trim() || !approverEmail.trim())
-        return failValidation("Select an approver from the company directory.", "approver-search");
-      if (!purpose.trim()) return failValidation("Purpose is required.");
+    } else if (!purpose.trim()) {
+      return failValidation("Purpose is required.");
     }
 
     if (!confirmed) {
@@ -379,8 +303,10 @@ export default function PublicRequestForm() {
       if (!supabaseUrl || !publishableKey)
         throw new Error("Public request service is not configured.");
       const passengerList = passengers
-        .map((passenger) => passenger.name.trim())
-        .filter(Boolean);      const overtimeEmployee = {
+        .split("\n")
+        .map((item) => item.trim())
+        .filter(Boolean);
+      const overtimeEmployee = {
         ...employee,
         employeeId: employeeId.trim(),
         employeeName: requesterName.trim(),
@@ -403,10 +329,6 @@ export default function PublicRequestForm() {
               employeeId,
               department,
             },
-            approver:
-              requestType === "outside_company"
-                ? { name: approverName, email: approverEmail }
-                : undefined,
             usingDate,
             startTime:
               requestType === "overtime"
@@ -429,8 +351,7 @@ export default function PublicRequestForm() {
             passengers: requestType === "outside_company" ? passengerList : [],
             overtimeEmployees:
               requestType === "overtime" ? [overtimeEmployee] : [],
-            tigerSpaceConfirmed:
-              requestType === "overtime" ? tigerSpaceConfirmed : undefined,
+            tigerSpaceConfirmed: tigerSpaceConfirmed ?? true,
             website,
           }),
         },
@@ -487,10 +408,7 @@ export default function PublicRequestForm() {
           </div>
           <dl className="grid gap-x-8 gap-y-4 px-5 py-5 text-sm sm:grid-cols-2 sm:px-7">
             <Info label="Request number" value={success.requestNo} />
-            <Info
-              label="Current status"
-              value={requestType === "overtime" ? "Waiting for OT verification" : "Pending department approval"}
-            />
+            <Info label="Current status" value="Pending department approval" />
             <Info
               label="Submitted"
               value={new Intl.DateTimeFormat("en-GB", {
@@ -501,14 +419,12 @@ export default function PublicRequestForm() {
             />
             <Info label="Department" value={department} />
             <Info
-              label={requestType === "overtime" ? "OT source" : "Approver"}
-              value={requestType === "overtime" ? "Tiger Space" : `${approverName} (${approverEmail})`}
+              label="Approver"
+              value={`${department} department approver`}
             />
             <Info
               label="Expected next step"
-              value={requestType === "overtime"
-                ? "HR/GA checks the Tiger Space report. Transport is confirmed after the OT is verified."
-                : "After approval, GA sources the vehicle and driver and emails the requester."}
+              value="After approval, Admin assigns the vehicle and driver and emails the employee."
             />
           </dl>
           {success.emailStatus === "queued" && (
@@ -517,7 +433,7 @@ export default function PublicRequestForm() {
               summary.
             </p>
           )}
-          {requestType !== "overtime" && success.emailStatus !== "sent" &&
+          {success.emailStatus !== "sent" &&
             success.emailStatus !== "queued" && (
               <p className="mx-5 mb-5 border-l-[3px] border-amber-500 bg-amber-50 px-3.5 py-3 text-sm text-amber-900 sm:mx-7">
                 The request was saved, but the approval email service is not
@@ -580,8 +496,8 @@ export default function PublicRequestForm() {
                 Where do you need to go?
               </h1>
               <p className="mt-3 text-sm leading-6 text-gray-500 sm:text-base">
-                Start with the type of transport you need. OT transport is
-                checked against Tiger Space; outside trips go to an approver.
+                Start with the type of transport you need. Your company details
+                route the request to the right approver automatically.
               </p>
             </div>
             <div className="mt-5 shrink-0 text-sm sm:mt-0 sm:text-right">
@@ -600,7 +516,7 @@ export default function PublicRequestForm() {
               title="OVERTIME / HOLIDAY WORK"
               body="Transportation for employees working overtime or on a public holiday."
               note="Submit by 16:00"
-              onClick={() => openRequestType("overtime")}
+              onClick={() => setRequestType("overtime")}
             />
             <Choice
               icon={<Car />}
@@ -608,7 +524,7 @@ export default function PublicRequestForm() {
               title="CAR SERVICE REQUISITION"
               body="Vehicle request for business travel outside the company premises."
               note="For off-site company trips"
-              onClick={() => openRequestType("outside_company")}
+              onClick={() => setRequestType("outside_company")}
             />
           </div>
           <RequestProgress />
@@ -625,73 +541,39 @@ export default function PublicRequestForm() {
           className="space-y-5 pb-20 sm:pb-0"
         >
           {requestType !== "overtime" && (
-            <>
-              <div className="flex min-w-0 flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
-                    Employee transportation request
-                  </p>
-                  <h1 className="mt-1.5 break-words text-2xl font-bold tracking-[-0.02em] text-ink sm:text-[30px]">
-                    CAR SERVICE REQUISITION
-                  </h1>
-                  <p className="mt-1.5 max-w-2xl text-sm leading-6 text-gray-500">
-                    Request a vehicle for business travel outside TOKIN premises.
-                    Your department approver must review the request before GA
-                    arranges the vehicle and driver.
-                  </p>
-                </div>
-                <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:flex sm:w-auto sm:gap-3">
-                  <Field label="Using date">
-                    <Input
-                      required
-                      type="date"
-                      lang="en-US"
-                      min={getTodayString()}
-                      className="h-10 sm:w-44"
-                      value={usingDate}
-                      onChange={(e) => setUsingDate(e.target.value)}
-                    />
-                  </Field>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="h-10 whitespace-nowrap px-3"
-                    onClick={backToRequestTypes}
-                  >
-                    Change type
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid gap-3 border border-brand-200 bg-brand-50 px-4 py-3.5 text-sm text-slate-700 sm:grid-cols-[1fr_auto] sm:items-center">
-                <div className="flex items-start gap-3">
-                  <ShieldCheck className="mt-0.5 shrink-0 text-brand-600" size={18} />
-                  <div>
-                    <p className="font-semibold text-ink">Before you begin</p>
-                    <p className="mt-0.5 text-xs leading-5 text-slate-600">
-                      Prepare the trip schedule, route, passenger details and purpose.
-                      Select an active department approver; they will receive a secure
-                      approval link by email after you submit.
-                    </p>
-                  </div>
-                </div>
-                <p className="justify-self-start text-xs font-semibold text-brand-700 sm:justify-self-end">
-                  Approval required for off-site travel
+            <div className="flex min-w-0 flex-col gap-4 border-b border-line pb-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold uppercase text-brand">
+                  TOKIN Transport
                 </p>
+                <h1 className="mt-1 break-words text-xl font-bold leading-tight sm:text-2xl">
+                  CAR SERVICE REQUISITION
+                </h1>
               </div>
-            </>
+              <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:flex sm:w-auto sm:gap-3">
+                <Field label="Using date">
+                  <Input
+                    required
+                    type="date"
+                    lang="en-US"
+                    min={getTodayString()}
+                    className="h-10 sm:w-44"
+                    value={usingDate}
+                    onChange={(e) => setUsingDate(e.target.value)}
+                  />
+                </Field>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-10 whitespace-nowrap px-3"
+                  onClick={() => setRequestType(null)}
+                >
+                  Change type
+                </Button>
+              </div>
+            </div>
           )}
-          {requestType !== "overtime" && (
-            <section className="border border-amber-200 bg-amber-50 px-4 py-3.5 text-sm text-amber-950" aria-label="Car service request remark">
-              <p className="font-semibold">Remark</p>
-              <p className="mt-1 text-xs leading-5 text-amber-900">
-                Submit this request at least one working day in advance. The request
-                is reviewed by the selected department approver, then GA arranges the
-                vehicle and driver. Keep trip details, passenger information and the
-                meeting point accurate so the arrangement can be completed on time.
-              </p>
-            </section>
-          )}
+
           {requestType === "overtime" ? (
             <PublicOvertimeRequestForm
               requesterName={requesterName}
@@ -708,6 +590,7 @@ export default function PublicRequestForm() {
               error={error}
               errorField={errorField}
               minimumDate={getTodayString()}
+              onTigerSpaceConfirmedChange={setTigerSpaceConfirmed}
               onRequesterChange={(field: RequesterField, value: string) => {
                 if (field === "name") {
                   setRequesterName(value);
@@ -726,12 +609,11 @@ export default function PublicRequestForm() {
                 setDirectorySelected(true);
               }}
               onConfirmedSelfChange={setConfirmedSelf}
-              onTigerSpaceConfirmedChange={setTigerSpaceConfirmed}
               onUsingDateChange={setUsingDate}
               onEmployeeChange={(field, value) =>
                 updateEmployee(0, field, value)
               }
-              onBackToType={backToRequestTypes}
+              onBackToType={() => setRequestType(null)}
               onBackToEdit={() => {
                 setShowSubmitConfirmation(false);
                 setError("");
@@ -753,7 +635,7 @@ export default function PublicRequestForm() {
                 <p className="mb-4 text-xs text-gray-500">
                   Search name or email to auto-fill company directory details.
                 </p>
-                <div className="grid gap-4 rounded-lg border border-line bg-canvas p-4 sm:grid-cols-2">
+                <div className="grid gap-4 rounded-xl border border-line bg-canvas p-4 sm:grid-cols-2">
                   <Field label="Employee number">
                     <Input
                       required
@@ -770,7 +652,7 @@ export default function PublicRequestForm() {
                     <Select
                       required
                       value={department}
-                      onChange={(e) => { setDepartment(e.target.value); setApproverName(""); setApproverEmail(""); }}
+                      onChange={(e) => setDepartment(e.target.value)}
                     >
                       <option value="">Select Dept</option>
                       {DEPARTMENTS.map((dept) => (
@@ -790,8 +672,6 @@ export default function PublicRequestForm() {
                     onChange={setRequesterName}
                     placeholder="Search name..."
                     onSelectUser={(person) => {
-                      setApproverName("");
-                      setApproverEmail("");
                       setRequesterName(person.displayName);
                       setRequesterEmail(person.mail);
                       if (person.department)
@@ -813,125 +693,20 @@ export default function PublicRequestForm() {
                     />
                   </Field>
                 </div>
-                <div className="mt-5 border-t border-line pt-5">
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <h3 className="text-sm font-semibold text-ink">Passengers</h3>
-                      <p className="mt-0.5 text-xs leading-5 text-slate-500">
-                        Add employees as required. Search their name to fill Department and Email automatically.
-                      </p>
-                    </div>
-                    
-                  </div>
-                  <div className="mt-4 space-y-3">
-                    <div className="hidden grid-cols-[32px_minmax(0,1.3fr)_minmax(120px,.7fr)_minmax(0,1fr)_32px] gap-3 px-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500 md:grid">
-                      <span>No.</span>
-                      <span>Search name</span>
-                      <span>Department</span>
-                      <span>Email</span>
-                    </div>
-                    {passengers.map((passenger, index) => (
-                      <div key={index} className="grid gap-3 border border-slate-200 bg-slate-50/60 p-3 md:grid-cols-[32px_minmax(0,1.3fr)_minmax(120px,.7fr)_minmax(0,1fr)_32px] md:items-start md:border-0 md:bg-transparent md:p-0">
-                        <span className="flex h-10 items-center justify-center text-xs font-semibold text-slate-500">{index + 1}</span>
-                        <CompanyUserField
-                          label=""
-                          inputId={`passenger-${index + 1}-name`}
-                          value={passenger.name}
-                          onChange={(value) => setPassengers((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, name: value } : item))}
-                          placeholder="Search name"
-                          onSelectUser={(person) => setPassengers((current) => current.map((item, itemIndex) => itemIndex === index ? { name: person.displayName, department: normalizeDepartment(person.department, person.jobTitle), email: person.mail } : item))}
-                        />
-                        <Select
-                          aria-label={`Passenger ${index + 1} department`}
-                          value={passenger.department}
-                          onChange={(event) => setPassengers((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, department: event.target.value } : item))}
-                        >
-                          <option value="">Select dept</option>
-                          {DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
-                          {passenger.department && !DEPARTMENTS.includes(passenger.department) && <option value={passenger.department}>{passenger.department}</option>}
-                        </Select>
-                        <Input
-                          type="email"
-                          aria-label={`Passenger ${index + 1} email`}
-                          value={passenger.email}
-                          onChange={(event) => setPassengers((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, email: event.target.value } : item))}
-                          placeholder="name@company.com"
-                        />
-                        <button
-                          type="button"
-                          disabled={passengers.length === 1}
-                          aria-label={`Delete passenger ${index + 1}`}
-                          title={passengers.length === 1 ? "Keep at least one passenger row" : "Delete passenger"}
-                          onClick={() => setPassengers((current) => current.filter((_item, itemIndex) => itemIndex !== index))}
-                          className="flex h-10 w-8 items-center justify-center text-slate-400 transition-colors hover:bg-red-50 hover:text-danger disabled:cursor-not-allowed disabled:opacity-35"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-5 flex items-center gap-3">
-                    <span className="h-px flex-1 bg-slate-200" />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={passengers.length >= 5}
-                      onClick={() =>
-                        setPassengers((current) => [
-                          ...current,
-                          { name: "", department: "", email: "" },
-                        ])
-                      }
-                      className="h-8 px-3 text-xs font-semibold text-brand-600 hover:bg-brand-50 hover:text-brand-700"
-                    >
-                      + Add
-                    </Button>
-                    <span className="h-px flex-1 bg-slate-200" />
-                  </div>
-                </div>
               </Card>
-              <Card className="p-5">
-                <SectionHeading
-                  number="2"
-                  title="Approval"
-                  description="Select the department approver who will receive the secure approval link."
-                />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <CompanyUserField
-                    label="Approver"
-                    inputId="approver-search"
-                    required
-                    disabled={!department}
-                    value={approverName}
-                    onChange={(value) => { setApproverName(value); setApproverEmail(""); }}
-                    placeholder={department ? "Search approver name..." : "Select department first"}
-                    onSelectUser={(person) => {
-                      setApproverName(person.displayName);
-                      setApproverEmail(person.mail);
-                    }}
-                  />
-                  <Field label="Approver email">
-                    <Input disabled value={approverEmail} placeholder="Filled after selecting approver" />
-                  </Field>
-                </div>
-                <p className="mt-3 text-xs leading-5 text-slate-500">
-                  The selected person must be an active approver for {department || "the requester's department"}.
-                </p>
-              </Card>
+              <ApprovalRouteNotice department={department} />
 
               <Card className="p-5">
                 <SectionHeading
-                  number="3"
-                  title="Travel details"
-                  description="Provide the required place, purpose, schedule and meeting point from the original car service form."
+                  number="2"
+                  title="Trip details"
+                  description="Provide the schedule, route, and purpose for this trip."
                 />
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <Field label="Start time">
                     <Input
                       required
                       type="time"
-                      lang="th-TH"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
                     />
@@ -940,7 +715,6 @@ export default function PublicRequestForm() {
                     <Input
                       required
                       type="time"
-                      lang="th-TH"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
                     />
@@ -952,7 +726,7 @@ export default function PublicRequestForm() {
                       onChange={(e) => setPickupLocation(e.target.value)}
                     />
                   </Field>
-                  <Field label="Place / destination">
+                  <Field label="Destination">
                     <Input
                       required
                       value={destination}
@@ -990,21 +764,23 @@ export default function PublicRequestForm() {
                     />
                   </div>
                 )}
-                <fieldset className="mt-5 space-y-2 border-t border-line pt-5">
-                  <legend className="text-[13px] font-semibold text-slate-700">
-                    Passenger arrangement
-                  </legend>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <label className={`flex cursor-pointer items-center gap-3 border px-3.5 py-3 text-sm transition-colors ${withStaff ? "border-brand-400 bg-brand-50" : "border-slate-300 bg-white hover:border-slate-400"}`}>
-                      <input type="radio" name="passenger-arrangement" checked={withStaff} onChange={() => setWithStaff(true)} className="h-4 w-4 accent-brand" />
-                      <span><span className="block font-semibold text-ink">With staff</span><span className="block text-xs text-slate-500">A TOKIN staff member travels with the group.</span></span>
-                    </label>
-                    <label className={`flex cursor-pointer items-center gap-3 border px-3.5 py-3 text-sm transition-colors ${!withStaff ? "border-brand-400 bg-brand-50" : "border-slate-300 bg-white hover:border-slate-400"}`}>
-                      <input type="radio" name="passenger-arrangement" checked={!withStaff} onChange={() => setWithStaff(false)} className="h-4 w-4 accent-brand" />
-                      <span><span className="block font-semibold text-ink">Without staff</span><span className="block text-xs text-slate-500">No additional TOKIN staff member is required.</span></span>
-                    </label>
-                  </div>
-                </fieldset>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <Field label="Passenger names (one per line)">
+                    <Textarea
+                      value={passengers}
+                      onChange={(e) => setPassengers(e.target.value)}
+                    />
+                  </Field>
+                  <label className="flex items-center gap-3 self-start pt-8 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={withStaff}
+                      onChange={(e) => setWithStaff(e.target.checked)}
+                      className="h-4 w-4 accent-brand"
+                    />
+                    Travel with GA staff
+                  </label>
+                </div>
               </Card>
 
               {error && (
@@ -1061,7 +837,7 @@ export default function PublicRequestForm() {
               </dd>
               <dt className="text-gray-500">Approval route</dt>
               <dd className="font-medium text-ink">
-                {approverName || "—"}
+                {department || "—"} department approver(s)
               </dd>
             </dl>
 
@@ -1141,8 +917,8 @@ function RequestProgress() {
     },
     {
       icon: <ShieldCheck size={17} />,
-      title: "Approval / verification",
-      body: "Tiger Space check for OT; department approval for outside trips",
+      title: "Department approval",
+      body: "Sent to your department approver",
     },
     {
       icon: <Car size={17} />,
@@ -1205,6 +981,25 @@ function SectionHeading({
   );
 }
 
+function ApprovalRouteNotice({ department }: { department: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3.5">
+      <ShieldCheck className="mt-0.5 shrink-0 text-brand" size={19} />
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-ink">
+          Approval is routed automatically
+        </p>
+        <p className="mt-0.5 text-xs leading-5 text-gray-600">
+          {department
+            ? `This request will be sent to the active approver(s) for ${department}.`
+            : "Select a department and the system will send this request to its active approver(s)."}{" "}
+          You do not need to enter a manager email.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function FormActions({
   submitting,
   onReset,
@@ -1213,7 +1008,7 @@ function FormActions({
   onReset: () => void;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-line bg-white px-4 py-3 shadow-[0_-2px_8px_rgba(15,23,42,0.06)] sm:static sm:justify-end sm:border-0 sm:bg-transparent sm:px-0 sm:pt-3 sm:shadow-none">
+    <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-line bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur sm:static sm:justify-end sm:border-0 sm:bg-transparent sm:px-0 sm:pt-3 sm:shadow-none">
       <p className="hidden text-xs text-gray-500 sm:mr-auto sm:block">
         Review your information before submitting.
       </p>
@@ -1234,10 +1029,28 @@ function FormActions({
 function PublicFrame({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-canvas">
-      <PublicHeader
-        context="Employee transportation request"
-        action={<a href="/admin/login" className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-brand-300 hover:text-brand-600">Admin portal</a>}
-      />
+      <header className="border-b border-line bg-white px-4 sm:px-6 shadow-sm">
+        <div className="mx-auto flex h-16 min-w-0 max-w-[1080px] items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <BrandLogo />
+            <div className="hidden h-8 w-px bg-gray-200 sm:block" />
+            <div>
+              <p className="text-[15px] font-bold text-ink leading-tight">
+                TOKIN Transport
+              </p>
+              <p className="hidden text-[11px] font-medium text-gray-500 sm:block">
+                Employee transportation request
+              </p>
+            </div>
+          </div>
+          <a
+            href="/admin/login"
+            className="shrink-0 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:border-gray-400 hover:bg-gray-50 hover:text-brand sm:px-3 sm:text-xs"
+          >
+            Admin portal
+          </a>
+        </div>
+      </header>
       <div className="mx-auto min-w-0 max-w-[1080px] px-4 py-6 sm:px-6 sm:py-8">
         {children}
       </div>
@@ -1264,7 +1077,7 @@ function Choice({
     <button
       type="button"
       onClick={onClick}
-      className="group flex min-w-0 flex-col rounded-lg border border-line bg-white p-6 text-left shadow-card transition-colors duration-150 hover:border-brand/50 hover:bg-[#fbfdff] sm:p-8"
+      className="group flex min-w-0 flex-col rounded-xl border border-line bg-white p-6 text-left shadow-card transition-colors duration-150 hover:border-brand/50 hover:bg-[#fbfdff] sm:p-8"
     >
       <div className="flex items-start justify-between gap-4">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-light text-brand transition-colors group-hover:bg-brand group-hover:text-white sm:h-14 sm:w-14">

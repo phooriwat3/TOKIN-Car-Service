@@ -8,6 +8,7 @@ import {
   Input,
   Select,
   Textarea,
+  TimeMaskInput,
 } from "@/components/ui";
 import {
   CompanyUserField,
@@ -385,28 +386,22 @@ export function PublicOvertimeRequestForm(
               </Field>
             </div>
             <Field label="OT start time">
-              <div className="space-y-2">
-                <Input
-                  id="ot-start"
-                  required
-                  type="time"
-                  value={props.employee.workStart}
-                  onChange={(event) => props.onEmployeeChange("workStart", event.target.value)}
-                />
-                <QuickTime options={["08:00", "17:20"]} onSelect={(value) => props.onEmployeeChange("workStart", value)} />
-              </div>
+              <TimeMaskInput
+                id="ot-start"
+                required
+                value={props.employee.workStart}
+                onChange={(value) => props.onEmployeeChange("workStart", value)}
+                quickTimes={["08:00", "17:20"]}
+              />
             </Field>
             <Field label="OT end time">
-              <div className="space-y-2">
-                <Input
-                  id="ot-end"
-                  required
-                  type="time"
-                  value={props.employee.workEnd}
-                  onChange={(event) => props.onEmployeeChange("workEnd", event.target.value)}
-                />
-                <QuickTime options={["16:45", "19:00", "20:00"]} onSelect={(value) => props.onEmployeeChange("workEnd", value)} />
-              </div>
+              <TimeMaskInput
+                id="ot-end"
+                required
+                value={props.employee.workEnd}
+                onChange={(value) => props.onEmployeeChange("workEnd", value)}
+                quickTimes={["16:45", "19:00", "20:00"]}
+              />
             </Field>
           </div>
           <div className="flex items-center justify-between border-y border-line bg-[#fafbfc] px-3.5 py-3 text-sm">

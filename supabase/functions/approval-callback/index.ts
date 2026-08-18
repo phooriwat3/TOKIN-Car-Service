@@ -1,9 +1,19 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/http.ts';
+import { checkRateLimit, getRateLimitHeaders } from '../_shared/rate-limit.ts';
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
+
+  const clientIp = request.headers.get('x-forwarded-for') ?? 'anonymous';
+  const rateLimit = checkRateLimit(`approval-callback:${clientIp}`, 30, 60_000);
+  if (!rateLimit.allowed) {
+    return new Response(JSON.stringify({ error: 'Too many requests' }), {
+      status: 429,
+      headers: { ...corsHeaders, ...getRateLimitHeaders(30, rateLimit.remaining, rateLimit.resetAt) },
+    });
+  }
 
   const expectedSecret = Deno.env.get('POWER_AUTOMATE_CALLBACK_SECRET');
   const suppliedSecret = request.headers.get('x-tokin-callback-secret');

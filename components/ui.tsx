@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { Clock, TrendingDown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const buttonFocusRing =
@@ -530,7 +530,7 @@ export function WeeklyHoursInput({
   );
 }
 
-/* --- Thai time input (24-hour) --- */
+/* --- iOS-Style 24-Hour Time Wheel Picker --- */
 export function TimeMaskInput({
   value,
   id,
@@ -548,34 +548,237 @@ export function TimeMaskInput({
   className?: string;
   quickTimes?: string[];
 }) {
+  const [open, setOpen] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const hoursRef = React.useRef<HTMLDivElement>(null);
+  const minutesRef = React.useRef<HTMLDivElement>(null);
+
+  // Parse current HH and mm
+  const [hhStr, mmStr] = (value || "17:20").split(":");
+  const currentHour = parseInt(hhStr || "17", 10);
+  const currentMinute = parseInt(mmStr || "20", 10);
+
+  // Close on outside click
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  // Scroll active hour & minute into exact center when popover opens
+  React.useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        if (hoursRef.current) {
+          hoursRef.current.scrollTop = currentHour * 40;
+        }
+        if (minutesRef.current) {
+          minutesRef.current.scrollTop = currentMinute * 40;
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [open, currentHour, currentMinute]);
+
+  const selectHour = (h: number) => {
+    const formatted = `${String(h).padStart(2, "0")}:${String(currentMinute).padStart(2, "0")}`;
+    onChange(formatted);
+  };
+
+  const selectMinute = (m: number) => {
+    const formatted = `${String(currentHour).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    onChange(formatted);
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let raw = e.target.value.replace(/[^0-9:]/g, "");
+    if (raw.length === 4 && !raw.includes(":")) {
+      raw = `${raw.slice(0, 2)}:${raw.slice(2)}`;
+    }
+    onChange(raw);
+  };
+
+  const handleBlur = () => {
+    if (!value) return;
+    const parts = value.split(":");
+    if (parts.length === 2) {
+      let h = parseInt(parts[0], 10);
+      let m = parseInt(parts[1], 10);
+      if (isNaN(h)) h = 0;
+      if (isNaN(m)) m = 0;
+      h = Math.min(23, Math.max(0, h));
+      m = Math.min(59, Math.max(0, m));
+      const formatted = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      onChange(formatted);
+    }
+  };
+
+  const hoursList = Array.from({ length: 24 }, (_, i) => i);
+  const minutesList = Array.from({ length: 60 }, (_, i) => i);
+
   return (
-    <div className="space-y-2">
-      <Input
-        id={id}
-        type="time"
-        lang="th-TH"
-        required={required}
-        disabled={disabled}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={className}
-      />
+    <div className="relative space-y-2" ref={containerRef}>
+      <div className="relative flex items-center">
+        <Input
+          id={id}
+          type="text"
+          inputMode="numeric"
+          placeholder="17:20 (24-hr)"
+          maxLength={5}
+          required={required}
+          disabled={disabled}
+          value={value}
+          onChange={handleTextChange}
+          onBlur={handleBlur}
+          onClick={() => setOpen(true)}
+          className={cn(
+            "font-mono text-sm tracking-wider pr-14 cursor-pointer",
+            className,
+          )}
+        />
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen((prev) => !prev)}
+          className="absolute right-2 flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50 transition-colors"
+          title="Open iOS 24-hr Time Wheel Picker"
+        >
+          <Clock size={15} />
+          <span>24 น.</span>
+        </button>
+      </div>
+
+      {/* Quick preset buttons below input */}
       {quickTimes && quickTimes.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-2">
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
           <span className="mr-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-            Quick time - Thailand time
+            QUICK TIME :
           </span>
           {quickTimes.map((time) => (
             <button
               key={time}
               type="button"
               disabled={disabled}
-              onClick={() => onChange(time)}
-              className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => {
+                onChange(time);
+                setOpen(false);
+              }}
+              className={cn(
+                "rounded-md border px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                value === time
+                  ? "border-brand-500 bg-brand-50 text-brand-700"
+                  : "border-slate-200 bg-slate-50 text-slate-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700",
+              )}
             >
-              {time}
+              {time} น.
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Clean iOS-Style Floating Time Wheel Picker */}
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-slate-200/80 bg-white/95 p-3.5 shadow-2xl backdrop-blur-md transition-all animate-in fade-in zoom-in-95">
+          {/* Top Column Labels */}
+          <div className="mb-2 flex items-center justify-around text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            <span className="w-1/2 text-center">HOURS</span>
+            <span className="w-1/2 text-center">MINUTES</span>
+          </div>
+
+          {/* iOS Dual Wheel Drum Container */}
+          <div className="relative flex h-[200px] items-center justify-center overflow-hidden rounded-xl bg-slate-50/90 border border-slate-100">
+            {/* Center Selection Highlight Bar */}
+            <div className="pointer-events-none absolute inset-x-2 top-1/2 h-10 -translate-y-1/2 rounded-lg bg-brand-500/10 border-y border-brand-500/30 shadow-inner" />
+
+            {/* Hours Wheel */}
+            <div
+              ref={hoursRef}
+              onScroll={(e) => {
+                const target = e.currentTarget;
+                const idx = Math.round(target.scrollTop / 40);
+                if (idx >= 0 && idx < 24 && idx !== currentHour) {
+                  selectHour(idx);
+                }
+              }}
+              className="h-[200px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
+              style={{ scrollbarWidth: "none" }}
+            >
+              <div className="h-[80px]" />
+              {hoursList.map((h) => {
+                const isSelected = h === currentHour;
+                return (
+                  <div
+                    key={h}
+                    onClick={() => {
+                      selectHour(h);
+                      if (hoursRef.current) hoursRef.current.scrollTop = h * 40;
+                    }}
+                    className={cn(
+                      "flex h-10 snap-center items-center justify-center font-mono text-xl cursor-pointer transition-all duration-150 select-none",
+                      isSelected
+                        ? "font-bold text-brand-600 scale-110"
+                        : "text-slate-400 opacity-60 hover:opacity-100",
+                    )}
+                  >
+                    {String(h).padStart(2, "0")}
+                  </div>
+                );
+              })}
+              <div className="h-[80px]" />
+            </div>
+
+            {/* Separator Colon */}
+            <div className="flex h-10 items-center justify-center font-mono text-xl font-bold text-brand-500/70 select-none z-10 px-1">
+              :
+            </div>
+
+            {/* Minutes Wheel */}
+            <div
+              ref={minutesRef}
+              onScroll={(e) => {
+                const target = e.currentTarget;
+                const idx = Math.round(target.scrollTop / 40);
+                if (idx >= 0 && idx < 60 && idx !== currentMinute) {
+                  selectMinute(idx);
+                }
+              }}
+              className="h-[200px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
+              style={{ scrollbarWidth: "none" }}
+            >
+              <div className="h-[80px]" />
+              {minutesList.map((m) => {
+                const isSelected = m === currentMinute;
+                return (
+                  <div
+                    key={m}
+                    onClick={() => {
+                      selectMinute(m);
+                      if (minutesRef.current)
+                        minutesRef.current.scrollTop = m * 40;
+                    }}
+                    className={cn(
+                      "flex h-10 snap-center items-center justify-center font-mono text-xl cursor-pointer transition-all duration-150 select-none",
+                      isSelected
+                        ? "font-bold text-brand-600 scale-110"
+                        : "text-slate-400 opacity-60 hover:opacity-100",
+                    )}
+                  >
+                    {String(m).padStart(2, "0")}
+                  </div>
+                );
+              })}
+              <div className="h-[80px]" />
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -172,9 +172,36 @@ export interface Booking {
   assignmentDraft?: AssignmentDraft;
   tripLog?: TripLog;
 }
+export interface AuditLog {
+  id: string;
+  tableName: string;
+  recordId: string;
+  operation: "INSERT" | "UPDATE" | "DELETE";
+  actorId?: string;
+  oldData?: Record<string, unknown>;
+  newData?: Record<string, unknown>;
+  changedFields?: string[];
+  createdAt: string;
+}
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  bookingId?: string;
+  type: string;
+  title: string;
+  body?: string;
+  actionUrl?: string;
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
 export interface AppData {
   bookings: Booking[];
   vehicles: Vehicle[];
   drivers: Driver[];
   approvers?: User[];
+  notifications?: AppNotification[];
+  auditLogs?: AuditLog[];
 }

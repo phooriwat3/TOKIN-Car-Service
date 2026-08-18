@@ -47,8 +47,10 @@ const listPathByRole: Record<Role, string> = {
   driver: "/driver/trips",
 };
 
+import { getBangkokDateString, getBangkokHour } from "@/lib/date-format";
+
 function getGreeting() {
-  const hour = new Date().getHours();
+  const hour = getBangkokHour();
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
@@ -78,9 +80,7 @@ export default function Dashboard() {
   const complete = own.filter(
     (booking) => booking.status === "completed",
   ).length;
-  const today = new Date().toLocaleDateString("en-CA", {
-    timeZone: "Asia/Bangkok",
-  });
+  const today = getBangkokDateString();
   const todayBookings = own.filter((booking) => booking.usingDate === today);
   const dailyVehicles = todayBookings.reduce(
     (sum, booking) =>
