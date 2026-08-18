@@ -129,11 +129,7 @@ export default function PublicManageRequest({
     if (initialToken) load(initialToken);
   }, [initialToken]);
 
-  const disabled =
-    saving ||
-    !permissions.canEdit ||
-    !request ||
-    (request.requestType === "overtime" && !otWindowOpen);
+  const disabled = saving || !permissions.canEdit || !request;
 
   async function load(rawToken = token) {
     setState("loading");
@@ -550,7 +546,7 @@ export default function PublicManageRequest({
                   <Button type="button" variant="secondary" disabled={saving} onClick={() => load()}><RefreshCw size={16} /> Reload</Button>
                   <div className="flex flex-col-reverse gap-2 sm:flex-row">
                     <Button type="button" variant="danger" disabled={saving || !permissions.canCancel} onClick={cancel}>Cancel request</Button>
-                    <Button disabled={saving || !permissions.canEdit || !otWindowOpen}>{saving ? "Saving…" : request.status === "changes_requested" ? "Resubmit request" : "Save changes"}</Button>
+                    <Button disabled={saving || !permissions.canEdit}>{saving ? "Saving…" : request.status === "changes_requested" ? "Resubmit request" : "Save changes"}</Button>
                   </div>
                 </div>
               </div>
