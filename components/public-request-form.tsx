@@ -131,8 +131,14 @@ const normalizeDepartment = (
 
 
 
-export default function PublicRequestForm() {
-  const [requestType, setRequestType] = useState<RequestType | null>(null);
+export default function PublicRequestForm({
+  initialType,
+}: {
+  initialType?: RequestType;
+} = {}) {
+  const [requestType, setRequestType] = useState<RequestType | null>(
+    initialType ?? null,
+  );
   const [requesterName, setRequesterName] = useState("");
   const [directorySelected, setDirectorySelected] = useState(false);
   const [confirmedSelf, setConfirmedSelf] = useState(false);
@@ -575,6 +581,7 @@ export default function PublicRequestForm() {
               title="OVERTIME / HOLIDAY WORK"
               body="Transportation for employees working overtime or on a public holiday."
               note="Submit by 16:00"
+              href="/request/overtime"
               onClick={() => setRequestType("overtime")}
             />
             <Choice
@@ -583,6 +590,7 @@ export default function PublicRequestForm() {
               title="CAR SERVICE REQUISITION"
               body="Vehicle request for business travel outside the company premises."
               note="For off-site company trips"
+              href="/request/car-service"
               onClick={() => setRequestType("outside_company")}
             />
           </div>
@@ -974,8 +982,9 @@ function FormActions({
     </div>
   );
 }
-function PublicFrame({
+export function PublicFrame({
   children,
+  showAdminLink,
 }: {
   children: React.ReactNode;
   showAdminLink?: boolean;
@@ -1022,6 +1031,7 @@ function Choice({
   title,
   body,
   note,
+  href,
   onClick,
 }: {
   icon: React.ReactNode;
@@ -1029,14 +1039,11 @@ function Choice({
   title: string;
   body: string;
   note: string;
+  href?: string;
   onClick: () => void;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex min-w-0 flex-col rounded-xl border border-line bg-white p-6 text-left shadow-card transition-colors duration-150 hover:border-brand/50 hover:bg-[#fbfdff] sm:p-8"
-    >
+  const content = (
+    <>
       <div className="flex items-start justify-between gap-4">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-light text-brand transition-colors group-hover:bg-brand group-hover:text-white sm:h-14 sm:w-14">
           {icon}
@@ -1059,6 +1066,27 @@ function Choice({
           className="transition-transform group-hover:translate-x-0.5"
         />
       </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        className="group flex min-w-0 flex-col rounded-xl border border-line bg-white p-6 text-left shadow-card transition-colors duration-150 hover:border-brand/50 hover:bg-[#fbfdff] sm:p-8"
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex min-w-0 flex-col rounded-xl border border-line bg-white p-6 text-left shadow-card transition-colors duration-150 hover:border-brand/50 hover:bg-[#fbfdff] sm:p-8"
+    >
+      {content}
     </button>
   );
 }
