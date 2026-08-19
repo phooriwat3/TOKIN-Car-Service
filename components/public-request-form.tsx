@@ -9,6 +9,7 @@ import {
   Car,
   CheckCircle2,
   Clock3,
+  HelpCircle,
   MailCheck,
   ShieldCheck,
 } from "lucide-react";
@@ -1058,14 +1059,24 @@ function PublicFrame({
               </p>
             </div>
           </div>
-          {showAdminLink && (
+          <div className="flex shrink-0 items-center gap-2">
             <a
-              href="/admin/login"
-              className="shrink-0 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:border-gray-400 hover:bg-gray-50 hover:text-brand sm:px-3 sm:text-xs"
+              href="/request/help"
+              aria-label="Help & user guide"
+              title="Help & user guide"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-white text-gray-400 transition hover:border-gray-400 hover:bg-gray-50 hover:text-brand"
             >
-              Admin portal
+              <HelpCircle size={16} />
             </a>
-          )}
+            {showAdminLink && (
+              <a
+                href="/admin/login"
+                className="shrink-0 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:border-gray-400 hover:bg-gray-50 hover:text-brand sm:px-3 sm:text-xs"
+              >
+                Admin portal
+              </a>
+            )}
+          </div>
         </div>
       </header>
       <div className="mx-auto min-w-0 max-w-[1080px] px-4 py-6 sm:px-6 sm:py-8">
