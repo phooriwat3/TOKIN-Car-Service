@@ -649,7 +649,7 @@ export default function PublicRequestForm({
                 updateEmployee(0, field, value)
               }
               onBackToType={() => {
-                window.location.href = "/";
+                window.location.href = "/request";
               }}
               onBackToEdit={() => {
                 setShowSubmitConfirmation(false);
@@ -726,7 +726,7 @@ export default function PublicRequestForm({
               onWithStaffChange={setWithStaff}
               onPassengersChange={setPassengers}
               onBackToType={() => {
-                window.location.href = "/";
+                window.location.href = "/request";
               }}
               onBackToEdit={() => {
                 setShowSubmitConfirmation(false);
@@ -998,9 +998,9 @@ export function PublicFrame({
       <header className="border-b border-line bg-white px-4 sm:px-6 shadow-sm">
         <div className="mx-auto flex h-16 min-w-0 max-w-[1080px] items-center justify-between gap-3">
           <a
-            href="/"
+            href="/request"
             className="flex min-w-0 items-center gap-3 sm:gap-4 transition hover:opacity-85"
-            title="Go to Home Portal"
+            title="TOKIN Transport Home"
           >
             <BrandLogo />
             <div className="hidden h-8 w-px bg-gray-200 sm:block" />
