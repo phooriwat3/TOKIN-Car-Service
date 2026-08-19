@@ -129,7 +129,7 @@ export function PublicFooter() {
       <div className="mx-auto flex max-w-[1080px] flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
         <div>
           <p className="text-xs font-semibold text-slate-700">
-            © 2026 TOKIN Electronics (Thailand) Co., Ltd. All rights reserved.
+            © 2026 TOKIN Electronics (Thailand) Co., Ltd.
           </p>
           <p className="mt-0.5 text-[11px] text-slate-500">
             Internal Operations — Employee Transport & Fleet Management System
