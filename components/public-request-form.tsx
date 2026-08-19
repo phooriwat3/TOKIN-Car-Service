@@ -648,7 +648,9 @@ export default function PublicRequestForm({
               onEmployeeChange={(field, value) =>
                 updateEmployee(0, field, value)
               }
-              onBackToType={() => setRequestType(null)}
+              onBackToType={() => {
+                window.location.href = "/";
+              }}
               onBackToEdit={() => {
                 setShowSubmitConfirmation(false);
                 setError("");
@@ -723,7 +725,9 @@ export default function PublicRequestForm({
               onMeetingPointChange={setMeetingPoint}
               onWithStaffChange={setWithStaff}
               onPassengersChange={setPassengers}
-              onBackToType={() => setRequestType(null)}
+              onBackToType={() => {
+                window.location.href = "/";
+              }}
               onBackToEdit={() => {
                 setShowSubmitConfirmation(false);
                 setError("");
@@ -993,7 +997,11 @@ export function PublicFrame({
     <main className="flex min-h-screen flex-col bg-canvas">
       <header className="border-b border-line bg-white px-4 sm:px-6 shadow-sm">
         <div className="mx-auto flex h-16 min-w-0 max-w-[1080px] items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+          <a
+            href="/"
+            className="flex min-w-0 items-center gap-3 sm:gap-4 transition hover:opacity-85"
+            title="Go to Home Portal"
+          >
             <BrandLogo />
             <div className="hidden h-8 w-px bg-gray-200 sm:block" />
             <div>
@@ -1004,7 +1012,7 @@ export function PublicFrame({
                 Employee transportation request
               </p>
             </div>
-          </div>
+          </a>
           <div className="flex shrink-0 items-center gap-2">
             <a
               href="/request/help"
