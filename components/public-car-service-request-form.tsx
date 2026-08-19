@@ -122,7 +122,7 @@ export function PublicCarServiceRequestForm(
               Review and submit
             </h2>
             <p className="mt-1 text-sm text-gray-500">
-              Confirm that the car service requisition details below are correct before submitting.
+              Confirm that the details below are correct before submission.
             </p>
           </div>
           <dl className="grid gap-x-8 gap-y-4 px-5 py-5 text-sm sm:grid-cols-2 sm:px-6">
@@ -181,7 +181,7 @@ export function PublicCarServiceRequestForm(
               disabled={props.submitting}
               onClick={props.onConfirmSubmit}
             >
-              {props.submitting ? "Submitting…" : "Confirm and submit"}
+              {props.submitting ? "Submitting…" : "Submit request"}
             </Button>
           </div>
         </section>
@@ -549,22 +549,27 @@ export function PublicCarServiceRequestForm(
       </section>
 
       {/* Action Buttons */}
-      <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
         <Button
           type="button"
-          variant="secondary"
+          variant="ghost"
+          disabled={props.submitting}
           onClick={props.onReset}
-          className="w-full sm:w-auto"
         >
           Reset form
         </Button>
-        <Button
-          type="button"
-          onClick={props.onProceedToReview}
-          className="w-full sm:w-auto"
-        >
-          Review request &rarr;
-        </Button>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row">
+          <p className="self-center text-xs text-gray-500">
+            Review is required before submission.
+          </p>
+          <Button
+            type="button"
+            disabled={props.submitting}
+            onClick={props.onProceedToReview}
+          >
+            Review request
+          </Button>
+        </div>
       </div>
     </div>
   );
