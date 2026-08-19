@@ -921,50 +921,63 @@ function Info({ label, value }: { label: string; value: string }) {
 function RequestProgress() {
   const steps = [
     {
-      icon: <MailCheck size={17} />,
+      icon: <MailCheck size={18} />,
+      stepNum: "01",
       title: "Submit request",
       body: "Enter company and trip details",
     },
     {
-      icon: <ShieldCheck size={17} />,
+      icon: <ShieldCheck size={18} />,
+      stepNum: "02",
       title: "Department approval",
       body: "Sent to your department approver",
     },
     {
-      icon: <Car size={17} />,
+      icon: <Car size={18} />,
+      stepNum: "03",
       title: "Transport assigned",
-      body: "Receive vehicle details by email",
+      body: "Receive vehicle & driver details by email",
     },
   ];
 
   return (
-    <section className="mt-8 border-t border-line px-1 py-6 sm:px-0">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">
-        What happens next
-      </p>
-      <ol className="mt-4 grid gap-4 sm:grid-cols-3 sm:gap-0">
+    <section className="mt-10 border-t border-line pt-8">
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">
+          What happens next
+        </p>
+        <span className="text-xs font-medium text-gray-400">
+          3-step process
+        </span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
         {steps.map((step, index) => (
-          <li key={step.title} className="relative flex min-w-0 gap-3 sm:px-5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-light text-brand">
+          <div
+            key={step.title}
+            className="relative flex items-start gap-3 rounded-xl border border-line bg-white p-4 shadow-card transition hover:border-brand/30 sm:p-4.5"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-light text-brand">
               {step.icon}
             </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink">
-                {index + 1}. {step.title}
+            <div className="min-w-0 flex-1">
+              <span className="text-[11px] font-bold tracking-wider text-brand/70 uppercase">
+                Step {step.stepNum}
+              </span>
+              <p className="mt-0.5 text-sm font-bold text-ink leading-snug">
+                {step.title}
               </p>
-              <p className="mt-0.5 text-xs leading-5 text-gray-500">
+              <p className="mt-1 text-xs leading-relaxed text-gray-500">
                 {step.body}
               </p>
             </div>
             {index < steps.length - 1 && (
-              <ArrowRight
-                className="absolute right-0 top-2 hidden text-gray-300 sm:block"
-                size={16}
-              />
+              <div className="hidden sm:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-10 h-7 w-7 items-center justify-center rounded-full border border-line bg-white text-gray-400 shadow-xs">
+                <ArrowRight size={13} className="text-gray-400" />
+              </div>
             )}
-          </li>
+          </div>
         ))}
-      </ol>
+      </div>
     </section>
   );
 }
