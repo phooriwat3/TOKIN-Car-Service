@@ -575,14 +575,15 @@ export function TimeMaskInput({
   }, [open]);
 
   // Scroll active hour & minute into exact center when popover opens
+  const ITEM_HEIGHT = 36;
   React.useEffect(() => {
     if (open) {
       const timer = setTimeout(() => {
         if (hoursRef.current) {
-          hoursRef.current.scrollTop = currentHour * 40;
+          hoursRef.current.scrollTop = currentHour * ITEM_HEIGHT;
         }
         if (minutesRef.current) {
-          minutesRef.current.scrollTop = currentMinute * 40;
+          minutesRef.current.scrollTop = currentMinute * ITEM_HEIGHT;
         }
       }, 50);
       return () => clearTimeout(timer);
@@ -649,11 +650,11 @@ export function TimeMaskInput({
           type="button"
           disabled={disabled}
           onClick={() => setOpen((prev) => !prev)}
-          className="absolute right-2 flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50 transition-colors"
-          title="Open iOS 24-hr Time Wheel Picker"
+          className="absolute right-2 flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+          title="Open 24-hr Time Wheel Picker"
         >
-          <Clock size={15} />
-          <span>24 น.</span>
+          <Clock size={14} className="text-gray-500" />
+          <span className="text-slate-800">24 น.</span>
         </button>
       </div>
 
@@ -685,34 +686,34 @@ export function TimeMaskInput({
         </div>
       )}
 
-      {/* Clean iOS-Style Floating Time Wheel Picker */}
+      {/* Compact & Minimal 24-Hr Floating Time Wheel Picker */}
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-slate-200/80 bg-white/95 p-3.5 shadow-2xl backdrop-blur-md transition-all animate-in fade-in zoom-in-95">
-          {/* Top Column Labels */}
-          <div className="mb-2 flex items-center justify-around text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            <span className="w-1/2 text-center">HOURS</span>
-            <span className="w-1/2 text-center">MINUTES</span>
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-52 rounded-xl border border-slate-200 bg-white p-2.5 shadow-xl transition-all animate-in fade-in zoom-in-95">
+          {/* Top Column Header */}
+          <div className="mb-1.5 flex items-center justify-between px-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="w-1/2 text-center">Hour</span>
+            <span className="w-1/2 text-center">Minute</span>
           </div>
 
-          {/* iOS Dual Wheel Drum Container */}
-          <div className="relative flex h-[200px] items-center justify-center overflow-hidden rounded-xl bg-slate-50/90 border border-slate-100">
+          {/* Dual Wheel Drum Container */}
+          <div className="relative flex h-[144px] items-center justify-center overflow-hidden rounded-lg bg-slate-50/80 border border-slate-100">
             {/* Center Selection Highlight Bar */}
-            <div className="pointer-events-none absolute inset-x-2 top-1/2 h-10 -translate-y-1/2 rounded-lg bg-brand-500/10 border-y border-brand-500/30 shadow-inner" />
+            <div className="pointer-events-none absolute inset-x-1 top-1/2 h-9 -translate-y-1/2 rounded-md bg-slate-200/70 border-y border-slate-300/80" />
 
             {/* Hours Wheel */}
             <div
               ref={hoursRef}
               onScroll={(e) => {
                 const target = e.currentTarget;
-                const idx = Math.round(target.scrollTop / 40);
+                const idx = Math.round(target.scrollTop / ITEM_HEIGHT);
                 if (idx >= 0 && idx < 24 && idx !== currentHour) {
                   selectHour(idx);
                 }
               }}
-              className="h-[200px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
+              className="h-[144px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
               style={{ scrollbarWidth: "none" }}
             >
-              <div className="h-[80px]" />
+              <div className="h-[54px]" />
               {hoursList.map((h) => {
                 const isSelected = h === currentHour;
                 return (
@@ -720,24 +721,25 @@ export function TimeMaskInput({
                     key={h}
                     onClick={() => {
                       selectHour(h);
-                      if (hoursRef.current) hoursRef.current.scrollTop = h * 40;
+                      if (hoursRef.current)
+                        hoursRef.current.scrollTop = h * ITEM_HEIGHT;
                     }}
                     className={cn(
-                      "flex h-10 snap-center items-center justify-center font-mono text-xl cursor-pointer transition-all duration-150 select-none",
+                      "flex h-9 snap-center items-center justify-center font-mono text-base cursor-pointer transition-all duration-100 select-none",
                       isSelected
-                        ? "font-bold text-brand-600 scale-110"
-                        : "text-slate-400 opacity-60 hover:opacity-100",
+                        ? "font-bold text-slate-900 scale-105"
+                        : "font-medium text-slate-400 hover:text-slate-600",
                     )}
                   >
                     {String(h).padStart(2, "0")}
                   </div>
                 );
               })}
-              <div className="h-[80px]" />
+              <div className="h-[54px]" />
             </div>
 
             {/* Separator Colon */}
-            <div className="flex h-10 items-center justify-center font-mono text-xl font-bold text-brand-500/70 select-none z-10 px-1">
+            <div className="flex h-9 items-center justify-center font-mono text-base font-bold text-slate-900 select-none z-10 px-0.5">
               :
             </div>
 
@@ -746,15 +748,15 @@ export function TimeMaskInput({
               ref={minutesRef}
               onScroll={(e) => {
                 const target = e.currentTarget;
-                const idx = Math.round(target.scrollTop / 40);
+                const idx = Math.round(target.scrollTop / ITEM_HEIGHT);
                 if (idx >= 0 && idx < 60 && idx !== currentMinute) {
                   selectMinute(idx);
                 }
               }}
-              className="h-[200px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
+              className="h-[144px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
               style={{ scrollbarWidth: "none" }}
             >
-              <div className="h-[80px]" />
+              <div className="h-[54px]" />
               {minutesList.map((m) => {
                 const isSelected = m === currentMinute;
                 return (
@@ -763,20 +765,20 @@ export function TimeMaskInput({
                     onClick={() => {
                       selectMinute(m);
                       if (minutesRef.current)
-                        minutesRef.current.scrollTop = m * 40;
+                        minutesRef.current.scrollTop = m * ITEM_HEIGHT;
                     }}
                     className={cn(
-                      "flex h-10 snap-center items-center justify-center font-mono text-xl cursor-pointer transition-all duration-150 select-none",
+                      "flex h-9 snap-center items-center justify-center font-mono text-base cursor-pointer transition-all duration-100 select-none",
                       isSelected
-                        ? "font-bold text-brand-600 scale-110"
-                        : "text-slate-400 opacity-60 hover:opacity-100",
+                        ? "font-bold text-slate-900 scale-105"
+                        : "font-medium text-slate-400 hover:text-slate-600",
                     )}
                   >
                     {String(m).padStart(2, "0")}
                   </div>
                 );
               })}
-              <div className="h-[80px]" />
+              <div className="h-[54px]" />
             </div>
           </div>
         </div>
