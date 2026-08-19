@@ -971,7 +971,7 @@ function RequestProgress() {
               </p>
             </div>
             {index < steps.length - 1 && (
-              <div className="hidden sm:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-10 h-7 w-7 items-center justify-center rounded-full border border-line bg-white text-gray-400 shadow-xs">
+              <div className="hidden sm:flex absolute -right-3.5 top-[24px] z-10 h-7 w-7 items-center justify-center rounded-full border border-line bg-white text-gray-400 shadow-xs">
                 <ArrowRight size={13} className="text-gray-400" />
               </div>
             )}
