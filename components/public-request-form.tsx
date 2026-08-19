@@ -35,6 +35,7 @@ import {
   PublicOvertimeRequestForm,
   type RequesterField,
 } from "@/components/public-overtime-request-form";
+import { PublicCarServiceRequestForm } from "@/components/public-car-service-request-form";
 import { overtimeDuration } from "@/lib/overtime";
 import { BrandLogo, PublicFooter } from "@/components/brand";
 
@@ -296,8 +297,36 @@ export default function PublicRequestForm() {
           "Please confirm that you have submitted this OT in Tiger Space by checking the box.",
           "tiger-space-confirmed",
         );
-    } else if (!purpose.trim()) {
-      return failValidation("Purpose is required.");
+    } else {
+      if (!confirmedSelf)
+        return failValidation(
+          "Confirm that this request is for official business travel.",
+          "confirm-self",
+        );
+      if (!usingDate)
+        return failValidation("Using date is required.", "using-date");
+      if (usingDate < getTodayString())
+        return failValidation(
+          "Using date cannot be in the past.",
+          "using-date",
+        );
+      if (!startTime)
+        return failValidation("Start time is required.", "start-time");
+      if (!endTime) return failValidation("End time is required.", "end-time");
+      if (endTime <= startTime)
+        return failValidation(
+          "End time must be after the start time.",
+          "end-time",
+        );
+      if (!pickupLocation.trim())
+        return failValidation(
+          "Pickup location is required.",
+          "pickup-location",
+        );
+      if (!destination.trim())
+        return failValidation("Destination is required.", "destination");
+      if (!purpose.trim())
+        return failValidation("Purpose is required.", "purpose");
     }
 
     if (!confirmed) {
@@ -634,172 +663,64 @@ export default function PublicRequestForm() {
               onConfirmSubmit={() => void submit(undefined, true)}
             />
           ) : (
-            /* Outside Company Requisition Form (Stacked cards layout) */
-            <div className="space-y-5 pb-20 sm:pb-0">
-              <Card className="p-5">
-                <SectionHeading
-                  number="1"
-                  title="Request owner"
-                  description="Enter the employee responsible for this request."
-                />
-                <p className="mb-4 text-xs text-gray-500">
-                  Search name or email to auto-fill company directory details.
-                </p>
-                <div className="grid gap-4 rounded-xl border border-line bg-canvas p-4 sm:grid-cols-2">
-                  <Field label="Employee number">
-                    <Input
-                      required
-                      value={employeeId}
-                      onChange={(e) => {
-                        const val = e.target.value
-                          .replace(/\D/g, "")
-                          .slice(0, 7);
-                        setEmployeeId(val);
-                      }}
-                    />
-                  </Field>
-                  <Field label="Department">
-                    <Select
-                      required
-                      value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
-                    >
-                      <option value="">Select Dept</option>
-                      {DEPARTMENTS.map((dept) => (
-                        <option key={dept} value={dept}>
-                          {dept}
-                        </option>
-                      ))}
-                      {department && !DEPARTMENTS.includes(department) && (
-                        <option value={department}>{department}</option>
-                      )}
-                    </Select>
-                  </Field>
-                  <CompanyUserField
-                    label="Employee name"
-                    required
-                    value={requesterName}
-                    onChange={setRequesterName}
-                    placeholder="Search name..."
-                    onSelectUser={(person) => {
-                      setRequesterName(person.displayName);
-                      setRequesterEmail(person.mail);
-                      if (person.department)
-                        setDepartment(
-                          normalizeDepartment(
-                            person.department,
-                            person.jobTitle,
-                          ),
-                        );
-                      if (person.employeeId) setEmployeeId(person.employeeId);
-                    }}
-                  />
-                  <Field label="Company email">
-                    <Input
-                      required
-                      type="email"
-                      value={requesterEmail}
-                      onChange={(e) => setRequesterEmail(e.target.value)}
-                    />
-                  </Field>
-                </div>
-              </Card>
-              <ApprovalRouteNotice department={department} />
-
-              <Card className="p-5">
-                <SectionHeading
-                  number="2"
-                  title="Trip details"
-                  description="Provide the schedule, route, and purpose for this trip."
-                />
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <Field label="Start time">
-                    <Input
-                      required
-                      type="time"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                    />
-                  </Field>
-                  <Field label="End time">
-                    <Input
-                      required
-                      type="time"
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                    />
-                  </Field>
-                  <Field label="Pickup location">
-                    <Input
-                      required
-                      value={pickupLocation}
-                      onChange={(e) => setPickupLocation(e.target.value)}
-                    />
-                  </Field>
-                  <Field label="Destination">
-                    <Input
-                      required
-                      value={destination}
-                      onChange={(e) => setDestination(e.target.value)}
-                    />
-                  </Field>
-                  <Field label="Meeting point">
-                    <Select
-                      value={meetingPoint}
-                      onChange={(e) =>
-                        setMeetingPoint(
-                          e.target.value as "front_area" | "loading_area",
-                        )
-                      }
-                    >
-                      <option value="front_area">Front area</option>
-                      <option value="loading_area">Loading area</option>
-                    </Select>
-                  </Field>
-                </div>
-                <div className="mt-4">
-                  <Field label="Purpose / work summary">
-                    <Textarea
-                      required
-                      value={purpose}
-                      onChange={(e) => setPurpose(e.target.value)}
-                    />
-                  </Field>
-                </div>
-                {destination.trim() && (
-                  <div className="mt-4">
-                    <GoogleMapLinks
-                      origin={pickupLocation}
-                      destination={destination}
-                    />
-                  </div>
-                )}
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <Field label="Passenger names (one per line)">
-                    <Textarea
-                      value={passengers}
-                      onChange={(e) => setPassengers(e.target.value)}
-                    />
-                  </Field>
-                  <label className="flex items-center gap-3 self-start pt-8 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={withStaff}
-                      onChange={(e) => setWithStaff(e.target.checked)}
-                      className="h-4 w-4 accent-brand"
-                    />
-                    Travel with GA staff
-                  </label>
-                </div>
-              </Card>
-
-              {error && (
-                <p className="border-l-2 border-danger bg-danger-light p-3 pl-4 text-sm text-danger mt-4">
-                  {error}
-                </p>
-              )}
-              <FormActions submitting={submitting} onReset={handleReset} />
-            </div>
+            <PublicCarServiceRequestForm
+              requesterName={requesterName}
+              requesterEmail={requesterEmail}
+              employeeId={employeeId}
+              department={department}
+              directorySelected={directorySelected}
+              confirmedSelf={confirmedSelf}
+              usingDate={usingDate}
+              startTime={startTime}
+              endTime={endTime}
+              pickupLocation={pickupLocation}
+              destination={destination}
+              purpose={purpose}
+              meetingPoint={meetingPoint}
+              withStaff={withStaff}
+              passengers={passengers}
+              reviewing={showSubmitConfirmation}
+              submitting={submitting}
+              error={error}
+              errorField={errorField}
+              minimumDate={getTodayString()}
+              onRequesterChange={(field: RequesterField, value: string) => {
+                if (field === "name") {
+                  setRequesterName(value);
+                  setDirectorySelected(false);
+                } else if (field === "email") setRequesterEmail(value);
+                else if (field === "employeeId") setEmployeeId(value);
+                else setDepartment(value);
+              }}
+              onDirectorySelect={(person) => {
+                setRequesterName(person.displayName);
+                setRequesterEmail(person.mail);
+                setEmployeeId(person.employeeId ?? "");
+                setDepartment(
+                  normalizeDepartment(person.department, person.jobTitle),
+                );
+                setDirectorySelected(true);
+              }}
+              onConfirmedSelfChange={setConfirmedSelf}
+              onUsingDateChange={setUsingDate}
+              onStartTimeChange={setStartTime}
+              onEndTimeChange={setEndTime}
+              onPickupLocationChange={setPickupLocation}
+              onDestinationChange={setDestination}
+              onPurposeChange={setPurpose}
+              onMeetingPointChange={setMeetingPoint}
+              onWithStaffChange={setWithStaff}
+              onPassengersChange={setPassengers}
+              onBackToType={() => setRequestType(null)}
+              onBackToEdit={() => {
+                setShowSubmitConfirmation(false);
+                setError("");
+                setErrorField(undefined);
+              }}
+              onReset={handleReset}
+              onProceedToReview={() => void submit(undefined, false)}
+              onConfirmSubmit={() => void submit(undefined, true)}
+            />
           )}
 
           <div className="hidden" aria-hidden="true">
