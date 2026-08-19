@@ -579,39 +579,7 @@ export default function PublicRequestForm() {
           noValidate={requestType === "overtime"}
           className="space-y-5 pb-20 sm:pb-0"
         >
-          {requestType !== "overtime" && (
-            <div className="flex min-w-0 flex-col gap-4 border-b border-line pb-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold uppercase text-brand">
-                  TOKIN Transport
-                </p>
-                <h1 className="mt-1 break-words text-xl font-bold leading-tight sm:text-2xl">
-                  CAR SERVICE REQUISITION
-                </h1>
-              </div>
-              <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:flex sm:w-auto sm:gap-3">
-                <Field label="Using date">
-                  <Input
-                    required
-                    type="date"
-                    lang="en-US"
-                    min={getTodayString()}
-                    className="h-10 sm:w-44"
-                    value={usingDate}
-                    onChange={(e) => setUsingDate(e.target.value)}
-                  />
-                </Field>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="h-10 whitespace-nowrap px-3"
-                  onClick={() => setRequestType(null)}
-                >
-                  Change type
-                </Button>
-              </div>
-            </div>
-          )}
+
 
           {requestType === "overtime" ? (
             <PublicOvertimeRequestForm
