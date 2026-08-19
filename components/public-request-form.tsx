@@ -4,6 +4,7 @@ import { formatUsDate, getBangkokDateString } from "@/lib/date-format";
 const getTodayString = () => getBangkokDateString();
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   ArrowRight,
   Car,
@@ -993,6 +994,9 @@ export function PublicFrame({
   children: React.ReactNode;
   showAdminLink?: boolean;
 }) {
+  const pathname = usePathname();
+  const helpHref = `/request/help?from=${encodeURIComponent(pathname || "/request")}`;
+
   return (
     <main className="flex min-h-screen flex-col bg-canvas">
       <header className="border-b border-line bg-white px-4 sm:px-6 shadow-sm">
@@ -1015,7 +1019,7 @@ export function PublicFrame({
           </a>
           <div className="flex shrink-0 items-center gap-2">
             <a
-              href="/request/help"
+              href={helpHref}
               aria-label="Help & user guide"
               title="Help & user guide"
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-white text-gray-400 transition hover:border-gray-400 hover:bg-gray-50 hover:text-brand"

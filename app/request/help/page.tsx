@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -93,9 +95,20 @@ function Badge({
   );
 }
 
-/* ─── page ──────────────────────────────────────────────── */
+/* ─── page content ──────────────────────────────────────── */
 
-export default function HelpPage() {
+function HelpContent() {
+  const searchParams = useSearchParams();
+  const fromParam = searchParams.get("from");
+
+  const backUrl =
+    fromParam &&
+    (fromParam.startsWith("/request/overtime") ||
+      fromParam.startsWith("/request/car-service") ||
+      fromParam.startsWith("/request"))
+      ? fromParam
+      : "/request";
+
   const workflow = [
     {
       label: "You submit",
@@ -172,7 +185,7 @@ export default function HelpPage() {
       <header className="border-b border-line bg-white px-4 sm:px-6 shadow-sm">
         <div className="mx-auto flex h-16 min-w-0 max-w-[1080px] items-center justify-between gap-3">
           <Link
-            href="/request"
+            href={backUrl}
             className="flex min-w-0 items-center gap-3 sm:gap-4 transition-opacity hover:opacity-90"
             aria-label="Back to transport request"
           >
@@ -188,7 +201,7 @@ export default function HelpPage() {
             </div>
           </Link>
           <Link
-            href="/request"
+            href={backUrl}
             className="flex items-center gap-1.5 shrink-0 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:border-gray-400 hover:bg-gray-50 hover:text-brand sm:px-3 sm:text-xs"
           >
             <ArrowLeft size={12} />
@@ -218,289 +231,275 @@ export default function HelpPage() {
             {/* 1. Request types */}
             <section className="rounded-xl border border-line bg-white p-6 shadow-card">
               <SectionTitle icon={<Car size={16} />}>
-                Types of transport requests
+                Request types &amp; when to use
               </SectionTitle>
+
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg border border-line bg-[#f8fafc] p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock3 size={15} className="text-brand shrink-0" />
-                    <p className="text-sm font-bold text-ink">
-                      Overtime / Holiday work
-                    </p>
+                {/* OT Transport */}
+                <div className="rounded-lg border border-line bg-[#fafbfc] p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-light text-brand">
+                      <Clock3 size={15} />
+                    </span>
+                    <Badge color="amber">Submit by 16:00</Badge>
                   </div>
-                  <p className="text-xs leading-5 text-gray-500">
-                    For employees who work{" "}
-                    <strong>overtime (OT) or on a public holiday</strong> and
-                    need transport home. Submit before{" "}
-                    <strong>16:00 Thailand time</strong> on the day you plan to
-                    work.
+                  <p className="font-bold text-ink text-sm">
+                    Overtime / Holiday Work
                   </p>
-                  <p className="mt-3 inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 px-2 py-1 text-[11px] font-semibold text-amber-700">
-                    <Timer size={11} /> Deadline: 16:00 same day
+                  <p className="text-xs text-gray-500 leading-5">
+                    For employees staying late for approved OT or working on a
+                    public holiday shift. One request per employee.
                   </p>
+                  <ul className="text-xs text-gray-600 space-y-1 pt-1 border-t border-line">
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      Must submit OT in Tiger Space first
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      Submit window: 08:00 – 16:00
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      Drop-off at your usual bus stop
+                    </li>
+                  </ul>
                 </div>
-                <div className="rounded-lg border border-line bg-[#f8fafc] p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Car size={15} className="text-brand shrink-0" />
-                    <p className="text-sm font-bold text-ink">
-                      Car Service Requisition
-                    </p>
+
+                {/* Car Service */}
+                <div className="rounded-lg border border-line bg-[#fafbfc] p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-light text-brand">
+                      <Car size={15} />
+                    </span>
+                    <Badge color="blue">Official Trips</Badge>
                   </div>
-                  <p className="text-xs leading-5 text-gray-500">
-                    For{" "}
-                    <strong>business travel outside company premises</strong> —
-                    client visits, meetings, government offices, etc. A company
-                    vehicle and driver will be assigned.
+                  <p className="font-bold text-ink text-sm">
+                    Car Service Requisition
                   </p>
-                  <p className="mt-3 inline-flex items-center gap-1 rounded bg-brand-light border border-brand/20 px-2 py-1 text-[11px] font-semibold text-brand">
-                    <MapPin size={11} /> Off-site trips only
+                  <p className="text-xs text-gray-500 leading-5">
+                    For official off-site company travel (customer visits,
+                    government offices, suppliers, training).
                   </p>
+                  <ul className="text-xs text-gray-600 space-y-1 pt-1 border-t border-line">
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      Requires department head approval
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      Specify pickup &amp; destination
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      Support multi-passenger trips
+                    </li>
+                  </ul>
                 </div>
               </div>
             </section>
 
-            {/* 2. How to submit */}
+            {/* 2. Step-by-step submission guide */}
             <section className="rounded-xl border border-line bg-white p-6 shadow-card">
               <SectionTitle icon={<ClipboardList size={16} />}>
-                How to submit a request
+                How to submit a request (5 simple steps)
               </SectionTitle>
+
               <div className="space-y-5">
                 <Step
                   number={1}
-                  title="Choose the request type"
-                  body='On the home screen, select "Overtime / Holiday work" or "Car Service Requisition" depending on your trip.'
+                  title="Select request type"
+                  body="Choose 'Overtime / Holiday Work' for OT rides or 'Car Service Requisition' for off-site business travel."
                 />
                 <Step
                   number={2}
-                  title="Fill in your details"
-                  body="Search your name in the company directory, confirm your employee number, company email, and department."
+                  title="Search & select your name from directory"
+                  body="Type your English name in the 'Employee name' field and select your record from the dropdown. Your email, ID, and department will fill automatically."
                 />
                 <Step
                   number={3}
-                  title="Enter trip information"
-                  body="Provide the date, time, pickup and destination. For OT, also confirm you have submitted the request in Tiger Space."
+                  title="Fill trip details"
+                  body="For OT: select date, work times, and bus stop. For Car Service: select date, start/end time, pickup location, destination, and purpose."
                 />
                 <Step
                   number={4}
-                  title="Review and confirm"
-                  body='Check your details in the confirmation dialog, then click "Confirm & submit". No sign-in is required.'
+                  title="Review & submit"
+                  body="Click 'Review request', verify all information on the summary screen, then click 'Submit request'."
                 />
                 <Step
                   number={5}
-                  title="Save your tracking link"
-                  body="After submitting you will receive a unique management link. Save it to view status, edit, or cancel your request later."
+                  title="Save your manage link & check email"
+                  body="Copy the unique Manage Link shown on the success screen or check your email for confirmation."
                 />
-              </div>
-              <div className="mt-5 flex items-start gap-2.5 rounded-lg border border-success/20 bg-success-light px-4 py-3">
-                <ShieldCheck
-                  size={15}
-                  className="mt-0.5 shrink-0 text-success"
-                />
-                <p className="text-xs leading-5 text-gray-700">
-                  <strong>No account needed.</strong> The form is open to all
-                  TOKIN employees using a company email address.
-                </p>
               </div>
             </section>
 
-            {/* 3. Approval workflow */}
+            {/* 3. Approval & Assignment Workflow */}
             <section className="rounded-xl border border-line bg-white p-6 shadow-card">
-              <SectionTitle icon={<UserCheck size={16} />}>
-                Approval workflow
+              <SectionTitle icon={<ShieldCheck size={16} />}>
+                Approval &amp; vehicle assignment process
               </SectionTitle>
-              <div className="overflow-x-auto -mx-1">
-                <div className="flex min-w-[480px] items-stretch gap-0 px-1 py-2">
-                  {workflow.map((node, i) => (
-                    <div key={i} className="flex flex-1 items-center">
-                      <div
-                        className={`flex-1 rounded-lg border px-3 py-3 text-center ${node.color}`}
-                      >
-                        <span
-                          className={`mx-auto mb-1.5 block h-2 w-2 rounded-full ${node.dot}`}
-                        />
-                        <p className="text-[11px] font-bold leading-tight">
-                          {node.label}
-                        </p>
-                        <p className="mt-0.5 text-[10px] leading-tight opacity-70">
-                          {node.sub}
-                        </p>
-                      </div>
-                      {i < workflow.length - 1 && (
-                        <div className="w-4 shrink-0 flex items-center justify-center">
-                          <div className="h-px w-full bg-gray-300" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <p className="mt-4 text-xs leading-5 text-gray-500">
-                You will receive an <strong>email notification</strong> when the
-                status changes. The assigned vehicle and driver details are sent
-                once GA completes the assignment.
-              </p>
-            </section>
 
-            {/* 4. Manage your request */}
-            <section className="rounded-xl border border-line bg-white p-6 shadow-card">
-              <SectionTitle icon={<Ticket size={16} />}>
-                Managing your request
-              </SectionTitle>
-              <p className="text-sm leading-6 text-gray-500 mb-4">
-                After submitting, you receive a{" "}
-                <strong>secure management link</strong> unique to your request.
-                Use it to:
-              </p>
-              <ul className="space-y-2.5">
-                {manageItems.map(({ icon, text }, i) => (
-                  <li
-                    key={i}
-                    className="flex items-start gap-2.5 text-sm text-gray-600"
+              <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
+                {workflow.map((item, idx) => (
+                  <div
+                    key={item.label}
+                    className={`rounded-lg border p-3 ${item.color} flex flex-col items-center justify-between text-center`}
                   >
-                    <span className="mt-0.5 shrink-0 text-brand">{icon}</span>
-                    {text}
-                  </li>
+                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+                      Step 0{idx + 1}
+                    </span>
+                    <p className="mt-1.5 font-bold text-xs leading-tight">
+                      {item.label}
+                    </p>
+                    <p className="mt-1 text-[11px] opacity-80 leading-tight">
+                      {item.sub}
+                    </p>
+                  </div>
                 ))}
-              </ul>
-              <div className="mt-5 flex items-start gap-2.5 rounded-lg border border-danger/20 bg-danger-light px-4 py-3">
-                <AlertTriangle
-                  size={15}
-                  className="mt-0.5 shrink-0 text-danger"
-                />
-                <p className="text-xs leading-5 text-gray-700">
-                  <strong>Keep your link private.</strong> Anyone with the
-                  management link can view and modify your request. Do not share
-                  it publicly.
+              </div>
+
+              <div className="mt-4 rounded-lg bg-blue-50 border border-blue-100 p-3.5 text-xs text-blue-900 space-y-1.5">
+                <p className="font-semibold flex items-center gap-1.5">
+                  <ShieldCheck size={14} className="text-brand shrink-0" />
+                  Auto-routed approval system
+                </p>
+                <p className="text-blue-800 leading-5">
+                  When you submit, an approval email with a 1-click button is sent
+                  directly to your active department approver. No manager email
+                  entry is required. Once approved, General Affairs (GA) assigns
+                  an available vehicle and driver.
                 </p>
               </div>
             </section>
 
-            {/* 5. FAQ */}
+            {/* 4. FAQ */}
             <section className="rounded-xl border border-line bg-white p-6 shadow-card">
               <SectionTitle icon={<HelpCircle size={16} />}>
-                Frequently asked questions
+                Frequently Asked Questions (FAQ)
               </SectionTitle>
-              <div>
+
+              <div className="divide-y divide-line">
                 <FaqItem
-                  question="Do I need a company account to submit?"
-                  answer="No. The request form is publicly accessible to all TOKIN employees. You only need your company email address to submit."
+                  question="What if I cannot find my name in the employee directory?"
+                  answer="You can manually type your English full name, company email, 7-digit employee ID, and department in the form fields."
                 />
                 <FaqItem
-                  question="What is Tiger Space and why must I confirm it?"
-                  answer="Tiger Space is the company's HR overtime tracking system. OT transport requests are only valid if the overtime has been formally recorded there. The checkbox confirms you have done this before requesting transport."
+                  question="Do I need to submit OT in Tiger Space before requesting a transport?"
+                  answer="Yes, transport requests for overtime are cross-verified against Tiger Space approved reports by HR/GA. Please submit in Tiger Space first."
                 />
                 <FaqItem
-                  question="What happens if I miss the 16:00 OT submission deadline?"
-                  answer="The form will block submission after 16:00. Contact your department approver or the General Affairs (GA) team directly for late arrangements."
+                  question="Can I edit or cancel my request after submitting?"
+                  answer="Yes. Open your unique Manage Request link (or find it in your confirmation email) to edit details or cancel while status is still 'Pending'."
                 />
                 <FaqItem
-                  question="Can I submit on behalf of someone else?"
-                  answer="For OT transport, each employee must submit their own request and confirm it is for themselves. For car service requisitions, a manager or secretary may submit on behalf of staff if needed."
+                  question="What is the daily cutoff time for OT transport requests?"
+                  answer="Standard requests should be submitted by 16:00 Thailand time to enter the normal vehicle planning batch."
                 />
                 <FaqItem
-                  question="How long does approval take?"
-                  answer="Department approvers receive an email immediately after submission. Approval time varies by department — typically within a few hours on the same business day."
+                  question="How do I know which driver or vehicle was assigned to me?"
+                  answer="Once GA assigns a vehicle, you will receive an email notification. You can also view driver name, phone number, and vehicle license plate on your Manage Request page."
                 />
                 <FaqItem
-                  question="I lost my management link. What do I do?"
-                  answer="Check your submission confirmation email — the link is included there. If you cannot find it, contact the GA team with your request number."
+                  question="What if my manager is absent or hasn't approved my request?"
+                  answer="GA receives notification for urgent pending requests. You may also contact General Affairs (GA) directly via Outlook email link."
                 />
                 <FaqItem
-                  question="Can I change my request after submitting?"
-                  answer="Yes, while the status is still 'Pending approval' you can edit details using your management link. Once approved or assigned, contact the GA team for changes."
+                  question="Why does my OT request say 'Waiting for HR/GA verification'?"
+                  answer="This is normal for Tiger Space OT requests. GA verifies OT hours against the daily report before finalizing vehicle dispatch."
                 />
               </div>
             </section>
           </div>
 
-          {/* ── RIGHT sidebar ── */}
-          <div className="space-y-5 lg:sticky lg:top-6">
-            {/* Status legend */}
+          {/* ── RIGHT Sidebar ── */}
+          <div className="space-y-6 lg:col-span-1">
+            {/* Status Guide */}
             <div className="rounded-xl border border-line bg-white p-5 shadow-card">
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-gray-500">
-                Request status guide
+              <p className="font-bold text-ink text-sm mb-3">
+                Request Status Guide
               </p>
-              <ul className="space-y-3">
-                {statusItems.map(({ label, color, desc }) => (
-                  <li key={label} className="flex flex-col gap-0.5">
-                    <Badge color={color}>{label}</Badge>
-                    <p className="text-[11px] text-gray-400 pl-1">{desc}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Key rules */}
-            <div className="rounded-xl border border-line bg-white p-5 shadow-card">
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-gray-500">
-                Key rules
-              </p>
-              <ul className="space-y-2.5">
-                {[
-                  "OT requests must be submitted before 16:00",
-                  "OT must be recorded in Tiger Space first",
-                  "Use your 7-digit employee number",
-                  "Use your TOKIN company email (@yageo.com)",
-                  "Car service is for off-site business trips only",
-                ].map((rule) => (
-                  <li
-                    key={rule}
-                    className="flex items-start gap-2 text-xs leading-5 text-gray-600"
+              <div className="space-y-2.5 text-xs">
+                {statusItems.map((s) => (
+                  <div
+                    key={s.label}
+                    className="flex items-start justify-between gap-2 border-b border-line pb-2 last:border-0 last:pb-0"
                   >
-                    <CheckCircle2
-                      size={13}
-                      className="mt-0.5 shrink-0 text-brand"
-                    />
-                    {rule}
-                  </li>
+                    <div>
+                      <Badge color={s.color}>{s.label}</Badge>
+                      <p className="mt-1 text-gray-500">{s.desc}</p>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
 
-            {/* Contact */}
+            {/* Request Management */}
             <div className="rounded-xl border border-line bg-white p-5 shadow-card">
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-gray-500">
-                Need more help?
+              <p className="font-bold text-ink text-sm mb-3">
+                Managing Your Request
               </p>
-              <p className="text-xs leading-5 text-gray-500 mb-3">
-                Contact the General Affairs (GA) team for urgent issues or if
-                you cannot find the answer above.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-xs text-gray-600">
-                  <Mail size={13} className="shrink-0 text-brand" />
-                  <a
-                    href="https://outlook.office.com/mail/deeplink/compose?to=Treebuppha.Saraphan@yageo.com&subject=TOKIN%20Transport%20Inquiry"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline hover:text-brand transition-colors break-all"
-                  >
-                    Treebuppha.Saraphan@yageo.com
-                  </a>
-                </li>
-                <li className="flex items-center gap-2 text-xs text-gray-600">
-                  <PhoneCall size={13} className="shrink-0 text-brand" />
-                  <span>Internal extension (GA desk)</span>
-                </li>
-              </ul>
-              <p className="mt-3 text-[11px] text-gray-400">
-                Office hours: Mon–Fri 08:00–16:45
-              </p>
+              <div className="space-y-3">
+                {manageItems.map((m, i) => (
+                  <div key={i} className="flex items-start gap-2.5 text-xs">
+                    <span className="mt-0.5 text-brand shrink-0">
+                      {m.icon}
+                    </span>
+                    <span className="text-gray-600 leading-5">{m.text}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Back CTA */}
-            <Link
-              href="/request"
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-btn transition hover:bg-brand-dark"
-            >
-              <ArrowLeft size={15} />
-              Back to request form
-            </Link>
+            {/* Key Rules Card */}
+            <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-5 text-xs space-y-2 text-amber-950">
+              <p className="font-bold flex items-center gap-1.5 text-amber-900">
+                <Timer size={14} />
+                Key Operating Rules
+              </p>
+              <ul className="space-y-1.5 leading-5 text-amber-900/90 list-disc pl-4">
+                <li>Submit OT rides by 16:00 daily</li>
+                <li>Verify your 7-digit Employee ID</li>
+                <li>Save your Manage Link after submit</li>
+                <li>Contact GA for urgent vehicle changes</li>
+              </ul>
+            </div>
+
+            {/* GA Admin Portal / Contact */}
+            <div className="rounded-xl border border-line bg-white p-5 shadow-card space-y-3">
+              <p className="font-bold text-ink text-sm">Need Further Assistance?</p>
+              <p className="text-xs text-gray-500 leading-5">
+                Contact General Affairs (GA) for urgent fleet management or special transport requests.
+              </p>
+              <a
+                href="https://outlook.office.com/mail/deeplink/compose?to=Treebuppha.Saraphan@yageo.com&subject=TOKIN%20Transport%20Inquiry"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-dark"
+              >
+                <Mail size={14} />
+                Contact GA Admin (Email)
+              </a>
+            </div>
           </div>
         </div>
       </div>
 
       <PublicFooter />
     </main>
+  );
+}
+
+export default function HelpPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-canvas p-4 text-center">
+          <p className="text-sm text-gray-500">Loading user guide…</p>
+        </main>
+      }
+    >
+      <HelpContent />
+    </Suspense>
   );
 }
