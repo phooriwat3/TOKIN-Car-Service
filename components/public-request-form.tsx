@@ -1038,7 +1038,6 @@ function FormActions({
 }
 function PublicFrame({
   children,
-  showAdminLink = false,
 }: {
   children: React.ReactNode;
   showAdminLink?: boolean;
@@ -1068,14 +1067,6 @@ function PublicFrame({
             >
               <HelpCircle size={16} />
             </a>
-            {showAdminLink && (
-              <a
-                href="/admin/login"
-                className="shrink-0 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:border-gray-400 hover:bg-gray-50 hover:text-brand sm:px-3 sm:text-xs"
-              >
-                Admin portal
-              </a>
-            )}
           </div>
         </div>
       </header>
