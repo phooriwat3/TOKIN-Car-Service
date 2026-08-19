@@ -470,7 +470,9 @@ export default function HelpPage() {
                 <li className="flex items-center gap-2 text-xs text-gray-600">
                   <Mail size={13} className="shrink-0 text-brand" />
                   <a
-                    href="mailto:Treebuppha.Saraphan@yageo.com?subject=TOKIN%20Transport%20Inquiry"
+                    href="https://outlook.office.com/mail/deeplink/compose?to=Treebuppha.Saraphan@yageo.com&subject=TOKIN%20Transport%20Inquiry"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="hover:underline hover:text-brand transition-colors break-all"
                   >
                     Treebuppha.Saraphan@yageo.com
