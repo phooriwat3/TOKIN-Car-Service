@@ -262,13 +262,6 @@ export default function PublicRequestForm() {
       return failValidation("Company email is required.", "company-email");
     if (!department.trim())
       return failValidation("Department is required.", "department");
-    if (!approverName.trim())
-      return failValidation(
-        "Select your approver's English name from the company directory, or enter it.",
-        "approver-search",
-      );
-    if (!approverEmail.trim())
-      return failValidation("Approver company email is required.", "approver-email");
 
     if (requestType === "overtime") {
       if (!confirmedSelf)
@@ -311,6 +304,16 @@ export default function PublicRequestForm() {
           "tiger-space-confirmed",
         );
     } else {
+      if (!approverName.trim())
+        return failValidation(
+          "Select your approver's English name from the company directory, or enter it.",
+          "approver-search",
+        );
+      if (!approverEmail.trim())
+        return failValidation(
+          "Approver company email is required.",
+          "approver-email",
+        );
       if (!confirmedSelf)
         return failValidation(
           "Confirm that this request is for official business travel.",
@@ -606,9 +609,6 @@ export default function PublicRequestForm() {
               department={department}
               directorySelected={directorySelected}
               confirmedSelf={confirmedSelf}
-              approverName={approverName}
-              approverEmail={approverEmail}
-              approverDirectorySelected={approverDirectorySelected}
               tigerSpaceConfirmed={tigerSpaceConfirmed}
               usingDate={usingDate}
               employee={employees[0] ?? emptyEmployee()}
@@ -636,19 +636,6 @@ export default function PublicRequestForm() {
                 setDirectorySelected(true);
               }}
               onConfirmedSelfChange={setConfirmedSelf}
-              onApproverChange={(field, value) => {
-                if (field === "name") {
-                  setApproverName(value);
-                  setApproverDirectorySelected(false);
-                } else {
-                  setApproverEmail(value);
-                }
-              }}
-              onApproverDirectorySelect={(person) => {
-                setApproverName(person.displayName);
-                setApproverEmail(person.mail);
-                setApproverDirectorySelected(true);
-              }}
               onUsingDateChange={setUsingDate}
               onEmployeeChange={(field, value) =>
                 updateEmployee(0, field, value)

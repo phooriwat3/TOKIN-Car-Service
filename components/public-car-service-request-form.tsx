@@ -372,7 +372,7 @@ export function PublicCarServiceRequestForm(
           {/* Approver Selection Sub-section */}
           <div className="sm:col-span-2 border-t border-line pt-4 mt-1">
             <p className="text-xs font-bold uppercase tracking-[0.1em] text-brand mb-3">
-              Approver Information (Supervisor / Section Head / Manager)
+              Approver Information (Chief / Supervisor / Sect.Manager / Dept.Manager)
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
