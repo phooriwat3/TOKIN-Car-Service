@@ -23,7 +23,7 @@ import { GoogleMapLinks } from "@/components/google-map-links";
 import { CompanyUserField } from "@/components/company-user-field";
 import { isOtRequestWindowOpen } from "@/lib/request-window";
 import { overtimeDuration } from "@/lib/overtime";
-import { PublicHeader } from "@/components/brand";
+import { PublicHeader, PublicFooter } from "@/components/brand";
 import type { BookingStatus, OvertimeEmployee, RequestType } from "@/lib/types";
 
 type ManagedRequest = {
@@ -187,7 +187,8 @@ export default function PublicManageRequest({
           request.requestType === "overtime"
             ? request.overtimeEmployees.map((emp) => ({
                 ...emp,
-                workDescription: emp.workDescription.trim() || "Transport Request",
+                workDescription:
+                  emp.workDescription.trim() || "Transport Request",
               }))
             : [],
       };
@@ -356,19 +357,20 @@ export default function PublicManageRequest({
   const rawOvertimeEmployee = request?.overtimeEmployees[0] ?? emptyEmployee();
   const overtimeEmployee = {
     ...rawOvertimeEmployee,
-    workDescription:
-      ["Overtime Work", "Transport Request", "Overtime / Transport Request"].includes(
-        rawOvertimeEmployee.workDescription.trim(),
-      )
-        ? ""
-        : rawOvertimeEmployee.workDescription,
+    workDescription: [
+      "Overtime Work",
+      "Transport Request",
+      "Overtime / Transport Request",
+    ].includes(rawOvertimeEmployee.workDescription.trim())
+      ? ""
+      : rawOvertimeEmployee.workDescription,
   };
 
   return (
-    <main className="min-h-screen bg-canvas">
+    <main className="flex min-h-screen flex-col bg-canvas">
       <PublicHeader context="Request management" />
 
-      <div className="mx-auto max-w-[1080px] p-4 py-6 sm:p-6 sm:py-8">
+      <div className="mx-auto flex-1 max-w-[1080px] p-4 py-6 sm:p-6 sm:py-8">
         {state === "loading" && (
           <Card className="mx-auto max-w-xl p-8 text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-brand" />
@@ -460,14 +462,20 @@ export default function PublicManageRequest({
               <div className="space-y-5">
                 {!otWindowOpen && permissions.canEdit && (
                   <div className="border-l-[3px] border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    Editing is locked outside the 08:00–16:00 Thailand submission window. You can still view the request details.
+                    Editing is locked outside the 08:00–16:00 Thailand
+                    submission window. You can still view the request details.
                   </div>
                 )}
 
                 <section className="rounded-lg border border-line bg-white">
                   <div className="border-b border-line bg-[#f7f8fa] px-5 py-4 sm:px-6">
-                    <h2 className="font-semibold text-ink">Employee information</h2>
-                    <p className="mt-0.5 text-xs text-gray-500">The department determines the approval route automatically.</p>
+                    <h2 className="font-semibold text-ink">
+                      Employee information
+                    </h2>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      The department determines the approval route
+                      automatically.
+                    </p>
                   </div>
                   <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6">
                     <CompanyUserField
@@ -485,7 +493,8 @@ export default function PublicManageRequest({
                         updateRequester("name", person.displayName);
                         updateEmployee(0, "employeeName", person.displayName);
                         updateEmployee(0, "employeeEmail", person.mail);
-                        if (person.department) updateRequester("department", person.department);
+                        if (person.department)
+                          updateRequester("department", person.department);
                         if (person.employeeId) {
                           updateRequester("employeeId", person.employeeId);
                           updateEmployee(0, "employeeId", person.employeeId);
@@ -496,54 +505,151 @@ export default function PublicManageRequest({
                       <Input
                         required
                         disabled={disabled}
-                        value={request.requester.employeeId ?? overtimeEmployee.employeeId}
+                        value={
+                          request.requester.employeeId ??
+                          overtimeEmployee.employeeId
+                        }
                         onChange={(event) => {
-                          const value = event.target.value.replace(/\D/g, "").slice(0, 7);
+                          const value = event.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 7);
                           updateRequester("employeeId", value);
                           updateEmployee(0, "employeeId", value);
                         }}
                       />
                     </Field>
-                    <Field label="Company email"><Input disabled value={request.requester.email} /></Field>
+                    <Field label="Company email">
+                      <Input disabled value={request.requester.email} />
+                    </Field>
                     <Field label="Department">
-                      <Select required disabled={disabled} value={request.requester.department} onChange={(event) => updateRequester("department", event.target.value)}>
+                      <Select
+                        required
+                        disabled={disabled}
+                        value={request.requester.department}
+                        onChange={(event) =>
+                          updateRequester("department", event.target.value)
+                        }
+                      >
                         <option value="">Select department</option>
-                        {DEPARTMENTS.map((item) => <option key={item} value={item}>{item}</option>)}
-                        {request.requester.department && !DEPARTMENTS.includes(request.requester.department) && <option value={request.requester.department}>{request.requester.department}</option>}
+                        {DEPARTMENTS.map((item) => (
+                          <option key={item} value={item}>
+                            {item}
+                          </option>
+                        ))}
+                        {request.requester.department &&
+                          !DEPARTMENTS.includes(
+                            request.requester.department,
+                          ) && (
+                            <option value={request.requester.department}>
+                              {request.requester.department}
+                            </option>
+                          )}
                       </Select>
                     </Field>
-                    <Field label="OT approval system"><Input disabled value="Tiger Space" /></Field>
-                    <Field label="Transport verification"><Input disabled value="HR/GA checks the Tiger Space report" /></Field>
+                    <Field label="OT approval system">
+                      <Input disabled value="Tiger Space" />
+                    </Field>
+                    <Field label="Transport verification">
+                      <Input
+                        disabled
+                        value="HR/GA checks the Tiger Space report"
+                      />
+                    </Field>
                   </div>
                 </section>
 
                 <section className="rounded-lg border border-line bg-white">
                   <div className="border-b border-line bg-[#f7f8fa] px-5 py-4 sm:px-6">
-                    <h2 className="font-semibold text-ink">OT and transportation details</h2>
-                    <p className="mt-0.5 text-xs text-gray-500">Changes return the transport request to waiting for Tiger Space verification.</p>
+                    <h2 className="font-semibold text-ink">
+                      OT and transportation details
+                    </h2>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      Changes return the transport request to waiting for Tiger
+                      Space verification.
+                    </p>
                   </div>
                   <div className="space-y-6 px-5 py-5 sm:px-6">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="sm:col-span-2">
-                        <Field label="OT / holiday work date"><Input required disabled={disabled} type="date" lang="en-US" value={request.usingDate} onChange={(event) => update("usingDate", event.target.value)} /></Field>
+                        <Field label="OT / holiday work date ">
+                          <Input
+                            required
+                            disabled={disabled}
+                            type="date"
+                            lang="en-US"
+                            value={request.usingDate}
+                            onChange={(event) =>
+                              update("usingDate", event.target.value)
+                            }
+                          />
+                        </Field>
                       </div>
                       <div className="sm:col-span-2">
-                        <Field label="Work description (optional)"><Textarea disabled={disabled} placeholder="Optional: briefly describe the overtime or holiday work" value={overtimeEmployee.workDescription} onChange={(event) => { const val = event.target.value; updateEmployee(0, "workDescription", val); update("purpose", val.trim() ? `Overtime / Holiday Work: ${val.trim()}` : "Overtime / Holiday Work"); }} /></Field>
+                        <Field label="Work description (optional)">
+                          <Textarea
+                            disabled={disabled}
+                            placeholder="Optional: briefly describe the overtime or holiday work"
+                            value={overtimeEmployee.workDescription}
+                            onChange={(event) => {
+                              const val = event.target.value;
+                              updateEmployee(0, "workDescription", val);
+                              update(
+                                "purpose",
+                                val.trim()
+                                  ? `Overtime / Holiday Work: ${val.trim()}`
+                                  : "Overtime / Holiday Work",
+                              );
+                            }}
+                          />
+                        </Field>
                       </div>
-                      <Field label="OT start time"><TimeMaskInput required disabled={disabled} value={overtimeEmployee.workStart} onChange={(value) => { updateEmployee(0, "workStart", value); update("startTime", value); }} quickTimes={["08:00", "17:20"]} /></Field>
-                      <Field label="OT end time"><TimeMaskInput required disabled={disabled} value={overtimeEmployee.workEnd} onChange={(value) => { updateEmployee(0, "workEnd", value); update("endTime", value); }} quickTimes={["16:45", "19:00", "20:00"]} /></Field>
+                      <Field label="OT start time">
+                        <TimeMaskInput
+                          required
+                          disabled={disabled}
+                          value={overtimeEmployee.workStart}
+                          onChange={(value) => {
+                            updateEmployee(0, "workStart", value);
+                            update("startTime", value);
+                          }}
+                          quickTimes={["08:00", "17:20"]}
+                        />
+                      </Field>
+                      <Field label="OT end time">
+                        <TimeMaskInput
+                          required
+                          disabled={disabled}
+                          value={overtimeEmployee.workEnd}
+                          onChange={(value) => {
+                            updateEmployee(0, "workEnd", value);
+                            update("endTime", value);
+                          }}
+                          quickTimes={["16:45", "19:00", "20:00"]}
+                        />
+                      </Field>
                     </div>
                     <div className="flex items-center justify-between border-y border-line bg-[#fafbfc] px-3.5 py-3 text-sm">
-                      <span className="text-gray-600">Calculated OT duration</span>
-                      <strong className="text-ink">{overtimeDuration(overtimeEmployee.workStart, overtimeEmployee.workEnd) ?? "Check the time range"}</strong>
+                      <span className="text-gray-600">
+                        Calculated OT duration
+                      </span>
+                      <strong className="text-ink">
+                        {overtimeDuration(
+                          overtimeEmployee.workStart,
+                          overtimeEmployee.workEnd,
+                        ) ?? "Check the time range"}
+                      </strong>
                     </div>
                     <fieldset>
-                      <legend className="text-[13px] font-semibold text-gray-700">Transportation requirement</legend>
+                      <legend className="text-[13px] font-semibold text-gray-700">
+                        Transportation requirement
+                      </legend>
                       <div className="mt-2 grid gap-3 sm:grid-cols-2">
                         <button
                           type="button"
                           disabled={disabled}
-                          onClick={() => updateEmployee(0, "transportRequired", true)}
+                          onClick={() =>
+                            updateEmployee(0, "transportRequired", true)
+                          }
                           className={`flex min-h-[72px] text-left cursor-pointer gap-3 border p-3.5 transition-colors ${overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300 bg-white"}`}
                         >
                           <input
@@ -551,15 +657,27 @@ export default function PublicManageRequest({
                             name="manage-transport"
                             readOnly
                             disabled={disabled}
-                            checked={Boolean(overtimeEmployee.transportRequired)}
+                            checked={Boolean(
+                              overtimeEmployee.transportRequired,
+                            )}
                             className="mt-1 h-4 w-4 shrink-0 accent-brand pointer-events-none"
                           />
-                          <div><strong className="block text-sm font-semibold text-ink">Transportation required</strong><span className="mt-1 block text-xs leading-5 text-gray-500">Admin will assign a vehicle and driver after approval.</span></div>
+                          <div>
+                            <strong className="block text-sm font-semibold text-ink">
+                              Transportation required
+                            </strong>
+                            <span className="mt-1 block text-xs leading-5 text-gray-500">
+                              Admin will assign a vehicle and driver after
+                              approval.
+                            </span>
+                          </div>
                         </button>
                         <button
                           type="button"
                           disabled={disabled}
-                          onClick={() => updateEmployee(0, "transportRequired", false)}
+                          onClick={() =>
+                            updateEmployee(0, "transportRequired", false)
+                          }
                           className={`flex min-h-[72px] text-left cursor-pointer gap-3 border p-3.5 transition-colors ${!overtimeEmployee.transportRequired ? "border-brand bg-brand-light/60" : "border-gray-300 bg-white"}`}
                         >
                           <input
@@ -570,23 +688,62 @@ export default function PublicManageRequest({
                             checked={!overtimeEmployee.transportRequired}
                             className="mt-1 h-4 w-4 shrink-0 accent-brand pointer-events-none"
                           />
-                          <div><strong className="block text-sm font-semibold text-ink">No transportation required</strong><span className="mt-1 block text-xs leading-5 text-gray-500">Submit the OT record without a vehicle assignment.</span></div>
+                          <div>
+                            <strong className="block text-sm font-semibold text-ink">
+                              No transportation required
+                            </strong>
+                            <span className="mt-1 block text-xs leading-5 text-gray-500">
+                              Submit the OT record without a vehicle assignment.
+                            </span>
+                          </div>
                         </button>
                       </div>
                     </fieldset>
                     {overtimeEmployee.transportRequired ? (
-                      <Field label="Drop-off location / bus stop"><Input required disabled={disabled} placeholder="Enter your usual bus stop or drop-off point" value={overtimeEmployee.busStop} onChange={(event) => updateEmployee(0, "busStop", event.target.value)} /></Field>
+                      <Field label="Drop-off location / bus stop">
+                        <Input
+                          required
+                          disabled={disabled}
+                          placeholder="Enter your usual bus stop or drop-off point"
+                          value={overtimeEmployee.busStop}
+                          onChange={(event) =>
+                            updateEmployee(0, "busStop", event.target.value)
+                          }
+                        />
+                      </Field>
                     ) : (
-                      <p className="border border-green-200 bg-green-50 px-3.5 py-3 text-sm text-green-800">No vehicle assignment is required for this request.</p>
+                      <p className="border border-green-200 bg-green-50 px-3.5 py-3 text-sm text-green-800">
+                        No vehicle assignment is required for this request.
+                      </p>
                     )}
                   </div>
                 </section>
 
                 <div className="flex flex-col-reverse gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <Button type="button" variant="secondary" disabled={saving} onClick={() => load()}><RefreshCw size={16} /> Reload</Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={saving}
+                    onClick={() => load()}
+                  >
+                    <RefreshCw size={16} /> Reload
+                  </Button>
                   <div className="flex flex-col-reverse gap-2 sm:flex-row">
-                    <Button type="button" variant="danger" disabled={saving || !permissions.canCancel} onClick={cancel}>Cancel request</Button>
-                    <Button disabled={saving || !permissions.canEdit}>{saving ? "Saving…" : request.status === "changes_requested" ? "Resubmit request" : "Save changes"}</Button>
+                    <Button
+                      type="button"
+                      variant="danger"
+                      disabled={saving || !permissions.canCancel}
+                      onClick={cancel}
+                    >
+                      Cancel request
+                    </Button>
+                    <Button disabled={saving || !permissions.canEdit}>
+                      {saving
+                        ? "Saving…"
+                        : request.status === "changes_requested"
+                          ? "Resubmit request"
+                          : "Save changes"}
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -601,7 +758,9 @@ export default function PublicManageRequest({
                         disabled={disabled}
                         value={request.requester.employeeId ?? ""}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, "").slice(0, 7);
+                          const val = e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 7);
                           updateRequester("employeeId", val);
                         }}
                       />
@@ -658,34 +817,37 @@ export default function PublicManageRequest({
                 </Card>
 
                 {request.requestType === "outside_company" && (
-                <Card className="p-5">
-                  <h2 className="mb-4 font-bold">Approver</h2>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <CompanyUserField
-                      label="Approver name"
-                      required
-                      disabled={disabled}
-                      value={request.approver.name}
-                      onChange={(val) => { updateApprover("name", val); updateApprover("email", ""); }}
-                      placeholder="Search manager name or email..."
-                      onSelectUser={(person) => {
-                        updateApprover("name", person.displayName);
-                        updateApprover("email", person.mail);
-                      }}
-                    />
-                    <Field label="Approver email">
-                      <Input
+                  <Card className="p-5">
+                    <h2 className="mb-4 font-bold">Approver</h2>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <CompanyUserField
+                        label="Approver name"
                         required
                         disabled={disabled}
-                        type="email"
-                        value={request.approver.email}
-                        onChange={(e) =>
-                          updateApprover("email", e.target.value)
-                        }
+                        value={request.approver.name}
+                        onChange={(val) => {
+                          updateApprover("name", val);
+                          updateApprover("email", "");
+                        }}
+                        placeholder="Search manager name or email..."
+                        onSelectUser={(person) => {
+                          updateApprover("name", person.displayName);
+                          updateApprover("email", person.mail);
+                        }}
                       />
-                    </Field>
-                  </div>
-                </Card>
+                      <Field label="Approver email">
+                        <Input
+                          required
+                          disabled={disabled}
+                          type="email"
+                          value={request.approver.email}
+                          onChange={(e) =>
+                            updateApprover("email", e.target.value)
+                          }
+                        />
+                      </Field>
+                    </div>
+                  </Card>
                 )}
 
                 <Card className="p-5">
@@ -702,7 +864,9 @@ export default function PublicManageRequest({
                         <option value="outside_company">
                           CAR SERVICE REQUISITION
                         </option>
-                        <option value="overtime">OVERTIME / HOLIDAY WORK</option>
+                        <option value="overtime">
+                          OVERTIME / HOLIDAY WORK
+                        </option>
                       </Select>
                     </Field>
                     <Field label="Using date">
@@ -844,10 +1008,8 @@ export default function PublicManageRequest({
         )}
       </div>
 
-      {request && request.requestType === "overtime" && (
-        <>
-        </>
-      )}
+      {request && request.requestType === "overtime" && <></>}
+      <PublicFooter />
     </main>
   );
 }
@@ -872,7 +1034,8 @@ function validate(request: ManagedRequest) {
   if (
     request.requestType === "outside_company" &&
     (!request.approver.name.trim() || !request.approver.email.trim())
-  ) return "Approver is required.";
+  )
+    return "Approver is required.";
   if (!request.usingDate || !request.startTime || !request.endTime)
     return "Date and time are required.";
   if (request.endTime <= request.startTime)

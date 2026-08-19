@@ -122,3 +122,41 @@ export function PublicHeader({
     </header>
   );
 }
+
+export function PublicFooter() {
+  return (
+    <footer className="mt-auto border-t border-slate-200/80 bg-white px-4 py-6 sm:px-6">
+      <div className="mx-auto flex max-w-[1080px] flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
+        <div>
+          <p className="text-xs font-semibold text-slate-700">
+            © 2026 TOKIN Corporation. All rights reserved.
+          </p>
+          <p className="mt-0.5 text-[11px] text-slate-500">
+            Internal Operations — Employee Transport & Fleet Management System
+          </p>
+        </div>
+        <nav
+          aria-label="Footer navigation"
+          className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-slate-600"
+        >
+          <Link href="/request/help" className="transition hover:text-brand">
+            User Guide & Help
+          </Link>
+          <span className="h-3 w-px bg-slate-200" />
+          <a
+            href="https://outlook.office.com/mail/deeplink/compose?to=Treebuppha.Saraphan@yageo.com&subject=TOKIN%20Transport%20Inquiry"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition hover:text-brand"
+          >
+            Contact GA
+          </a>
+          <span className="h-3 w-px bg-slate-200" />
+          <Link href="/admin/login" className="transition hover:text-brand">
+            Admin Portal
+          </Link>
+        </nav>
+      </div>
+    </footer>
+  );
+}

@@ -18,7 +18,7 @@ import {
   Timer,
   UserCheck,
 } from "lucide-react";
-import { BrandLogo } from "@/components/brand";
+import { BrandLogo, PublicFooter } from "@/components/brand";
 
 /* ─── shared primitives ─────────────────────────────────── */
 
@@ -167,7 +167,7 @@ export default function HelpPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-canvas">
+    <main className="flex min-h-screen flex-col bg-canvas">
       {/* Header — same pattern as PublicFrame */}
       <header className="border-b border-line bg-white px-4 sm:px-6 shadow-sm">
         <div className="mx-auto flex h-16 min-w-0 max-w-[1080px] items-center justify-between gap-3">
@@ -197,7 +197,7 @@ export default function HelpPage() {
         </div>
       </header>
 
-      <div className="mx-auto min-w-0 max-w-[1080px] px-4 py-8 sm:px-6 sm:py-12 animate-fade-in">
+      <div className="mx-auto flex-1 min-w-0 max-w-[1080px] px-4 py-8 sm:px-6 sm:py-12 animate-fade-in">
         {/* Page heading */}
         <div className="mb-10 max-w-2xl">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
@@ -484,7 +484,7 @@ export default function HelpPage() {
                 </li>
               </ul>
               <p className="mt-3 text-[11px] text-gray-400">
-                Office hours: Mon–Fri 08:00–17:00
+                Office hours: Mon–Fri 08:00–16:45
               </p>
             </div>
 
@@ -500,17 +500,7 @@ export default function HelpPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="mt-12 border-t border-line bg-white px-4 py-6 sm:px-6">
-        <div className="mx-auto max-w-[1080px] flex flex-col items-center gap-1 text-center sm:flex-row sm:justify-between sm:text-left">
-          <p className="text-xs text-gray-400">
-            TOKIN Industrial — Internal transport service
-          </p>
-          <p className="text-xs text-gray-400">
-            For system issues contact the IT Helpdesk
-          </p>
-        </div>
-      </footer>
+      <PublicFooter />
     </main>
   );
 }

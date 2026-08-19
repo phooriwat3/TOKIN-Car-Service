@@ -36,7 +36,7 @@ import {
   type RequesterField,
 } from "@/components/public-overtime-request-form";
 import { overtimeDuration } from "@/lib/overtime";
-import { BrandLogo } from "@/components/brand";
+import { BrandLogo, PublicFooter } from "@/components/brand";
 
 const emptyEmployee = (): OvertimeEmployee => ({
   employeeId: "",
@@ -1044,7 +1044,7 @@ function PublicFrame({
   showAdminLink?: boolean;
 }) {
   return (
-    <main className="min-h-screen bg-canvas">
+    <main className="flex min-h-screen flex-col bg-canvas">
       <header className="border-b border-line bg-white px-4 sm:px-6 shadow-sm">
         <div className="mx-auto flex h-16 min-w-0 max-w-[1080px] items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
@@ -1079,9 +1079,10 @@ function PublicFrame({
           </div>
         </div>
       </header>
-      <div className="mx-auto min-w-0 max-w-[1080px] px-4 py-6 sm:px-6 sm:py-8">
+      <div className="mx-auto flex-1 min-w-0 max-w-[1080px] px-4 py-6 sm:px-6 sm:py-8">
         {children}
       </div>
+      <PublicFooter />
     </main>
   );
 }
