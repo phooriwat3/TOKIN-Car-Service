@@ -61,13 +61,7 @@ function Step({
   );
 }
 
-function FaqItem({
-  question,
-  answer,
-}: {
-  question: string;
-  answer: string;
-}) {
+function FaqItem({ question, answer }: { question: string; answer: string }) {
   return (
     <div className="border-b border-line py-4 last:border-0">
       <p className="font-semibold text-sm text-ink">{question}</p>
@@ -130,18 +124,46 @@ export default function HelpPage() {
   ];
 
   const statusItems = [
-    { label: "Pending approval", color: "amber" as const, desc: "Waiting for department approver" },
-    { label: "Approved", color: "blue" as const, desc: "Approved, GA assigning vehicle" },
-    { label: "Assigned", color: "green" as const, desc: "Vehicle & driver confirmed" },
+    {
+      label: "Pending approval",
+      color: "amber" as const,
+      desc: "Waiting for department approver",
+    },
+    {
+      label: "Approved",
+      color: "blue" as const,
+      desc: "Approved, GA assigning vehicle",
+    },
+    {
+      label: "Assigned",
+      color: "green" as const,
+      desc: "Vehicle & driver confirmed",
+    },
     { label: "Completed", color: "gray" as const, desc: "Trip finished" },
-    { label: "Rejected", color: "red" as const, desc: "Not approved — see reason" },
+    {
+      label: "Rejected",
+      color: "red" as const,
+      desc: "Not approved — see reason",
+    },
   ];
 
   const manageItems = [
-    { icon: <Info size={14} />, text: "View current status and assigned vehicle / driver" },
-    { icon: <ClipboardList size={14} />, text: "Edit trip details while the request is still pending" },
-    { icon: <AlertTriangle size={14} />, text: "Cancel the request if your plans change" },
-    { icon: <CheckCircle2 size={14} />, text: "Resubmit if the request was returned for correction" },
+    {
+      icon: <Info size={14} />,
+      text: "View current status and assigned vehicle / driver",
+    },
+    {
+      icon: <ClipboardList size={14} />,
+      text: "Edit trip details while the request is still pending",
+    },
+    {
+      icon: <AlertTriangle size={14} />,
+      text: "Cancel the request if your plans change",
+    },
+    {
+      icon: <CheckCircle2 size={14} />,
+      text: "Resubmit if the request was returned for correction",
+    },
   ];
 
   return (
@@ -193,7 +215,6 @@ export default function HelpPage() {
         <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
           {/* ── LEFT / MAIN column ── */}
           <div className="space-y-6 lg:col-span-2">
-
             {/* 1. Request types */}
             <section className="rounded-xl border border-line bg-white p-6 shadow-card">
               <SectionTitle icon={<Car size={16} />}>
@@ -203,11 +224,16 @@ export default function HelpPage() {
                 <div className="rounded-lg border border-line bg-[#f8fafc] p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Clock3 size={15} className="text-brand shrink-0" />
-                    <p className="text-sm font-bold text-ink">Overtime / Holiday work</p>
+                    <p className="text-sm font-bold text-ink">
+                      Overtime / Holiday work
+                    </p>
                   </div>
                   <p className="text-xs leading-5 text-gray-500">
-                    For employees who work <strong>overtime (OT) or on a public holiday</strong> and need transport home. Submit before{" "}
-                    <strong>16:00 Thailand time</strong> on the day you plan to work.
+                    For employees who work{" "}
+                    <strong>overtime (OT) or on a public holiday</strong> and
+                    need transport home. Submit before{" "}
+                    <strong>16:00 Thailand time</strong> on the day you plan to
+                    work.
                   </p>
                   <p className="mt-3 inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 px-2 py-1 text-[11px] font-semibold text-amber-700">
                     <Timer size={11} /> Deadline: 16:00 same day
@@ -216,10 +242,15 @@ export default function HelpPage() {
                 <div className="rounded-lg border border-line bg-[#f8fafc] p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Car size={15} className="text-brand shrink-0" />
-                    <p className="text-sm font-bold text-ink">Car Service Requisition</p>
+                    <p className="text-sm font-bold text-ink">
+                      Car Service Requisition
+                    </p>
                   </div>
                   <p className="text-xs leading-5 text-gray-500">
-                    For <strong>business travel outside company premises</strong> — client visits, meetings, government offices, etc. A company vehicle and driver will be assigned.
+                    For{" "}
+                    <strong>business travel outside company premises</strong> —
+                    client visits, meetings, government offices, etc. A company
+                    vehicle and driver will be assigned.
                   </p>
                   <p className="mt-3 inline-flex items-center gap-1 rounded bg-brand-light border border-brand/20 px-2 py-1 text-[11px] font-semibold text-brand">
                     <MapPin size={11} /> Off-site trips only
@@ -261,9 +292,13 @@ export default function HelpPage() {
                 />
               </div>
               <div className="mt-5 flex items-start gap-2.5 rounded-lg border border-success/20 bg-success-light px-4 py-3">
-                <ShieldCheck size={15} className="mt-0.5 shrink-0 text-success" />
+                <ShieldCheck
+                  size={15}
+                  className="mt-0.5 shrink-0 text-success"
+                />
                 <p className="text-xs leading-5 text-gray-700">
-                  <strong>No account needed.</strong> The form is open to all TOKIN employees using a company email address.
+                  <strong>No account needed.</strong> The form is open to all
+                  TOKIN employees using a company email address.
                 </p>
               </div>
             </section>
@@ -283,8 +318,12 @@ export default function HelpPage() {
                         <span
                           className={`mx-auto mb-1.5 block h-2 w-2 rounded-full ${node.dot}`}
                         />
-                        <p className="text-[11px] font-bold leading-tight">{node.label}</p>
-                        <p className="mt-0.5 text-[10px] leading-tight opacity-70">{node.sub}</p>
+                        <p className="text-[11px] font-bold leading-tight">
+                          {node.label}
+                        </p>
+                        <p className="mt-0.5 text-[10px] leading-tight opacity-70">
+                          {node.sub}
+                        </p>
                       </div>
                       {i < workflow.length - 1 && (
                         <div className="w-4 shrink-0 flex items-center justify-center">
@@ -324,7 +363,10 @@ export default function HelpPage() {
                 ))}
               </ul>
               <div className="mt-5 flex items-start gap-2.5 rounded-lg border border-danger/20 bg-danger-light px-4 py-3">
-                <AlertTriangle size={15} className="mt-0.5 shrink-0 text-danger" />
+                <AlertTriangle
+                  size={15}
+                  className="mt-0.5 shrink-0 text-danger"
+                />
                 <p className="text-xs leading-5 text-gray-700">
                   <strong>Keep your link private.</strong> Anyone with the
                   management link can view and modify your request. Do not share
@@ -373,7 +415,6 @@ export default function HelpPage() {
 
           {/* ── RIGHT sidebar ── */}
           <div className="space-y-5 lg:sticky lg:top-6">
-
             {/* Status legend */}
             <div className="rounded-xl border border-line bg-white p-5 shadow-card">
               <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-gray-500">
@@ -406,7 +447,10 @@ export default function HelpPage() {
                     key={rule}
                     className="flex items-start gap-2 text-xs leading-5 text-gray-600"
                   >
-                    <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-brand" />
+                    <CheckCircle2
+                      size={13}
+                      className="mt-0.5 shrink-0 text-brand"
+                    />
                     {rule}
                   </li>
                 ))}
@@ -425,7 +469,12 @@ export default function HelpPage() {
               <ul className="space-y-2">
                 <li className="flex items-center gap-2 text-xs text-gray-600">
                   <Mail size={13} className="shrink-0 text-brand" />
-                  <span>GA department email</span>
+                  <a
+                    href="mailto:Treebuppha.Saraphan@yageo.com?subject=TOKIN%20Transport%20Inquiry"
+                    className="hover:underline hover:text-brand transition-colors break-all"
+                  >
+                    Treebuppha.Saraphan@yageo.com
+                  </a>
                 </li>
                 <li className="flex items-center gap-2 text-xs text-gray-600">
                   <PhoneCall size={13} className="shrink-0 text-brand" />
