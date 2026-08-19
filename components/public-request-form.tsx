@@ -606,6 +606,9 @@ export default function PublicRequestForm() {
               department={department}
               directorySelected={directorySelected}
               confirmedSelf={confirmedSelf}
+              approverName={approverName}
+              approverEmail={approverEmail}
+              approverDirectorySelected={approverDirectorySelected}
               tigerSpaceConfirmed={tigerSpaceConfirmed}
               usingDate={usingDate}
               employee={employees[0] ?? emptyEmployee()}
@@ -633,6 +636,19 @@ export default function PublicRequestForm() {
                 setDirectorySelected(true);
               }}
               onConfirmedSelfChange={setConfirmedSelf}
+              onApproverChange={(field, value) => {
+                if (field === "name") {
+                  setApproverName(value);
+                  setApproverDirectorySelected(false);
+                } else {
+                  setApproverEmail(value);
+                }
+              }}
+              onApproverDirectorySelect={(person) => {
+                setApproverName(person.displayName);
+                setApproverEmail(person.mail);
+                setApproverDirectorySelected(true);
+              }}
               onUsingDateChange={setUsingDate}
               onEmployeeChange={(field, value) =>
                 updateEmployee(0, field, value)
