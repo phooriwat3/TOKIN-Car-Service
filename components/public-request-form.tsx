@@ -950,29 +950,29 @@ function RequestProgress() {
           3-step process
         </span>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
         {steps.map((step, index) => (
-          <div
-            key={step.title}
-            className="relative flex items-start gap-3 rounded-xl border border-line bg-white p-4 shadow-card transition hover:border-brand/30 sm:p-4.5"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-light text-brand">
-              {step.icon}
-            </span>
-            <div className="min-w-0 flex-1">
-              <span className="text-[11px] font-bold tracking-wider text-brand/70 uppercase">
-                Step {step.stepNum}
+          <div key={step.title} className="contents sm:flex sm:flex-1 sm:items-center sm:gap-2">
+            <div className="flex flex-1 items-start gap-3 rounded-xl border border-line bg-white p-4 shadow-card transition hover:border-brand/30 sm:p-4">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-light text-brand">
+                {step.icon}
               </span>
-              <p className="mt-0.5 text-sm font-bold text-ink leading-snug">
-                {step.title}
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                {step.body}
-              </p>
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-bold tracking-wider text-brand/70 uppercase">
+                  Step {step.stepNum}
+                </span>
+                <p className="mt-0.5 text-sm font-bold text-ink leading-snug">
+                  {step.title}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                  {step.body}
+                </p>
+              </div>
             </div>
+
             {index < steps.length - 1 && (
-              <div className="hidden sm:flex absolute -right-3.5 top-[24px] z-10 h-7 w-7 items-center justify-center rounded-full border border-line bg-white text-gray-400 shadow-xs">
-                <ArrowRight size={13} className="text-gray-400" />
+              <div className="hidden sm:flex shrink-0 items-center justify-center text-gray-300">
+                <ArrowRight size={16} className="text-gray-300" />
               </div>
             )}
           </div>
