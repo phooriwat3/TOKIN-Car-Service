@@ -33,6 +33,7 @@ const DEPARTMENTS = [
 ];
 
 export type RequesterField = "name" | "email" | "employeeId" | "department";
+export type ApproverField = "name" | "email";
 
 export type PublicCarServiceRequestFormProps = {
   requesterName: string;
@@ -41,6 +42,9 @@ export type PublicCarServiceRequestFormProps = {
   department: string;
   directorySelected: boolean;
   confirmedSelf: boolean;
+  approverName: string;
+  approverEmail: string;
+  approverDirectorySelected: boolean;
   usingDate: string;
   startTime: string;
   endTime: string;
@@ -58,6 +62,8 @@ export type PublicCarServiceRequestFormProps = {
   onRequesterChange: (field: RequesterField, value: string) => void;
   onDirectorySelect: (person: CompanyUser) => void;
   onConfirmedSelfChange: (value: boolean) => void;
+  onApproverChange: (field: ApproverField, value: string) => void;
+  onApproverDirectorySelect: (person: CompanyUser) => void;
   onUsingDateChange: (value: string) => void;
   onStartTimeChange: (value: string) => void;
   onEndTimeChange: (value: string) => void;
@@ -82,6 +88,8 @@ export function PublicCarServiceRequestForm(
       props.requesterEmail.trim() &&
       props.employeeId.trim() &&
       props.department.trim() &&
+      props.approverName.trim() &&
+      props.approverEmail.trim() &&
       props.confirmedSelf,
   );
 
@@ -133,12 +141,12 @@ export function PublicCarServiceRequestForm(
             <Summary label="Department" value={props.department} />
             <Summary label="Company email" value={props.requesterEmail} />
             <Summary
-              label="Request type"
-              value="Car Service Requisition (Off-site Business)"
+              label="Approver"
+              value={`${props.approverName} (${props.approverEmail})`}
             />
             <Summary
-              label="Approval route"
-              value={`${props.department} department approver(s)`}
+              label="Request type"
+              value="Car Service Requisition (Off-site Business)"
             />
             <Summary
               label="Using date"
@@ -223,12 +231,12 @@ export function PublicCarServiceRequestForm(
               Official Off-Site Business Travel
             </p>
             <p className="mt-0.5 text-xs leading-5 text-gray-600">
-              Submitted requests require approval from your department head before GA assigns a vehicle and driver.
+              Submitted requests require approval from your specified supervisor/manager before GA assigns a vehicle.
             </p>
           </div>
         </div>
         <div className="flex items-center gap-1 text-xs font-semibold text-brand">
-          <ShieldCheck size={14} /> Auto-routed approval
+          <ShieldCheck size={14} /> Direct Approver Email
         </div>
       </div>
 
@@ -243,15 +251,15 @@ export function PublicCarServiceRequestForm(
         detailsComplete={detailsComplete}
       />
 
-      {/* Step 1: Employee Information */}
+      {/* Step 1: Employee & Approver Information */}
       <section
         className="rounded-lg border border-line bg-white shadow-card"
         aria-labelledby="employee-section-heading"
       >
         <SectionHeader
           step="1"
-          title="Employee information"
-          description="Search by your English name and select your company directory record."
+          title="Employee & Approver information"
+          description="Search by English name to select your company directory record and your designated approver."
           id="employee-section-heading"
         />
         <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6">
@@ -360,6 +368,66 @@ export function PublicCarServiceRequestForm(
               <p className="mt-1.5 text-xs text-gray-500"></p>
             )}
           </Field>
+
+          {/* Approver Selection Sub-section */}
+          <div className="sm:col-span-2 border-t border-line pt-4 mt-1">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-brand mb-3">
+              Approver Information (Supervisor / Section Head / Manager)
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <CompanyUserField
+                  inputId="approver-search"
+                  label="Approver name"
+                  required
+                  value={props.approverName}
+                  onChange={(value) => props.onApproverChange("name", value)}
+                  placeholder="Type approver's English name"
+                  onSelectUser={props.onApproverDirectorySelect}
+                  describedBy="approver-search-help"
+                />
+                {props.errorField === "approver-search" ? (
+                  <p className="mt-1.5 text-xs font-semibold text-danger">
+                    ⚠️ {props.error}
+                  </p>
+                ) : (
+                  <p
+                    id="approver-search-help"
+                    className="mt-1.5 text-xs text-gray-500"
+                  >
+                    Select approver from directory to auto-fill their company email.
+                  </p>
+                )}
+              </div>
+
+              <Field label="Approver email">
+                <Input
+                  id="approver-email"
+                  required
+                  type="email"
+                  className={
+                    props.errorField === "approver-email"
+                      ? "border-danger ring-2 ring-danger/20"
+                      : ""
+                  }
+                  placeholder="approver@yageo.com"
+                  value={props.approverEmail}
+                  readOnly={
+                    props.approverDirectorySelected &&
+                    Boolean(props.approverEmail)
+                  }
+                  onChange={(event) =>
+                    props.onApproverChange("email", event.target.value)
+                  }
+                />
+                {props.errorField === "approver-email" && (
+                  <p className="mt-1.5 text-xs font-semibold text-danger">
+                    ⚠️ {props.error}
+                  </p>
+                )}
+              </Field>
+            </div>
+          </div>
 
           <div className="sm:col-span-2">
             <label
@@ -544,7 +612,10 @@ export function PublicCarServiceRequestForm(
             </label>
           </div>
 
-          <ApprovalRouteNotice department={props.department} />
+          <ApprovalRouteNotice
+            approverName={props.approverName}
+            approverEmail={props.approverEmail}
+          />
         </div>
       </section>
 
@@ -587,7 +658,7 @@ function Progress({
   detailsComplete: boolean;
 }) {
   const steps = [
-    { label: "Employee information", complete: employeeComplete },
+    { label: "Employee & Approver", complete: employeeComplete },
     { label: "Trip & schedule details", complete: detailsComplete },
     { label: "Review and submit", complete: false },
   ];
@@ -685,19 +756,24 @@ function QuickTime({
   );
 }
 
-function ApprovalRouteNotice({ department }: { department: string }) {
+function ApprovalRouteNotice({
+  approverName,
+  approverEmail,
+}: {
+  approverName: string;
+  approverEmail: string;
+}) {
   return (
     <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3.5">
       <ShieldCheck className="mt-0.5 shrink-0 text-brand" size={19} />
       <div className="min-w-0">
         <p className="text-sm font-semibold text-ink">
-          Approval is routed automatically
+          Approval notification target
         </p>
         <p className="mt-0.5 text-xs leading-5 text-gray-600">
-          {department
-            ? `This request will be sent to the active approver(s) for ${department}.`
-            : "Select a department and the system will send this request to its active approver(s)."}{" "}
-          You do not need to enter a manager email.
+          {approverEmail
+            ? `An email with a 1-click approval link will be sent to ${approverName || approverEmail} (${approverEmail}).`
+            : "Search and select your designated approver above. The approval notification will be emailed directly to them."}
         </p>
       </div>
     </div>

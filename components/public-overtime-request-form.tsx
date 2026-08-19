@@ -41,6 +41,7 @@ const DEPARTMENTS = [
 ];
 
 export type RequesterField = "name" | "email" | "employeeId" | "department";
+export type ApproverField = "name" | "email";
 
 export type PublicOvertimeRequestFormProps = {
   requesterName: string;
@@ -49,6 +50,9 @@ export type PublicOvertimeRequestFormProps = {
   department: string;
   directorySelected: boolean;
   confirmedSelf: boolean;
+  approverName: string;
+  approverEmail: string;
+  approverDirectorySelected: boolean;
   tigerSpaceConfirmed: boolean;
   usingDate: string;
   employee: OvertimeEmployee;
@@ -60,6 +64,8 @@ export type PublicOvertimeRequestFormProps = {
   onRequesterChange: (field: RequesterField, value: string) => void;
   onDirectorySelect: (person: CompanyUser) => void;
   onConfirmedSelfChange: (value: boolean) => void;
+  onApproverChange: (field: ApproverField, value: string) => void;
+  onApproverDirectorySelect: (person: CompanyUser) => void;
   onTigerSpaceConfirmedChange: (value: boolean) => void;
   onUsingDateChange: (value: string) => void;
   onEmployeeChange: <K extends keyof OvertimeEmployee>(
@@ -85,6 +91,8 @@ export function PublicOvertimeRequestForm(
     props.requesterEmail.trim() &&
     props.employeeId.trim() &&
     props.department.trim() &&
+    props.approverName.trim() &&
+    props.approverEmail.trim() &&
     props.confirmedSelf,
   );
   const detailsComplete = Boolean(
@@ -131,6 +139,10 @@ export function PublicOvertimeRequestForm(
             />
             <Summary label="Department" value={props.department} />
             <Summary label="Company email" value={props.requesterEmail} />
+            <Summary
+              label="Approver"
+              value={`${props.approverName} (${props.approverEmail})`}
+            />
             <Summary
               label="OT source"
               value="Tiger Space (no duplicate OT approval)"
@@ -362,6 +374,65 @@ export function PublicOvertimeRequestForm(
               <p className="mt-1.5 text-xs text-gray-500"></p>
             )}
           </Field>
+          {/* Approver Selection Sub-section */}
+          <div className="sm:col-span-2 border-t border-line pt-4 mt-1">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-brand mb-3">
+              Approver Information (Supervisor / Section Head / Manager)
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <CompanyUserField
+                  inputId="approver-search"
+                  label="Approver name"
+                  required
+                  value={props.approverName}
+                  onChange={(value) => props.onApproverChange("name", value)}
+                  placeholder="Type approver's English name"
+                  onSelectUser={props.onApproverDirectorySelect}
+                  describedBy="approver-search-help"
+                />
+                {props.errorField === "approver-search" ? (
+                  <p className="mt-1.5 text-xs font-semibold text-danger">
+                    ⚠️ {props.error}
+                  </p>
+                ) : (
+                  <p
+                    id="approver-search-help"
+                    className="mt-1.5 text-xs text-gray-500"
+                  >
+                    Select approver from directory to auto-fill their company email.
+                  </p>
+                )}
+              </div>
+
+              <Field label="Approver email">
+                <Input
+                  id="approver-email"
+                  required
+                  type="email"
+                  className={
+                    props.errorField === "approver-email"
+                      ? "border-danger ring-2 ring-danger/20"
+                      : ""
+                  }
+                  placeholder="approver@yageo.com"
+                  value={props.approverEmail}
+                  readOnly={
+                    props.approverDirectorySelected &&
+                    Boolean(props.approverEmail)
+                  }
+                  onChange={(event) =>
+                    props.onApproverChange("email", event.target.value)
+                  }
+                />
+                {props.errorField === "approver-email" && (
+                  <p className="mt-1.5 text-xs font-semibold text-danger">
+                    ⚠️ {props.error}
+                  </p>
+                )}
+              </Field>
+            </div>
+          </div>
           <div className="sm:col-span-2">
             <label
               className={`flex min-h-11 cursor-pointer items-start gap-3 border px-3.5 py-3 text-sm text-gray-700 transition-colors ${

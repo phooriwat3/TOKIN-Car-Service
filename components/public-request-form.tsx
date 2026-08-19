@@ -140,6 +140,9 @@ export default function PublicRequestForm() {
   const [requesterEmail, setRequesterEmail] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [department, setDepartment] = useState("");
+  const [approverName, setApproverName] = useState("");
+  const [approverEmail, setApproverEmail] = useState("");
+  const [approverDirectorySelected, setApproverDirectorySelected] = useState(false);
   const [usingDate, setUsingDate] = useState(getTodayString);
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("17:00");
@@ -203,6 +206,9 @@ export default function PublicRequestForm() {
     setRequesterEmail("");
     setEmployeeId("");
     setDepartment("");
+    setApproverName("");
+    setApproverEmail("");
+    setApproverDirectorySelected(false);
     setStartTime("08:00");
     setEndTime("17:00");
     setPickupLocation("Tokin factory");
@@ -256,6 +262,13 @@ export default function PublicRequestForm() {
       return failValidation("Company email is required.", "company-email");
     if (!department.trim())
       return failValidation("Department is required.", "department");
+    if (!approverName.trim())
+      return failValidation(
+        "Select your approver's English name from the company directory, or enter it.",
+        "approver-search",
+      );
+    if (!approverEmail.trim())
+      return failValidation("Approver company email is required.", "approver-email");
 
     if (requestType === "overtime") {
       if (!confirmedSelf)
@@ -367,6 +380,10 @@ export default function PublicRequestForm() {
               email: requesterEmail,
               employeeId,
               department,
+            },
+            approver: {
+              name: approverName,
+              email: approverEmail,
             },
             usingDate,
             startTime:
@@ -638,6 +655,9 @@ export default function PublicRequestForm() {
               department={department}
               directorySelected={directorySelected}
               confirmedSelf={confirmedSelf}
+              approverName={approverName}
+              approverEmail={approverEmail}
+              approverDirectorySelected={approverDirectorySelected}
               usingDate={usingDate}
               startTime={startTime}
               endTime={endTime}
@@ -670,6 +690,19 @@ export default function PublicRequestForm() {
                 setDirectorySelected(true);
               }}
               onConfirmedSelfChange={setConfirmedSelf}
+              onApproverChange={(field, value) => {
+                if (field === "name") {
+                  setApproverName(value);
+                  setApproverDirectorySelected(false);
+                } else {
+                  setApproverEmail(value);
+                }
+              }}
+              onApproverDirectorySelect={(person) => {
+                setApproverName(person.displayName);
+                setApproverEmail(person.mail);
+                setApproverDirectorySelected(true);
+              }}
               onUsingDateChange={setUsingDate}
               onStartTimeChange={setStartTime}
               onEndTimeChange={setEndTime}
