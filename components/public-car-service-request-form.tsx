@@ -163,16 +163,6 @@ export function PublicCarServiceRequestForm(
               value={props.purpose.trim() || "Not provided"}
             />
             <Summary
-              label="Passengers"
-              value={
-                props.passengers
-                  .split("\n")
-                  .map((p) => p.trim())
-                  .filter(Boolean)
-                  .join(", ") || "Only requester"
-              }
-            />
-            <Summary
               label="Travel with GA staff"
               value={props.withStaff ? "Yes" : "No"}
             />
@@ -535,35 +525,23 @@ export function PublicCarServiceRequestForm(
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Passenger names (one per line)">
-              <Textarea
-                id="passengers"
-                className="min-h-20"
-                placeholder="Optional: enter other passenger names"
-                value={props.passengers}
-                onChange={(e) => props.onPassengersChange(e.target.value)}
+          <div>
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-line bg-[#fafbfc] px-4 py-3.5 text-sm text-gray-700 transition hover:border-gray-300 w-full">
+              <input
+                type="checkbox"
+                checked={props.withStaff}
+                onChange={(e) => props.onWithStaffChange(e.target.checked)}
+                className="h-4 w-4 shrink-0 accent-brand"
               />
-            </Field>
-
-            <div className="flex items-center pt-6">
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-line bg-[#fafbfc] px-4 py-3 text-sm text-gray-700 transition hover:border-gray-300 w-full">
-                <input
-                  type="checkbox"
-                  checked={props.withStaff}
-                  onChange={(e) => props.onWithStaffChange(e.target.checked)}
-                  className="h-4 w-4 shrink-0 accent-brand"
-                />
-                <div>
-                  <strong className="font-semibold text-ink block">
-                    Travel with GA staff
-                  </strong>
-                  <span className="text-xs text-gray-500">
-                    Check if GA staff will accompany this trip
-                  </span>
-                </div>
-              </label>
-            </div>
+              <div>
+                <strong className="font-semibold text-ink block">
+                  Travel with GA staff
+                </strong>
+                <span className="text-xs text-gray-500">
+                  Check if GA staff will accompany this trip
+                </span>
+              </div>
+            </label>
           </div>
 
           <ApprovalRouteNotice department={props.department} />
