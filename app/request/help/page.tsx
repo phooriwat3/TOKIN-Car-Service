@@ -241,7 +241,7 @@ function HelpContent() {
                     <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-light text-brand">
                       <Clock3 size={15} />
                     </span>
-                    <Badge color="amber">Submit by 16:00</Badge>
+                    <Badge color="amber">Cut-off 15:30</Badge>
                   </div>
                   <p className="font-bold text-ink text-sm">
                     Overtime / Holiday Work
@@ -250,18 +250,18 @@ function HelpContent() {
                     For employees staying late for approved OT or working on a
                     public holiday shift. One request per employee.
                   </p>
-                  <ul className="text-xs text-gray-600 space-y-1 pt-1 border-t border-line">
+                  <ul className="text-xs text-gray-600 space-y-1.5 pt-1 border-t border-line">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 size={12} className="text-success shrink-0" />
-                      Must submit OT in Tiger Space first
+                      Must submit OT in Tiger OpenSpace first
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 size={12} className="text-success shrink-0" />
-                      Submit window: 08:00 – 16:00
+                      Normal cut-off: 15:30 (Window closes 16:00)
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 size={12} className="text-success shrink-0" />
-                      Drop-off at your usual bus stop
+                      Drop-off at your usual bus stop / route
                     </li>
                   </ul>
                 </div>
@@ -272,27 +272,27 @@ function HelpContent() {
                     <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-light text-brand">
                       <Car size={15} />
                     </span>
-                    <Badge color="blue">Official Trips</Badge>
+                    <Badge color="blue">24h Advance Notice</Badge>
                   </div>
                   <p className="font-bold text-ink text-sm">
                     Car Service Requisition
                   </p>
                   <p className="text-xs text-gray-500 leading-5">
                     For official off-site company travel (customer visits,
-                    government offices, suppliers, training).
+                    government offices, suppliers, inter-plant trips).
                   </p>
-                  <ul className="text-xs text-gray-600 space-y-1 pt-1 border-t border-line">
+                  <ul className="text-xs text-gray-600 space-y-1.5 pt-1 border-t border-line">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 size={12} className="text-success shrink-0" />
-                      Requires department head approval
+                      Submit at least 24 hours (1 working day) prior
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 size={12} className="text-success shrink-0" />
-                      Specify pickup &amp; destination
+                      Requires Department Approver email approval
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 size={12} className="text-success shrink-0" />
-                      Support multi-passenger trips
+                      Specify meeting point &amp; passenger details
                     </li>
                   </ul>
                 </div>
@@ -309,7 +309,7 @@ function HelpContent() {
                 <Step
                   number={1}
                   title="Select request type"
-                  body="Choose 'Overtime / Holiday Work' for OT rides or 'Car Service Requisition' for off-site business travel."
+                  body="Choose 'Overtime / Holiday Work' for OT rides or 'Car Service Requisition' for official business travel."
                 />
                 <Step
                   number={2}
@@ -318,8 +318,8 @@ function HelpContent() {
                 />
                 <Step
                   number={3}
-                  title="Fill trip details"
-                  body="For OT: select date, work times, and bus stop. For Car Service: select date, start/end time, pickup location, destination, and purpose."
+                  title="Fill trip details & approver"
+                  body="For OT: select date, shift hours, and bus stop. For Car Service: select travel date, hours, pickup/destination, purpose, and choose your Department Approver."
                 />
                 <Step
                   number={4}
@@ -328,8 +328,8 @@ function HelpContent() {
                 />
                 <Step
                   number={5}
-                  title="Save your manage link & check email"
-                  body="Copy the unique Manage Link shown on the success screen or check your email for confirmation."
+                  title="Save your manage link & track vehicle"
+                  body="Copy your unique Manage Link shown on the confirmation screen to check real-time status and assigned driver details."
                 />
               </div>
             </section>
@@ -359,17 +359,25 @@ function HelpContent() {
                 ))}
               </div>
 
-              <div className="mt-4 rounded-lg bg-blue-50 border border-blue-100 p-3.5 text-xs text-blue-900 space-y-1.5">
-                <p className="font-semibold flex items-center gap-1.5">
-                  <ShieldCheck size={14} className="text-brand shrink-0" />
-                  Auto-routed approval system
+              <div className="mt-4 rounded-lg bg-blue-50 border border-blue-100 p-3.5 text-xs text-blue-900 space-y-2">
+                <p className="font-semibold flex items-center gap-1.5 text-sm">
+                  <ShieldCheck size={15} className="text-brand shrink-0" />
+                  Dual Verification &amp; Approval System
                 </p>
-                <p className="text-blue-800 leading-5">
-                  When you submit, an approval email with a 1-click button is sent
-                  directly to your active department approver. No manager email
-                  entry is required. Once approved, General Affairs (GA) assigns
-                  an available vehicle and driver.
-                </p>
+                <div className="grid gap-2 sm:grid-cols-2 pt-1">
+                  <div className="rounded border border-blue-200/60 bg-white/70 p-2.5">
+                    <p className="font-bold text-ink text-xs">Car Service Requisition</p>
+                    <p className="mt-1 text-slate-600 leading-normal">
+                      A 1-click approval email is sent directly to your selected Department Approver. GA assigns vehicles after manager approval.
+                    </p>
+                  </div>
+                  <div className="rounded border border-blue-200/60 bg-white/70 p-2.5">
+                    <p className="font-bold text-ink text-xs">Overtime Transport</p>
+                    <p className="mt-1 text-slate-600 leading-normal">
+                      Transport-only booking. GA verifies your approved hours against the <strong>Tiger OpenSpace</strong> report before van dispatch.
+                    </p>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -385,28 +393,32 @@ function HelpContent() {
                   answer="You can manually type your English full name, company email, 7-digit employee ID, and department in the form fields."
                 />
                 <FaqItem
-                  question="Do I need to submit OT in Tiger Space before requesting a transport?"
-                  answer="Yes, transport requests for overtime are cross-verified against Tiger Space approved reports by HR/GA. Please submit in Tiger Space first."
-                />
-                <FaqItem
-                  question="Can I edit or cancel my request after submitting?"
-                  answer="Yes. Open your unique Manage Request link (or find it in your confirmation email) to edit details or cancel while status is still 'Pending'."
+                  question="Do I need to submit OT in Tiger OpenSpace before requesting transport?"
+                  answer="Yes, transport requests for overtime are cross-verified against Tiger OpenSpace approved reports by HR/GA. You may submit this transport booking immediately, and GA will verify records prior to vehicle dispatch."
                 />
                 <FaqItem
                   question="What is the daily cutoff time for OT transport requests?"
-                  answer="Standard requests should be submitted by 16:00 Thailand time to enter the normal vehicle planning batch."
+                  answer="Standard requests should be submitted by 15:30 Thailand time to enter normal batch planning. Submissions between 15:30–16:00 are allocated subject to available van capacity, and the window closes at 16:00."
+                />
+                <FaqItem
+                  question="How far in advance should I request a Car Service?"
+                  answer="Car Service requisitions should be submitted at least 24 hours (1 working day) in advance to allow GA to allocate fleet vehicles and schedule drivers."
+                />
+                <FaqItem
+                  question="Who approves my Car Service request?"
+                  answer="Select your active Department Manager/Approver from the directory search in the form. An email notification with a 1-click approval button will be sent to them directly."
+                />
+                <FaqItem
+                  question="Can I edit or cancel my request after submitting?"
+                  answer="Yes. Open your unique Manage Request link (or find it in your confirmation email) to edit details or cancel before the cutoff time."
                 />
                 <FaqItem
                   question="How do I know which driver or vehicle was assigned to me?"
-                  answer="Once GA assigns a vehicle, you will receive an email notification. You can also view driver name, phone number, and vehicle license plate on your Manage Request page."
-                />
-                <FaqItem
-                  question="What if my manager is absent or hasn't approved my request?"
-                  answer="GA receives notification for urgent pending requests. You may also contact General Affairs (GA) directly via Outlook email link."
+                  answer="Once GA assigns a vehicle, you will receive an email notification. You can also view the driver's name, phone number, and vehicle license plate on your Manage Request page."
                 />
                 <FaqItem
                   question="Why does my OT request say 'Waiting for HR/GA verification'?"
-                  answer="This is normal for Tiger Space OT requests. GA verifies OT hours against the daily report before finalizing vehicle dispatch."
+                  answer="This is normal for Tiger OpenSpace OT requests. GA verifies OT hours against the daily Tiger OpenSpace report before finalizing vehicle dispatch."
                 />
               </div>
             </section>
@@ -452,16 +464,17 @@ function HelpContent() {
             </div>
 
             {/* Key Rules Card */}
-            <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-5 text-xs space-y-2 text-amber-950">
+            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-5 text-xs space-y-2 text-amber-950">
               <p className="font-bold flex items-center gap-1.5 text-amber-900">
                 <Timer size={14} />
                 Key Operating Rules
               </p>
               <ul className="space-y-1.5 leading-5 text-amber-900/90 list-disc pl-4">
-                <li>Submit OT rides by 16:00 daily</li>
-                <li>Verify your 7-digit Employee ID</li>
-                <li>Save your Manage Link after submit</li>
-                <li>Contact GA for urgent vehicle changes</li>
+                <li><strong>OT:</strong> Submit by 15:30 (Closes 16:00)</li>
+                <li><strong>OT:</strong> Submit in Tiger OpenSpace first</li>
+                <li><strong>Car Service:</strong> 24-hr advance notice</li>
+                <li><strong>Car Service:</strong> Manager email approval</li>
+                <li>Save your Manage Link to track driver &amp; vehicle</li>
               </ul>
             </div>
 
