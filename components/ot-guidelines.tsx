@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import {
-  AlertTriangle,
-  Bus,
+  AlertCircle,
+  Calendar,
   CheckCircle2,
   Clock,
   ExternalLink,
@@ -16,349 +16,230 @@ import {
 
 const translations = {
   th: {
-    eyebrow: "นโยบายและแนวทางปฏิบัติ — TOKIN TRANSPORT",
-    title: "แนวทางและกฎการขอรถรับส่งทำงานล่วงเวลา (OT)",
-    subtitle:
-      "ข้อมูลสำคัญและข้อกำหนดในการจองรถรับส่งสำหรับพนักงานที่ปฏิบัติงานล่วงเวลาหรือวันหยุด เพื่อการจัดสรรรถอย่างมีประสิทธิภาพ",
-    stats: [
-      { label: "เวลาตัดรอบประจำวัน (Cut-off)", value: "16:00 น.", desc: "ส่งคำขอก่อนเวลานี้เพื่อเข้าสู่รอบจัดรถปกติ" },
-      { label: "ระบบยื่น OT ล่วงหน้า", value: "Tiger Space", desc: "ยื่นคำขอในระบบควบคู่กับการจองรถรับส่ง" },
-      { label: "ยกเลิก / เปลี่ยนแปลง", value: "Manage Link", desc: "กดยกเลิกผ่านลิงก์คำขอก่อน 16:00 น." },
+    headerCategory: "ข้อกำหนดและนโยบายภายใน • TOKIN TRANSPORT",
+    title: "แนวทางการขอรับบริการรถรับส่งทำงานล่วงเวลา (OT)",
+    description:
+      "ระเบียบและแนวทางปฏิบัติสำหรับพนักงานที่ปฏิบัติงานล่วงเวลาหรือวันหยุด เพื่อการวางแผนจัดสรรสายรถและจำนวนยานพาหนะได้อย่างเหมาะสม",
+    langTh: "ไทย",
+    langEn: "English",
+    summaryTitle: "ข้อมูลสรุปสำคัญ (Key Highlights)",
+    summaryItems: [
+      { label: "เวลาตัดรอบประจำวัน", value: "16:00 น.", note: "ส่งคำขอก่อนเวลานี้เพื่อจัดรถรอบปกติ" },
+      { label: "ระบบอนุมัติเวลาทำงาน", value: "Tiger Space", note: "บันทึกคำขอในระบบควบคู่กับการจองรถ" },
+      { label: "การยกเลิก / แก้ไข", value: "Manage Link", note: "กดยกเลิกผ่านลิงก์ของตนเองก่อน 16:00 น." },
     ],
-    rulesHeading: "5 ข้อกำหนดสำคัญในการใช้บริการรถรับส่ง OT",
-    rulesSubheading: "โปรดอ่านและปฏิบัติตามแนวทางด้านล่างเพื่อให้การเดินทางเป็นไปอย่างราบรื่น",
+    rulesTitle: "ข้อกำหนดและขั้นตอนการปฏิบัติ (Operating Procedures)",
     rules: [
       {
-        number: "01",
-        icon: Clock,
-        title: "รอบเวลาส่งคำขอ (Daily Submission Window)",
-        summary: "เปิดรับคำขอ 06:00 - 22:00 น. โดยมีรอบตัดเวลาจัดรถปกติที่ 16:00 น.",
-        details:
-          "พนักงานควรส่งคำขอจองรถรับส่งก่อนเวลา 16:00 น. ของวันทำงาน เพื่อให้ทีมยานพาหนะ (GA) รวบรวมข้อมูล จัดเส้นทาง และจัดสรรจำนวนรถตู้ได้อย่างเพียงพอ",
-        badge: "ตัดรอบ 16:00 น.",
-        badgeVariant: "amber",
+        no: "1",
+        title: "กำหนดเวลาส่งคำขอ (Cut-off Time)",
+        body: "ระบบเปิดรับคำขอระหว่างเวลา 06:00 – 22:00 น. โดยคำขอที่ส่งก่อนเวลา 16:00 น. จะถูกนำไปจัดสรรในรอบรถปกติประจำวัน เพื่อให้ทีมงานธุรการ (GA) จัดเตรียมจำนวนรถตู้และเส้นทางได้อย่างมีประสิทธิภาพ",
       },
       {
-        number: "02",
-        icon: ShieldCheck,
-        title: "การบันทึกข้อมูลในระบบ Tiger Space",
-        summary: "ยื่นคำขอทำ OT ใน Tiger Space ควบคู่กับการจองรถ",
-        details:
-          "พนักงานสามารถส่งคำขอรถรับส่งในเว็บนี้ได้ทันทีโดยไม่ต้องรอให้อนุมัติใน Tiger Space เสร็จสิ้น โดยฝ่าย GA จะนำข้อมูลไปตรวจสอบความถูกต้องกับระบบ Tiger Space ก่อนปล่อยรถ",
-        badge: "ไม่ต้องรออนุมัติก่อน",
-        badgeVariant: "blue",
+        no: "2",
+        title: "การเชื่อมโยงกับระบบ Tiger Space",
+        body: "พนักงานต้องยื่นขออนุมัติทำงานล่วงเวลาในระบบ Tiger Space ด้วยตนเอง โดยสามารถส่งคำขอจองรถรับส่งนี้ได้ทันทีโดยไม่ต้องรอผลอนุมัติใน Tiger Space ทั้งนี้ฝ่ายธุรการ (GA) จะตรวจสอบความถูกต้องกับรายงานของ Tiger Space ก่อนปล่อยรถ",
       },
       {
-        number: "03",
-        icon: MapPin,
-        title: "การเลือกสายรถและจุดส่ง (Routes & Drop-off)",
-        summary: "เลือกรอบเวลาเลิกงานและจุดลงที่ตรงกับจุดหมายจริง",
-        details:
-          "โปรดตรวจสอบรอบเวลาเลิกงาน (เช่น 19:00 หรือ 20:00 น.) และเลือกสายรถ/จุดลงให้ถูกต้อง หากไม่มีจุดลงในรายการ ให้เลือกจุดลงใกล้เคียงและระบุรายละเอียดในช่องหมายเหตุเพิ่มเติม",
-        badge: "ระบุจุดส่งให้ชัดเจน",
-        badgeVariant: "slate",
+        no: "3",
+        title: "การระบุเวลาเลิกงานและจุดส่ง (Routes & Drop-off)",
+        body: "โปรดตรวจสอบรอบเวลาเลิกงาน (เช่น 19:00 หรือ 20:00 น.) และเลือกสายรถ/จุดลงให้ตรงกับจุดหมายปลายทาง หากไม่พบจุดลงในระบบ ให้เลือกจุดที่ใกล้เคียงที่สุดและระบุรายละเอียดเพิ่มเติมในช่องหมายเหตุ",
       },
       {
-        number: "04",
-        icon: UserCheck,
-        title: "การยกเลิกหรือแก้ไขคำขอ (Cancellation Policy)",
-        summary: "ยกเลิกคำขอก่อน 16:00 น. หากไม่มีการทำ OT แล้ว",
-        details:
-          "หากมีเหตุจำเป็นต้องยกเลิก OT หรือเปลี่ยนแปลงเวลาทำงาน กรุณาใช้ลิงก์ในหน้าจัดการคำขอ (Manage Link) เพื่อกดยกเลิกรถก่อนเวลา 16:00 น. เพื่อคืนโควตาที่นั่งให้เพื่อนร่วมงานท่านอื่น",
-        badge: "แจ้งล่วงหน้าก่อน 16:00",
-        badgeVariant: "red",
+        no: "4",
+        title: "การยกเลิกและแก้ไขเที่ยวรถ (Cancellation Policy)",
+        body: "หากมีการยกเลิก OT หรือเปลี่ยนแปลงเวลาเลิกงาน กรุณาเปิดลิงก์จัดการคำขอ (Manage Link) เพื่อกดยกเลิกการจองรถก่อนเวลา 16:00 น. เพื่อให้ระบบจัดสรรที่นั่งให้แก่พนักงานท่านอื่นได้อย่างคุ้มค่า",
       },
       {
-        number: "05",
-        icon: Bus,
-        title: "การขึ้นรถและการยืนยันตัวตน (Boarding)",
-        summary: "พร้อมขึ้นรถก่อนเวลา 5 นาที ณ จุดจอดรถโรงงาน",
-        details:
-          "รถตู้จะออกเดินทางตรงเวลาตามรอบที่กำหนด โปรดเตรียมรหัสพนักงาน 7 หลัก เพื่อยืนยันรายชื่อกับคนขับรถก่อนขึ้นรถ",
-        badge: "ตรงต่อเวลา",
-        badgeVariant: "green",
+        no: "5",
+        title: "การขึ้นรถและตรวจสอบรายชื่อ (Boarding)",
+        body: "รถตู้จะออกเดินทางตรงเวลา ณ จุดจอดรถโรงงาน โปรดมาถึงก่อนเวลาออกเดินทางอย่างน้อย 5 นาที พร้อมเตรียมรหัสพนักงาน 7 หลักเพื่อยืนยันตนกับพนักงานขับรถ",
       },
     ],
-    checklistTitle: "สรุปขั้นตอนก่อนเดินทาง",
-    checklistDesc: "เช็คลิสต์ 4 สเต็ปง่ายๆ สำหรับพนักงาน",
-    checklist: [
-      "1. ยื่นขอ OT ใน Tiger Space",
-      "2. ส่งคำขอจองรถในเว็บนี้ก่อน 16:00 น.",
-      "3. บันทึก Manage Link หรือจำเลขคำขอไว้",
-      "4. มาถึงจุดขึ้นรถก่อนเวลาออก 5 นาที",
-    ],
-    alertTitle: "กรณีคำขอฉุกเฉิน (หลัง 16:00 น.)",
-    alertBody:
-      "คำขอที่ส่งหลังเวลา 16:00 น. จะถูกจัดเป็นกรณีเร่งด่วน (Urgent Request) ซึ่งอาจมีข้อจำกัดเรื่องที่นั่งและเส้นทาง โปรดประสานงานแจ้งหัวหน้างานและติดต่อฝ่าย GA ทันที",
-    helpTitle: "ต้องการความช่วยเหลือเพิ่มเติม?",
-    helpDesc: "หากมีข้อสงสัยเรื่องสายรถ จุดส่ง หรือกรณีฉุกเฉิน สามารถติดต่อทีมงานธุรการ (GA) ได้โดยตรง",
-    contactButton: "ติดต่อฝ่ายธุรการ (GA Transport)",
+    urgentTitle: "หมายเหตุสำหรับคำขอเร่งด่วน (หลัง 16:00 น.)",
+    urgentBody:
+      "คำขอที่ส่งหลังเวลา 16:00 น. จะถือเป็นคำขอเร่งด่วน (Emergency/Late Request) ซึ่งขึ้นอยู่กับจำนวนที่นั่งและเส้นทางรถที่ว่าง โปรดแจ้งหัวหน้างานและประสานงานกับฝ่ายธุรการ (GA) โดยตรง",
+    contactTitle: "ติดต่อสอบถามหรือแจ้งปัญหา",
+    contactBody: "ฝ่ายธุรการและยานพาหนะ (General Affairs - Transport)",
+    contactAction: "ส่งอีเมลถึงฝ่ายธุรการ (GA)",
   },
   en: {
-    eyebrow: "POLICY & OPERATING GUIDELINES — TOKIN TRANSPORT",
-    title: "Overtime (OT) Transport Rules & Guidelines",
-    subtitle:
-      "Key requirements and operating procedures for employee overtime and holiday work transportation to ensure safe and efficient fleet dispatching.",
-    stats: [
-      { label: "Daily Batch Cut-off", value: "16:00", desc: "Submit before 16:00 for normal transport batch allocation" },
-      { label: "OT Work System", value: "Tiger Space", desc: "Submit OT in Tiger Space alongside transport request" },
-      { label: "Cancel / Update", value: "Manage Link", desc: "Cancel via your direct link before 16:00" },
+    headerCategory: "INTERNAL POLICY & GUIDELINES • TOKIN TRANSPORT",
+    title: "Overtime (OT) Transport Request Guidelines",
+    description:
+      "Operating procedures and standard rules for employees requiring transport services during scheduled overtime or holiday shifts.",
+    langTh: "ไทย",
+    langEn: "English",
+    summaryTitle: "Key Highlights",
+    summaryItems: [
+      { label: "Daily Batch Cut-off", value: "16:00", note: "Submit before 16:00 for standard route planning" },
+      { label: "Work Authorization", value: "Tiger Space", note: "Submit OT requisition in Tiger Space system" },
+      { label: "Cancellation / Edit", value: "Manage Link", note: "Cancel via your link before 16:00" },
     ],
-    rulesHeading: "5 Core Transport Operating Rules",
-    rulesSubheading: "Please review and follow these operational standards before submitting your request",
+    rulesTitle: "Operating Procedures & Rules",
     rules: [
       {
-        number: "01",
-        icon: Clock,
-        title: "Daily Submission Window",
-        summary: "Service open 06:00 - 22:00 with standard 16:00 planning cutoff",
-        details:
-          "Submit your transport request before 16:00 on the working day. This enables General Affairs (GA) fleet planners to consolidate passenger lists and assign sufficient vans.",
-        badge: "Cut-off 16:00",
-        badgeVariant: "amber",
+        no: "1",
+        title: "Daily Submission Cut-off",
+        body: "The service window is 06:00 – 22:00. Requests submitted by 16:00 enter standard route optimization and vehicle allocation handled by General Affairs (GA).",
       },
       {
-        number: "02",
-        icon: ShieldCheck,
-        title: "Tiger Space OT Synchronization",
-        summary: "Submit your overtime request in Tiger Space",
-        details:
-          "You can submit this transport request immediately without waiting for Tiger Space approval. GA will cross-check and verify approval records with Tiger Space prior to dispatch.",
-        badge: "No approval wait required",
-        badgeVariant: "blue",
+        no: "2",
+        title: "Tiger Space Work Synchronization",
+        body: "Employees must submit overtime requisitions in Tiger Space. You may submit this transport booking immediately without waiting for approval. GA will verify records with the Tiger Space report prior to dispatch.",
       },
       {
-        number: "03",
-        icon: MapPin,
-        title: "Route & Drop-off Selection",
-        summary: "Select your exact shift end time and verified drop-off point",
-        details:
-          "Check your shift end time (e.g. 19:00, 20:00) and pick the designated route. If your specific stop is missing, choose the closest point and provide exact instructions in the notes field.",
-        badge: "Verify Drop-off",
-        badgeVariant: "slate",
+        no: "3",
+        title: "Shift End Time & Drop-off Point",
+        body: "Verify your exact shift end time (e.g. 19:00, 20:00) and select the designated route. If your specific stop is not listed, choose the nearest point and specify instructions in the notes field.",
       },
       {
-        number: "04",
-        icon: UserCheck,
-        title: "Cancellation & Modification Policy",
-        summary: "Cancel via Manage Link prior to 16:00 if overtime is cancelled",
-        details:
-          "If your overtime plan changes or is cancelled, use your Manage Link to cancel the transport booking before 16:00 so van seats can be reallocated to other colleagues.",
-        badge: "Notify by 16:00",
-        badgeVariant: "red",
+        no: "4",
+        title: "Cancellation & Schedule Changes",
+        body: "If your overtime is cancelled or postponed, please use your Manage Link to cancel the vehicle request before 16:00 so seats can be reallocated.",
       },
       {
-        number: "05",
-        icon: Bus,
-        title: "Boarding & Driver Check-in",
-        summary: "Arrive at factory dispatch station 5 minutes prior to departure",
-        details:
-          "Vans depart strictly on schedule. Please arrive at the factory pickup area 5 minutes early and be ready with your 7-digit Employee ID for driver check-in.",
-        badge: "On-time Departure",
-        badgeVariant: "green",
+        no: "5",
+        title: "Boarding & Identity Verification",
+        body: "Vans depart on schedule from the factory dispatch area. Please arrive 5 minutes prior to departure and be prepared to state your 7-digit Employee ID to the driver.",
       },
     ],
-    checklistTitle: "Quick Travel Checklist",
-    checklistDesc: "4 easy steps for every OT passenger",
-    checklist: [
-      "1. Submit OT requisition in Tiger Space",
-      "2. Submit transport booking here by 16:00",
-      "3. Save your Manage Link / Request Number",
-      "4. Arrive at pickup point 5 mins before departure",
-    ],
-    alertTitle: "Emergency / Late Submissions (After 16:00)",
-    alertBody:
-      "Requests submitted after 16:00 will be treated as urgent requests subject to vehicle seat availability. Please notify your direct supervisor and contact GA Transport immediately.",
-    helpTitle: "Need Further Assistance?",
-    helpDesc: "For route inquiries, drop-off adjustments, or fleet issues, contact the General Affairs (GA) team.",
-    contactButton: "Contact GA Transport via Outlook",
+    urgentTitle: "Late Requests (After 16:00)",
+    urgentBody:
+      "Submissions after 16:00 are treated as urgent requests subject to vehicle capacity. Please notify your supervisor and contact General Affairs (GA) directly.",
+    contactTitle: "Need Assistance?",
+    contactBody: "General Affairs & Fleet Management Team",
+    contactAction: "Contact GA via Outlook",
   },
 } as const;
 
 type Language = keyof typeof translations;
 
 export function OtGuidelines() {
-  const [language, setLanguage] = useState<Language>("th");
-  const text = translations[language];
+  const [lang, setLang] = useState<Language>("th");
+  const t = translations[lang];
 
   return (
-    <section className="ot-guidelines overflow-hidden bg-canvas text-ink">
-      {/* Header Banner */}
-      <header className="relative bg-gradient-to-r from-brand-900 via-brand to-brand-700 px-5 py-6 text-white sm:px-8 sm:py-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-2xl">
-            <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-blue-200">
-              <ShieldCheck size={14} className="text-blue-300" />
-              <span>{text.eyebrow}</span>
-            </div>
-            <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-              {text.title}
+    <div className="bg-white text-slate-800">
+      {/* Header */}
+      <div className="border-b border-slate-200 bg-slate-900 px-6 py-6 text-white sm:px-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+              {t.headerCategory}
+            </p>
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-white sm:text-2xl">
+              {t.title}
             </h2>
-            <p className="mt-2 text-xs leading-relaxed text-blue-100/90 sm:text-sm">
-              {text.subtitle}
+            <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-slate-300 sm:text-sm">
+              {t.description}
             </p>
           </div>
 
-          {/* Language Toggle */}
-          <div
-            className="flex mr-10 sm:mr-12 rounded-lg border border-white/20 bg-white/10 p-0.5 backdrop-blur-sm"
-            aria-label="OT rules language switch"
-          >
-            {(["th", "en"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={language === option}
-                onClick={() => setLanguage(option)}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                  language === option
-                    ? "bg-white text-brand shadow-sm"
-                    : "text-blue-100 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                {option === "th" ? "ภาษาไทย" : "English"}
-              </button>
-            ))}
+          {/* Clean Language Segment */}
+          <div className="flex shrink-0 items-center rounded-lg border border-slate-700 bg-slate-800 p-0.5 sm:mr-10">
+            <button
+              type="button"
+              onClick={() => setLang("th")}
+              className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                lang === "th"
+                  ? "bg-brand text-white shadow-xs"
+                  : "text-slate-300 hover:text-white"
+              }`}
+            >
+              {t.langTh}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang("en")}
+              className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                lang === "en"
+                  ? "bg-brand text-white shadow-xs"
+                  : "text-slate-300 hover:text-white"
+              }`}
+            >
+              {t.langEn}
+            </button>
           </div>
         </div>
 
-        {/* 3 Metric Summary Cards */}
+        {/* 3 Metric Cards */}
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {text.stats.map((stat, i) => (
+          {t.summaryItems.map((item, idx) => (
             <div
-              key={i}
-              className="rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur-md transition hover:bg-white/15"
+              key={idx}
+              className="rounded-lg border border-slate-800 bg-slate-800/80 p-3.5"
             >
-              <p className="text-[11px] font-medium text-blue-200">{stat.label}</p>
-              <p className="mt-1 text-lg font-bold tracking-tight text-white sm:text-xl">
-                {stat.value}
+              <span className="text-[11px] font-medium text-slate-400">
+                {item.label}
+              </span>
+              <p className="mt-0.5 text-base font-bold text-white">
+                {item.value}
               </p>
-              <p className="mt-1 text-[11px] leading-tight text-blue-100/75">
-                {stat.desc}
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                {item.note}
               </p>
             </div>
           ))}
         </div>
-      </header>
+      </div>
 
-      {/* Main Content Layout */}
-      <div className="grid grid-cols-1 gap-6 p-5 sm:p-7 xl:grid-cols-[1.25fr_0.75fr]">
-        {/* Left Column: 5 Core Rules */}
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-base font-bold text-ink sm:text-lg">
-              {text.rulesHeading}
-            </h3>
-            <p className="mt-0.5 text-xs text-slate-500">
-              {text.rulesSubheading}
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {text.rules.map((rule) => {
-              const IconComponent = rule.icon;
-              return (
-                <div
-                  key={rule.number}
-                  className="rounded-xl border border-line bg-white p-4 shadow-sm transition hover:border-brand/40 hover:shadow-md sm:p-5"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-light text-brand">
-                        <IconComponent size={18} />
-                      </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[11px] font-bold text-brand">
-                            RULE {rule.number}
-                          </span>
-                          <h4 className="text-sm font-bold text-ink">
-                            {rule.title}
-                          </h4>
-                        </div>
-                        <p className="mt-1 text-xs font-medium text-slate-700">
-                          {rule.summary}
-                        </p>
-                        <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
-                          {rule.details}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+      {/* Main Body */}
+      <div className="p-6 sm:p-8 space-y-6">
+        <div>
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+            {t.rulesTitle}
+          </h3>
+          <div className="mt-4 divide-y divide-slate-100 border-y border-slate-100">
+            {t.rules.map((rule) => (
+              <div key={rule.no} className="flex items-start gap-4 py-4">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
+                  {rule.no}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-semibold text-slate-900">
+                    {rule.title}
+                  </h4>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
+                    {rule.body}
+                  </p>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Right Column: Checklist, Urgent Alert & Contact */}
-        <div className="space-y-5">
-          {/* Quick Step Checklist */}
-          <div className="rounded-xl border border-line bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-emerald-600" />
-              <h3 className="text-sm font-bold text-ink">
-                {text.checklistTitle}
-              </h3>
-            </div>
-            <p className="mt-0.5 text-xs text-slate-500">
-              {text.checklistDesc}
+        {/* Notice & Contact Row */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-4 text-xs leading-relaxed text-amber-900">
+            <p className="font-semibold text-amber-950 flex items-center gap-1.5">
+              <AlertCircle size={14} className="text-amber-700 shrink-0" />
+              {t.urgentTitle}
             </p>
-
-            <ul className="mt-4 space-y-2.5">
-              {text.checklist.map((item, idx) => (
-                <li
-                  key={idx}
-                  className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5 text-xs font-medium text-slate-700"
-                >
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-light text-[10px] font-bold text-brand">
-                    {idx + 1}
-                  </span>
-                  <span className="leading-5">{item}</span>
-                </li>
-              ))}
-            </ul>
+            <p className="mt-1.5 text-amber-900/90">{t.urgentBody}</p>
           </div>
 
-          {/* Urgent / Late Request Notice */}
-          <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-amber-950 shadow-sm">
-            <div className="flex gap-3">
-              <AlertTriangle className="mt-0.5 shrink-0 text-amber-600" size={18} />
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900">
-                  {text.alertTitle}
-                </h4>
-                <p className="mt-1.5 text-xs leading-relaxed text-amber-800">
-                  {text.alertBody}
-                </p>
-              </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs flex flex-col justify-between gap-3">
+            <div>
+              <p className="font-semibold text-slate-900 flex items-center gap-1.5">
+                <HelpCircle size={14} className="text-slate-600 shrink-0" />
+                {t.contactTitle}
+              </p>
+              <p className="mt-1 text-slate-600">{t.contactBody}</p>
             </div>
-          </div>
-
-          {/* GA Contact & Support Card */}
-          <div className="rounded-xl border border-line bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <HelpCircle size={16} className="text-brand" />
-              <h3 className="text-sm font-bold text-ink">
-                {text.helpTitle}
-              </h3>
-            </div>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">
-              {text.helpDesc}
-            </p>
             <a
               href="https://outlook.office.com/mail/deeplink/compose?to=Treebuppha.Saraphan@yageo.com&subject=TOKIN%20OT%20Transport%20Inquiry"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 flex items-center justify-center gap-2 w-full rounded-lg bg-brand px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-dark hover:shadow active:scale-[0.99]"
+              className="inline-flex items-center gap-1.5 font-semibold text-brand hover:text-brand-dark hover:underline"
             >
-              <Mail size={14} />
-              <span>{text.contactButton}</span>
-              <ExternalLink size={12} className="opacity-75" />
+              <Mail size={13} />
+              <span>{t.contactAction}</span>
+              <ExternalLink size={12} className="opacity-70" />
             </a>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

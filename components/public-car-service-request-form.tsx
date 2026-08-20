@@ -76,6 +76,7 @@ export type PublicCarServiceRequestFormProps = {
   onBackToType: () => void;
   onBackToEdit: () => void;
   onReset: () => void;
+  onShowGuidelines?: () => void;
   onProceedToReview: () => void;
   onConfirmSubmit: () => void;
 };
@@ -235,9 +236,15 @@ export function PublicCarServiceRequestForm(
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-xs font-semibold text-brand">
-          <ShieldCheck size={14} /> Direct Approver Email
-        </div>
+        {props.onShowGuidelines && (
+          <button
+            type="button"
+            onClick={props.onShowGuidelines}
+            className="min-h-10 justify-self-start text-xs font-semibold text-brand underline underline-offset-2 hover:text-brand-dark sm:justify-self-end"
+          >
+            View car service rules
+          </button>
+        )}
       </div>
 
       {props.error && (
