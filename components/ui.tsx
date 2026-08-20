@@ -623,31 +623,68 @@ export function TimeMaskInput({
     }
   };
 
-  const handleWheel = (
-    e: React.WheelEvent<HTMLDivElement>,
-    type: "hour" | "minute",
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const step = e.deltaY > 0 ? 1 : -1;
-    if (type === "hour") {
-      const next = Math.min(23, Math.max(0, currentHour + step));
-      if (next !== currentHour) {
-        selectHour(next);
-        if (hoursRef.current) {
-          hoursRef.current.scrollTop = next * ITEM_HEIGHT;
+  const currentHourRef = React.useRef(currentHour);
+  const currentMinuteRef = React.useRef(currentMinute);
+  currentHourRef.current = currentHour;
+  currentMinuteRef.current = currentMinute;
+
+  const selectHourRef = React.useRef(selectHour);
+  const selectMinuteRef = React.useRef(selectMinute);
+  selectHourRef.current = selectHour;
+  selectMinuteRef.current = selectMinute;
+
+  // Non-passive wheel event listeners with speed limiter / accumulator
+  React.useEffect(() => {
+    if (!open) return;
+
+    let hourAccumulator = 0;
+    let minuteAccumulator = 0;
+    const THRESHOLD = 35;
+
+    const onHourWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      hourAccumulator += e.deltaY;
+      if (Math.abs(hourAccumulator) >= THRESHOLD) {
+        const step = hourAccumulator > 0 ? 1 : -1;
+        hourAccumulator = 0;
+        const next = Math.min(23, Math.max(0, currentHourRef.current + step));
+        if (next !== currentHourRef.current) {
+          selectHourRef.current(next);
+          if (hoursRef.current) {
+            hoursRef.current.scrollTop = next * ITEM_HEIGHT;
+          }
         }
       }
-    } else {
-      const next = Math.min(59, Math.max(0, currentMinute + step));
-      if (next !== currentMinute) {
-        selectMinute(next);
-        if (minutesRef.current) {
-          minutesRef.current.scrollTop = next * ITEM_HEIGHT;
+    };
+
+    const onMinuteWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      minuteAccumulator += e.deltaY;
+      if (Math.abs(minuteAccumulator) >= THRESHOLD) {
+        const step = minuteAccumulator > 0 ? 1 : -1;
+        minuteAccumulator = 0;
+        const next = Math.min(59, Math.max(0, currentMinuteRef.current + step));
+        if (next !== currentMinuteRef.current) {
+          selectMinuteRef.current(next);
+          if (minutesRef.current) {
+            minutesRef.current.scrollTop = next * ITEM_HEIGHT;
+          }
         }
       }
-    }
-  };
+    };
+
+    const hEl = hoursRef.current;
+    const mEl = minutesRef.current;
+    if (hEl) hEl.addEventListener("wheel", onHourWheel, { passive: false });
+    if (mEl) mEl.addEventListener("wheel", onMinuteWheel, { passive: false });
+
+    return () => {
+      if (hEl) hEl.removeEventListener("wheel", onHourWheel);
+      if (mEl) mEl.removeEventListener("wheel", onMinuteWheel);
+    };
+  }, [open]);
 
   const hoursList = Array.from({ length: 24 }, (_, i) => i);
   const minutesList = Array.from({ length: 60 }, (_, i) => i);
@@ -719,7 +756,6 @@ export function TimeMaskInput({
             {/* Hours Wheel */}
             <div
               ref={hoursRef}
-              onWheel={(e) => handleWheel(e, "hour")}
               onScroll={(e) => {
                 const target = e.currentTarget;
                 const idx = Math.round(target.scrollTop / ITEM_HEIGHT);
@@ -763,7 +799,6 @@ export function TimeMaskInput({
             {/* Minutes Wheel */}
             <div
               ref={minutesRef}
-              onWheel={(e) => handleWheel(e, "minute")}
               onScroll={(e) => {
                 const target = e.currentTarget;
                 const idx = Math.round(target.scrollTop / ITEM_HEIGHT);
