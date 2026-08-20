@@ -25,7 +25,7 @@ const translations = {
     summaryTitle: "ข้อมูลสรุปสำคัญ (Key Highlights)",
     summaryItems: [
       { label: "เวลาตัดรอบประจำวัน", value: "16:00 น.", note: "ส่งคำขอก่อนเวลานี้เพื่อจัดรถรอบปกติ" },
-      { label: "ระบบอนุมัติเวลาทำงาน", value: "Tiger Space", note: "บันทึกคำขอในระบบควบคู่กับการจองรถ" },
+      { label: "ระบบอนุมัติเวลาทำงาน", value: "Tiger OpenSpace", note: "บันทึกคำขอในระบบควบคู่กับการจองรถ" },
       { label: "การยกเลิก / แก้ไข", value: "Manage Link", note: "กดยกเลิกผ่านลิงก์ของตนเองก่อน 16:00 น." },
     ],
     rulesTitle: "ข้อกำหนดและขั้นตอนการปฏิบัติ (Operating Procedures)",
@@ -37,8 +37,8 @@ const translations = {
       },
       {
         no: "2",
-        title: "การเชื่อมโยงกับระบบ Tiger Space",
-        body: "พนักงานต้องยื่นขออนุมัติทำงานล่วงเวลาในระบบ Tiger Space ด้วยตนเอง โดยสามารถส่งคำขอจองรถรับส่งนี้ได้ทันทีโดยไม่ต้องรอผลอนุมัติใน Tiger Space ทั้งนี้ฝ่ายธุรการ (GA) จะตรวจสอบความถูกต้องกับรายงานของ Tiger Space ก่อนปล่อยรถ",
+        title: "การเชื่อมโยงกับระบบ Tiger OpenSpace",
+        body: "พนักงานต้องยื่นขออนุมัติทำงานล่วงเวลาในระบบ Tiger OpenSpace ด้วยตนเอง โดยสามารถส่งคำขอจองรถรับส่งนี้ได้ทันทีโดยไม่ต้องรอผลอนุมัติใน Tiger OpenSpace ทั้งนี้ฝ่ายธุรการ (GA) จะตรวจสอบความถูกต้องกับรายงานของ Tiger OpenSpace ก่อนปล่อยรถ",
       },
       {
         no: "3",
@@ -73,7 +73,7 @@ const translations = {
     summaryTitle: "Key Highlights",
     summaryItems: [
       { label: "Daily Batch Cut-off", value: "16:00", note: "Submit before 16:00 for standard route planning" },
-      { label: "Work Authorization", value: "Tiger Space", note: "Submit OT requisition in Tiger Space system" },
+      { label: "Work Authorization", value: "Tiger OpenSpace", note: "Submit OT requisition in Tiger OpenSpace system" },
       { label: "Cancellation / Edit", value: "Manage Link", note: "Cancel via your link before 16:00" },
     ],
     rulesTitle: "Operating Procedures & Rules",
@@ -85,8 +85,8 @@ const translations = {
       },
       {
         no: "2",
-        title: "Tiger Space Work Synchronization",
-        body: "Employees must submit overtime requisitions in Tiger Space. You may submit this transport booking immediately without waiting for approval. GA will verify records with the Tiger Space report prior to dispatch.",
+        title: "Tiger OpenSpace Work Synchronization",
+        body: "Employees must submit overtime requisitions in Tiger OpenSpace. You may submit this transport booking immediately without waiting for approval. GA will verify records with the Tiger OpenSpace report prior to dispatch.",
       },
       {
         no: "3",

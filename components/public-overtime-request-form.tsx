@@ -1,7 +1,7 @@
 "use client";
 import { formatUsDate } from "@/lib/date-format";
 
-import { Check, Clock3 } from "lucide-react";
+import { Check, Clock3, ShieldCheck } from "lucide-react";
 import {
   Button,
   Field,
@@ -133,7 +133,7 @@ export function PublicOvertimeRequestForm(
             <Summary label="Company email" value={props.requesterEmail} />
             <Summary
               label="OT source"
-              value="Tiger Space (no duplicate OT approval)"
+              value="Tiger OpenSpace (HR/GA Verification)"
             />
             <Summary
               label="OT verification"
@@ -205,18 +205,15 @@ export function PublicOvertimeRequestForm(
         </Button>
       </div>
 
-      <div className="grid gap-3 border border-amber-200 bg-amber-50 px-4 py-3.5 text-sm text-amber-950 sm:grid-cols-[1fr_auto] sm:items-center">
+      <div className="grid gap-3 border border-amber-200 bg-amber-50/80 px-4 py-3.5 text-sm text-amber-950 sm:grid-cols-[1fr_auto] sm:items-center">
         <div className="flex items-start gap-3">
           <Clock3 className="mt-0.5 shrink-0 text-amber-700" size={18} />
           <div>
-            <p className="font-semibold">
-              Submission window: {OT_REQUEST_START} until {OT_REQUEST_END}{" "}
-              Thailand time
+            <p className="font-semibold text-slate-900">
+              Booking Window: {OT_REQUEST_START} – {OT_REQUEST_END} (Bangkok Time: {bangkokTime()})
             </p>
-            <p className="mt-0.5 text-xs leading-5 text-amber-800">
-              Requests received by {OT_NORMAL_REQUEST_CUTOFF} enter the normal
-              transport-planning batch. OT verification may continue after this
-              cutoff. Current Thailand time: {bangkokTime()}.
+            <p className="mt-0.5 text-xs text-amber-800">
+              Requests received by {OT_NORMAL_REQUEST_CUTOFF} enter the normal transport-planning batch. Submissions after {OT_NORMAL_REQUEST_CUTOFF} are subject to vehicle availability.
             </p>
           </div>
         </div>
@@ -229,10 +226,10 @@ export function PublicOvertimeRequestForm(
         </button>
       </div>
 
-      <div className="border-l-[3px] border-brand bg-brand-light/60 px-4 py-3 text-sm text-gray-700">
+      <div className="border-l-[3px] border-brand bg-brand-light/60 px-4 py-3 text-xs sm:text-sm text-gray-700">
         <p>
           <strong className="text-ink">Before you begin:</strong> Submit your OT
-          request in Tiger Space, then submit this transport request for
+          request in <strong>Tiger OpenSpace</strong>, then submit this transport request for
           yourself. You do not need to wait for OT approval before requesting
           transport.
         </p>
@@ -484,18 +481,20 @@ export function PublicOvertimeRequestForm(
           </div>
 
           <div
-            className={`rounded-lg border p-4 text-sm transition-colors ${
+            className={`rounded-lg border p-4 text-xs transition-colors ${
               props.errorField === "tiger-space-confirmed"
                 ? "border-danger bg-danger-light/40 text-danger ring-2 ring-danger/20"
-                : "border-blue-200 bg-blue-50 text-blue-950"
+                : "border-blue-200 bg-blue-50/70 text-slate-800"
             }`}
           >
-            <p className="font-semibold">Transport request only</p>
-            <p className="mt-1 text-xs leading-5 text-blue-800">
-              Tiger Space remains the source of truth for OT. Submit this form
-              only when you need transportation.
+            <p className="font-semibold text-slate-900 flex items-center gap-1.5">
+              <ShieldCheck size={15} className="text-brand shrink-0" />
+              Tiger OpenSpace Synchronization (Transport Booking Only)
             </p>
-            <label className="mt-3 flex items-start gap-2 cursor-pointer">
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+              Tiger OpenSpace is the official system for overtime attendance and payroll approval. Submit this form only to request transportation. GA will verify approved records prior to vehicle dispatch.
+            </p>
+            <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-md border border-blue-200/80 bg-white p-3 shadow-2xs hover:bg-blue-50/30">
               <input
                 id="tiger-space-confirmed"
                 type="checkbox"
@@ -505,11 +504,8 @@ export function PublicOvertimeRequestForm(
                 }
                 className="mt-0.5 h-4 w-4 accent-brand shrink-0"
               />
-              <span>
-                I confirm that I have submitted this OT in Tiger Space and I
-                require transportation. The transport request will remain
-                pending until HR/GA can verify the approved OT from the Tiger
-                Space report.
+              <span className="text-xs font-medium text-slate-800 leading-normal">
+                I have submitted (or will submit) this OT request in <strong>Tiger OpenSpace</strong> and require company transportation.
               </span>
             </label>
             {props.errorField === "tiger-space-confirmed" && (
