@@ -862,60 +862,53 @@ function Info({ label, value }: { label: string; value: string }) {
 function RequestProgress() {
   const steps = [
     {
-      icon: <MailCheck size={18} />,
-      stepNum: "01",
-      title: "Submit request",
-      body: "Enter company and trip details",
+      stepNum: "1",
+      title: "1. Submit Request",
+      body: "Choose transport type and fill in employee & trip details.",
     },
     {
-      icon: <ShieldCheck size={18} />,
-      stepNum: "02",
-      title: "Department approval",
-      body: "Sent to your department approver",
+      stepNum: "2",
+      title: "2. Verify & Approve",
+      body: "Car Service: Manager email approval. OT: Tiger OpenSpace sync.",
     },
     {
-      icon: <Car size={18} />,
-      stepNum: "03",
-      title: "Transport assigned",
-      body: "Receive vehicle & driver details by email",
+      stepNum: "3",
+      title: "3. Fleet Dispatch",
+      body: "GA assigns vehicle & driver. Track details via your Manage Link.",
     },
   ];
 
   return (
-    <section className="mt-10 border-t border-line pt-8">
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">
-          What happens next
-        </p>
-        <span className="text-xs font-medium text-gray-400">
-          3-step process
+    <section className="mt-10 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-5 text-slate-800 sm:p-6">
+      <div className="flex flex-col gap-1 border-b border-slate-200/80 pb-3.5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+            How It Works • ขั้นตอนการดำเนินการ
+          </p>
+          <p className="text-sm font-semibold text-slate-900">
+            What happens after you submit a request
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
+          <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+          3-step standard process
         </span>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-        {steps.map((step, index) => (
-          <div key={step.title} className="contents sm:flex sm:flex-1 sm:items-center sm:gap-2">
-            <div className="flex flex-1 items-start gap-3 rounded-xl border border-line bg-white p-4 shadow-card transition hover:border-brand/30 sm:p-4">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-light text-brand">
-                {step.icon}
-              </span>
-              <div className="min-w-0 flex-1">
-                <span className="text-[11px] font-bold tracking-wider text-brand/70 uppercase">
-                  Step {step.stepNum}
-                </span>
-                <p className="mt-0.5 text-sm font-bold text-ink leading-snug">
-                  {step.title}
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                  {step.body}
-                </p>
-              </div>
-            </div>
 
-            {index < steps.length - 1 && (
-              <div className="hidden sm:flex shrink-0 items-center justify-center text-gray-300">
-                <ArrowRight size={16} className="text-gray-300" />
-              </div>
-            )}
+      <div className="mt-4.5 grid gap-4 sm:grid-cols-3 sm:gap-6">
+        {steps.map((step) => (
+          <div key={step.stepNum} className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-700">
+                {step.stepNum}
+              </span>
+              <p className="text-xs font-bold text-slate-900">
+                {step.title}
+              </p>
+            </div>
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+              {step.body}
+            </p>
           </div>
         ))}
       </div>
