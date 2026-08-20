@@ -246,7 +246,6 @@ export function PublicOvertimeRequestForm(
         aria-labelledby="employee-section-heading"
       >
         <SectionHeader
-          step="1"
           title="Employee information"
           description="Search by your English name and select your company directory record."
           id="employee-section-heading"
@@ -398,9 +397,8 @@ export function PublicOvertimeRequestForm(
         aria-labelledby="ot-section-heading"
       >
         <SectionHeader
-          step="2"
           title="OT and transportation details"
-          description="Enter the Tiger Space OT schedule and the drop-off point for this transport request."
+          description="Enter the Tiger OpenSpace OT schedule and the drop-off point for this transport request."
           id="ot-section-heading"
         />
         <div className="space-y-6 px-5 py-5 sm:px-6">
@@ -610,27 +608,21 @@ function Progress({
 }
 
 function SectionHeader({
-  step,
   title,
   description,
   id,
 }: {
-  step: string;
+  step?: string;
   title: string;
   description: string;
   id: string;
 }) {
   return (
-    <div className="flex items-start gap-3 border-b border-line bg-[#f7f8fa] px-5 py-4 sm:px-6">
-      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#102d44] text-xs font-semibold text-white">
-        {step}
-      </span>
-      <div>
-        <h2 id={id} className="font-semibold text-ink">
-          {title}
-        </h2>
-        <p className="mt-0.5 text-xs leading-5 text-gray-500">{description}</p>
-      </div>
+    <div className="border-b border-line bg-[#f8fafc] px-5 py-4 sm:px-6">
+      <h2 id={id} className="text-sm sm:text-base font-semibold text-ink">
+        {title}
+      </h2>
+      <p className="mt-0.5 text-xs text-gray-500">{description}</p>
     </div>
   );
 }
