@@ -225,7 +225,7 @@ export function PublicOvertimeRequestForm(
           onClick={props.onShowGuidelines}
           className="min-h-10 justify-self-start text-xs font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-950 sm:justify-self-end"
         >
-          View OT rules
+          View OT transport rules
         </button>
       </div>
 

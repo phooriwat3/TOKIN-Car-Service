@@ -1,104 +1,208 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Clock3, ShieldCheck } from "lucide-react";
-
-const workPeriods = [
-  { period: "17:20–19:00", day: "—", overtime: "1.67" },
-  { period: "17:20–20:00", day: "—", overtime: "2.67" },
-  { period: "08:00–16:45", day: "8.00", overtime: "0.00" },
-  { period: "08:00–19:00", day: "8.00", overtime: "1.67" },
-  { period: "08:00–20:00", day: "8.00", overtime: "2.67" },
-];
+import {
+  AlertTriangle,
+  Bus,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  HelpCircle,
+  Mail,
+  MapPin,
+  ShieldCheck,
+  UserCheck,
+} from "lucide-react";
 
 const translations = {
   th: {
-    eyebrow: "นโยบายการทำงานล่วงเวลา",
-    title: "แนวทางการคำนวณเวลาทำงาน",
-    subtitle: "ข้อมูลอ้างอิงสำหรับตรวจสอบชั่วโมงทำงานและข้อกำหนดก่อนส่งคำขอ",
-    weeklyLimit: "ชั่วโมงรวมสูงสุด",
-    fiveDayLimit: "OT สูงสุด • 5 วันทำงาน",
-    sixDayLimit: "OT สูงสุด • 6 วันทำงาน",
-    hoursPerWeek: "ชั่วโมง / สัปดาห์",
-    referenceTitle: "ตารางอ้างอิงเวลาทำงาน",
-    referenceDescription: "ใช้ตารางนี้เพื่อตรวจสอบชั่วโมงปกติและชั่วโมงล่วงเวลาตามช่วงเวลาทำงาน",
-    period: "ช่วงเวลาทำงาน",
-    normal: "เวลาปกติ",
-    scheduleTitle: "ชั่วโมงรายสัปดาห์ตามวันทำงาน",
-    weeklyTarget: "เป้าหมาย 60 ชม.",
-    fiveDays: "5 วันทำงาน",
-    sixDays: "6 วันทำงาน",
-    overtime: "ล่วงเวลา",
-    note: "หน่วยเป็นชั่วโมง ตัวเลขใช้สำหรับอ้างอิงการกรอกข้อมูล",
-    conditions: "เงื่อนไขการอนุมัติ",
-    conditionsDescription: "โปรดตรวจสอบข้อกำหนดต่อไปนี้ก่อนส่งคำขอ",
-    ruleOneTitle: "ต้องได้รับอนุมัติก่อนเริ่มงาน",
-    ruleOne:
-      "พนักงานต้องได้รับคำสั่งหรือการอนุมัติจากบริษัทฯ ก่อนเริ่มทำงานล่วงเวลาหรือทำงานในวันหยุด มิฉะนั้นบริษัทฯ จะไม่จ่ายค่าตอบแทนดังกล่าว",
-    ruleTwoTitle: "จ่ายตามชั่วโมงที่อนุมัติ",
-    ruleTwo:
-      "บริษัทฯ จะจ่ายค่าล่วงเวลาและค่าทำงานในวันหยุดตามจำนวนชั่วโมงที่ได้รับอนุมัติเท่านั้น",
-    maximumTitle: "ข้อจำกัดสำคัญ",
-    maximumBody: "ชั่วโมงการทำงานรวมต้องไม่เกิน 60.00 ชั่วโมงต่อสัปดาห์",
+    eyebrow: "นโยบายและแนวทางปฏิบัติ — TOKIN TRANSPORT",
+    title: "แนวทางและกฎการขอรถรับส่งทำงานล่วงเวลา (OT)",
+    subtitle:
+      "ข้อมูลสำคัญและข้อกำหนดในการจองรถรับส่งสำหรับพนักงานที่ปฏิบัติงานล่วงเวลาหรือวันหยุด เพื่อการจัดสรรรถอย่างมีประสิทธิภาพ",
+    stats: [
+      { label: "เวลาตัดรอบประจำวัน (Cut-off)", value: "16:00 น.", desc: "ส่งคำขอก่อนเวลานี้เพื่อเข้าสู่รอบจัดรถปกติ" },
+      { label: "ระบบยื่น OT ล่วงหน้า", value: "Tiger Space", desc: "ยื่นคำขอในระบบควบคู่กับการจองรถรับส่ง" },
+      { label: "ยกเลิก / เปลี่ยนแปลง", value: "Manage Link", desc: "กดยกเลิกผ่านลิงก์คำขอก่อน 16:00 น." },
+    ],
+    rulesHeading: "5 ข้อกำหนดสำคัญในการใช้บริการรถรับส่ง OT",
+    rulesSubheading: "โปรดอ่านและปฏิบัติตามแนวทางด้านล่างเพื่อให้การเดินทางเป็นไปอย่างราบรื่น",
+    rules: [
+      {
+        number: "01",
+        icon: Clock,
+        title: "รอบเวลาส่งคำขอ (Daily Submission Window)",
+        summary: "เปิดรับคำขอ 06:00 - 22:00 น. โดยมีรอบตัดเวลาจัดรถปกติที่ 16:00 น.",
+        details:
+          "พนักงานควรส่งคำขอจองรถรับส่งก่อนเวลา 16:00 น. ของวันทำงาน เพื่อให้ทีมยานพาหนะ (GA) รวบรวมข้อมูล จัดเส้นทาง และจัดสรรจำนวนรถตู้ได้อย่างเพียงพอ",
+        badge: "ตัดรอบ 16:00 น.",
+        badgeVariant: "amber",
+      },
+      {
+        number: "02",
+        icon: ShieldCheck,
+        title: "การบันทึกข้อมูลในระบบ Tiger Space",
+        summary: "ยื่นคำขอทำ OT ใน Tiger Space ควบคู่กับการจองรถ",
+        details:
+          "พนักงานสามารถส่งคำขอรถรับส่งในเว็บนี้ได้ทันทีโดยไม่ต้องรอให้อนุมัติใน Tiger Space เสร็จสิ้น โดยฝ่าย GA จะนำข้อมูลไปตรวจสอบความถูกต้องกับระบบ Tiger Space ก่อนปล่อยรถ",
+        badge: "ไม่ต้องรออนุมัติก่อน",
+        badgeVariant: "blue",
+      },
+      {
+        number: "03",
+        icon: MapPin,
+        title: "การเลือกสายรถและจุดส่ง (Routes & Drop-off)",
+        summary: "เลือกรอบเวลาเลิกงานและจุดลงที่ตรงกับจุดหมายจริง",
+        details:
+          "โปรดตรวจสอบรอบเวลาเลิกงาน (เช่น 19:00 หรือ 20:00 น.) และเลือกสายรถ/จุดลงให้ถูกต้อง หากไม่มีจุดลงในรายการ ให้เลือกจุดลงใกล้เคียงและระบุรายละเอียดในช่องหมายเหตุเพิ่มเติม",
+        badge: "ระบุจุดส่งให้ชัดเจน",
+        badgeVariant: "slate",
+      },
+      {
+        number: "04",
+        icon: UserCheck,
+        title: "การยกเลิกหรือแก้ไขคำขอ (Cancellation Policy)",
+        summary: "ยกเลิกคำขอก่อน 16:00 น. หากไม่มีการทำ OT แล้ว",
+        details:
+          "หากมีเหตุจำเป็นต้องยกเลิก OT หรือเปลี่ยนแปลงเวลาทำงาน กรุณาใช้ลิงก์ในหน้าจัดการคำขอ (Manage Link) เพื่อกดยกเลิกรถก่อนเวลา 16:00 น. เพื่อคืนโควตาที่นั่งให้เพื่อนร่วมงานท่านอื่น",
+        badge: "แจ้งล่วงหน้าก่อน 16:00",
+        badgeVariant: "red",
+      },
+      {
+        number: "05",
+        icon: Bus,
+        title: "การขึ้นรถและการยืนยันตัวตน (Boarding)",
+        summary: "พร้อมขึ้นรถก่อนเวลา 5 นาที ณ จุดจอดรถโรงงาน",
+        details:
+          "รถตู้จะออกเดินทางตรงเวลาตามรอบที่กำหนด โปรดเตรียมรหัสพนักงาน 7 หลัก เพื่อยืนยันรายชื่อกับคนขับรถก่อนขึ้นรถ",
+        badge: "ตรงต่อเวลา",
+        badgeVariant: "green",
+      },
+    ],
+    checklistTitle: "สรุปขั้นตอนก่อนเดินทาง",
+    checklistDesc: "เช็คลิสต์ 4 สเต็ปง่ายๆ สำหรับพนักงาน",
+    checklist: [
+      "1. ยื่นขอ OT ใน Tiger Space",
+      "2. ส่งคำขอจองรถในเว็บนี้ก่อน 16:00 น.",
+      "3. บันทึก Manage Link หรือจำเลขคำขอไว้",
+      "4. มาถึงจุดขึ้นรถก่อนเวลาออก 5 นาที",
+    ],
+    alertTitle: "กรณีคำขอฉุกเฉิน (หลัง 16:00 น.)",
+    alertBody:
+      "คำขอที่ส่งหลังเวลา 16:00 น. จะถูกจัดเป็นกรณีเร่งด่วน (Urgent Request) ซึ่งอาจมีข้อจำกัดเรื่องที่นั่งและเส้นทาง โปรดประสานงานแจ้งหัวหน้างานและติดต่อฝ่าย GA ทันที",
+    helpTitle: "ต้องการความช่วยเหลือเพิ่มเติม?",
+    helpDesc: "หากมีข้อสงสัยเรื่องสายรถ จุดส่ง หรือกรณีฉุกเฉิน สามารถติดต่อทีมงานธุรการ (GA) ได้โดยตรง",
+    contactButton: "ติดต่อฝ่ายธุรการ (GA Transport)",
   },
   en: {
-    eyebrow: "Overtime policy",
-    title: "Working-hours guidance",
-    subtitle: "Reference data for reviewing working hours and policy requirements before submission.",
-    weeklyLimit: "Maximum total hours",
-    fiveDayLimit: "Maximum OT • 5-day week",
-    sixDayLimit: "Maximum OT • 6-day week",
-    hoursPerWeek: "hours / week",
-    referenceTitle: "Working-hours reference",
-    referenceDescription: "Use this table to check normal and overtime hours for common work periods.",
-    period: "Work period",
-    normal: "Normal time",
-    scheduleTitle: "Weekly hours by work schedule",
-    weeklyTarget: "60-hour target",
-    fiveDays: "5 working days",
-    sixDays: "6 working days",
-    overtime: "Overtime",
-    note: "Values are shown in hours and are provided as a data-entry reference.",
-    conditions: "Approval conditions",
-    conditionsDescription: "Review these requirements before submitting the request.",
-    ruleOneTitle: "Approval is required before work begins",
-    ruleOne:
-      "Employees must receive a company instruction or approval before starting overtime or holiday work. Otherwise, the company will not pay the related compensation.",
-    ruleTwoTitle: "Payment follows approved hours",
-    ruleTwo:
-      "The company will pay overtime and holiday-work compensation only for the number of hours approved.",
-    maximumTitle: "Important limit",
-    maximumBody: "Total working hours must not exceed 60.00 hours per week.",
+    eyebrow: "POLICY & OPERATING GUIDELINES — TOKIN TRANSPORT",
+    title: "Overtime (OT) Transport Rules & Guidelines",
+    subtitle:
+      "Key requirements and operating procedures for employee overtime and holiday work transportation to ensure safe and efficient fleet dispatching.",
+    stats: [
+      { label: "Daily Batch Cut-off", value: "16:00", desc: "Submit before 16:00 for normal transport batch allocation" },
+      { label: "OT Work System", value: "Tiger Space", desc: "Submit OT in Tiger Space alongside transport request" },
+      { label: "Cancel / Update", value: "Manage Link", desc: "Cancel via your direct link before 16:00" },
+    ],
+    rulesHeading: "5 Core Transport Operating Rules",
+    rulesSubheading: "Please review and follow these operational standards before submitting your request",
+    rules: [
+      {
+        number: "01",
+        icon: Clock,
+        title: "Daily Submission Window",
+        summary: "Service open 06:00 - 22:00 with standard 16:00 planning cutoff",
+        details:
+          "Submit your transport request before 16:00 on the working day. This enables General Affairs (GA) fleet planners to consolidate passenger lists and assign sufficient vans.",
+        badge: "Cut-off 16:00",
+        badgeVariant: "amber",
+      },
+      {
+        number: "02",
+        icon: ShieldCheck,
+        title: "Tiger Space OT Synchronization",
+        summary: "Submit your overtime request in Tiger Space",
+        details:
+          "You can submit this transport request immediately without waiting for Tiger Space approval. GA will cross-check and verify approval records with Tiger Space prior to dispatch.",
+        badge: "No approval wait required",
+        badgeVariant: "blue",
+      },
+      {
+        number: "03",
+        icon: MapPin,
+        title: "Route & Drop-off Selection",
+        summary: "Select your exact shift end time and verified drop-off point",
+        details:
+          "Check your shift end time (e.g. 19:00, 20:00) and pick the designated route. If your specific stop is missing, choose the closest point and provide exact instructions in the notes field.",
+        badge: "Verify Drop-off",
+        badgeVariant: "slate",
+      },
+      {
+        number: "04",
+        icon: UserCheck,
+        title: "Cancellation & Modification Policy",
+        summary: "Cancel via Manage Link prior to 16:00 if overtime is cancelled",
+        details:
+          "If your overtime plan changes or is cancelled, use your Manage Link to cancel the transport booking before 16:00 so van seats can be reallocated to other colleagues.",
+        badge: "Notify by 16:00",
+        badgeVariant: "red",
+      },
+      {
+        number: "05",
+        icon: Bus,
+        title: "Boarding & Driver Check-in",
+        summary: "Arrive at factory dispatch station 5 minutes prior to departure",
+        details:
+          "Vans depart strictly on schedule. Please arrive at the factory pickup area 5 minutes early and be ready with your 7-digit Employee ID for driver check-in.",
+        badge: "On-time Departure",
+        badgeVariant: "green",
+      },
+    ],
+    checklistTitle: "Quick Travel Checklist",
+    checklistDesc: "4 easy steps for every OT passenger",
+    checklist: [
+      "1. Submit OT requisition in Tiger Space",
+      "2. Submit transport booking here by 16:00",
+      "3. Save your Manage Link / Request Number",
+      "4. Arrive at pickup point 5 mins before departure",
+    ],
+    alertTitle: "Emergency / Late Submissions (After 16:00)",
+    alertBody:
+      "Requests submitted after 16:00 will be treated as urgent requests subject to vehicle seat availability. Please notify your direct supervisor and contact GA Transport immediately.",
+    helpTitle: "Need Further Assistance?",
+    helpDesc: "For route inquiries, drop-off adjustments, or fleet issues, contact the General Affairs (GA) team.",
+    contactButton: "Contact GA Transport via Outlook",
   },
 } as const;
 
 type Language = keyof typeof translations;
 
 export function OtGuidelines() {
-  const [language, setLanguage] = useState<Language>("en");
+  const [language, setLanguage] = useState<Language>("th");
   const text = translations[language];
 
-  const limits = [
-    { label: text.weeklyLimit, value: "60.00", unit: text.hoursPerWeek },
-    { label: text.fiveDayLimit, value: "≤ 20.00", unit: text.hoursPerWeek },
-    { label: text.sixDayLimit, value: "≤ 12.00", unit: text.hoursPerWeek },
-  ];
-
   return (
-    <section className="ot-guidelines overflow-hidden bg-white text-ink">
-      <header className="bg-brand-700 pb-5 pl-5 pr-16 pt-6 text-white sm:pb-6 sm:pl-7 sm:pr-20">
-        <div className="flex flex-wrap items-start justify-between gap-5">
+    <section className="ot-guidelines overflow-hidden bg-canvas text-ink">
+      {/* Header Banner */}
+      <header className="relative bg-gradient-to-r from-brand-900 via-brand to-brand-700 px-5 py-6 text-white sm:px-8 sm:py-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">
-            <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-100">
+            <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-blue-200">
+              <ShieldCheck size={14} className="text-blue-300" />
               <span>{text.eyebrow}</span>
             </div>
-            <h2 className="text-xl font-semibold leading-tight sm:text-2xl">{text.title}</h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-blue-100/90">{text.subtitle}</p>
+            <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+              {text.title}
+            </h2>
+            <p className="mt-2 text-xs leading-relaxed text-blue-100/90 sm:text-sm">
+              {text.subtitle}
+            </p>
           </div>
 
+          {/* Language Toggle */}
           <div
-            className="flex border border-white/20 bg-brand-800 p-0.5"
-            aria-label="OT rules language"
+            className="flex mr-10 sm:mr-12 rounded-lg border border-white/20 bg-white/10 p-0.5 backdrop-blur-sm"
+            aria-label="OT rules language switch"
           >
             {(["th", "en"] as const).map((option) => (
               <button
@@ -106,127 +210,154 @@ export function OtGuidelines() {
                 type="button"
                 aria-pressed={language === option}
                 onClick={() => setLanguage(option)}
-                className={`min-w-12 px-3 py-1.5 text-xs font-semibold transition ${
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
                   language === option
                     ? "bg-white text-brand shadow-sm"
                     : "text-blue-100 hover:bg-white/10 hover:text-white"
                 }`}
               >
-                {option === "th" ? "TH" : "ENG"}
+                {option === "th" ? "ภาษาไทย" : "English"}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="mt-6 grid gap-px overflow-hidden border border-white/15 bg-white/15 sm:grid-cols-3">
-          {limits.map((item) => (
-            <div key={item.label} className="bg-brand-800 px-4 py-3.5">
-              <p className="text-[11px] font-medium leading-4 text-blue-100/80">{item.label}</p>
-              <p className="mt-1.5 text-xl font-semibold tracking-tight text-white">
-                {item.value}
-                <span className="ml-1.5 text-[11px] font-medium tracking-normal text-blue-100/75">
-                  {item.unit}
-                </span>
+        {/* 3 Metric Summary Cards */}
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {text.stats.map((stat, i) => (
+            <div
+              key={i}
+              className="rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur-md transition hover:bg-white/15"
+            >
+              <p className="text-[11px] font-medium text-blue-200">{stat.label}</p>
+              <p className="mt-1 text-lg font-bold tracking-tight text-white sm:text-xl">
+                {stat.value}
+              </p>
+              <p className="mt-1 text-[11px] leading-tight text-blue-100/75">
+                {stat.desc}
               </p>
             </div>
           ))}
         </div>
       </header>
 
-      <div className="grid xl:grid-cols-[1.12fr_.88fr]">
-        <div className="border-b border-line p-5 sm:p-7 xl:border-b-0 xl:border-r">
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-ink">{text.referenceTitle}</h3>
-            <p className="mt-0.5 text-xs leading-5 text-gray-500">{text.referenceDescription}</p>
+      {/* Main Content Layout */}
+      <div className="grid grid-cols-1 gap-6 p-5 sm:p-7 xl:grid-cols-[1.25fr_0.75fr]">
+        {/* Left Column: 5 Core Rules */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-base font-bold text-ink sm:text-lg">
+              {text.rulesHeading}
+            </h3>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {text.rulesSubheading}
+            </p>
           </div>
 
-          <div className="overflow-x-auto border border-line">
-            <table className="w-full min-w-[400px] text-sm">
-              <thead className="border-b border-line bg-gray-50 text-[11px] font-semibold uppercase tracking-[0.06em] text-gray-500">
-                <tr>
-                  <th className="px-4 py-2.5 text-left">{text.period}</th>
-                  <th className="px-4 py-2.5 text-right">{text.normal}</th>
-                  <th className="px-4 py-2.5 text-right">OT</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {workPeriods.map((row) => (
-                  <tr key={row.period} className="hover:bg-gray-50/70">
-                    <td className="px-4 py-2.5 font-medium text-gray-800">{row.period}</td>
-                    <td className="px-4 py-2.5 text-right text-gray-500">{row.day}</td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-brand">{row.overtime}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-2 text-[11px] leading-5 text-gray-500">{text.note}</p>
-
-          <h3 className="mb-3 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-gray-500">
-            {text.scheduleTitle}
-          </h3>
-          <div className="overflow-x-auto border border-line">
-            <table className="w-full min-w-[400px] text-sm">
-              <thead className="border-b border-line bg-gray-50 text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500">
-                <tr>
-                  <th className="px-4 py-2.5 text-left">{text.weeklyTarget}</th>
-                  <th className="px-4 py-2.5 text-right">{text.fiveDays}</th>
-                  <th className="px-4 py-2.5 text-right">{text.sixDays}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">{text.normal}</th>
-                  <td className="px-4 py-3 text-right text-gray-700">40.00 Hrs.</td>
-                  <td className="px-4 py-3 text-right text-gray-700">48.00 Hrs.</td>
-                </tr>
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">{text.overtime}</th>
-                  <td className="px-4 py-3 text-right font-semibold text-danger">≤ 20.00 Hrs.</td>
-                  <td className="px-4 py-3 text-right font-semibold text-danger">≤ 12.00 Hrs.</td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            {text.rules.map((rule) => {
+              const IconComponent = rule.icon;
+              return (
+                <div
+                  key={rule.number}
+                  className="rounded-xl border border-line bg-white p-4 shadow-sm transition hover:border-brand/40 hover:shadow-md sm:p-5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-light text-brand">
+                        <IconComponent size={18} />
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[11px] font-bold text-brand">
+                            RULE {rule.number}
+                          </span>
+                          <h4 className="text-sm font-bold text-ink">
+                            {rule.title}
+                          </h4>
+                        </div>
+                        <p className="mt-1 text-xs font-medium text-slate-700">
+                          {rule.summary}
+                        </p>
+                        <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                          {rule.details}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        <aside className="bg-gray-50/60 p-5 sm:p-7">
-          <div className="border border-line bg-white p-5">
-            <div className="mb-5">
-              <h3 className="text-sm font-semibold text-ink">{text.conditions}</h3>
-              <p className="mt-1 text-xs leading-5 text-gray-500">{text.conditionsDescription}</p>
+        {/* Right Column: Checklist, Urgent Alert & Contact */}
+        <div className="space-y-5">
+          {/* Quick Step Checklist */}
+          <div className="rounded-xl border border-line bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-emerald-600" />
+              <h3 className="text-sm font-bold text-ink">
+                {text.checklistTitle}
+              </h3>
             </div>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {text.checklistDesc}
+            </p>
 
-            <ol className="space-y-5">
-              {[
-                { title: text.ruleOneTitle, body: text.ruleOne },
-                { title: text.ruleTwoTitle, body: text.ruleTwo },
-              ].map((rule, index) => (
-                <li key={rule.title} className="grid grid-cols-[28px_1fr] gap-3">
-                  <span className="flex h-7 w-7 items-center justify-center bg-brand-light text-[11px] font-semibold text-brand">
-                    {String(index + 1).padStart(2, "0")}
+            <ul className="mt-4 space-y-2.5">
+              {text.checklist.map((item, idx) => (
+                <li
+                  key={idx}
+                  className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5 text-xs font-medium text-slate-700"
+                >
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-light text-[10px] font-bold text-brand">
+                    {idx + 1}
                   </span>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{rule.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-gray-600">{rule.body}</p>
-                  </div>
+                  <span className="leading-5">{item}</span>
                 </li>
               ))}
-            </ol>
+            </ul>
           </div>
 
-          <div className="mt-4 border border-red-200 bg-red-50 px-4 py-4">
+          {/* Urgent / Late Request Notice */}
+          <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-amber-950 shadow-sm">
             <div className="flex gap-3">
-              <AlertTriangle className="mt-0.5 shrink-0 text-danger" size={18} strokeWidth={2} />
+              <AlertTriangle className="mt-0.5 shrink-0 text-amber-600" size={18} />
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.06em] text-danger">
-                  {text.maximumTitle}
+                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                  {text.alertTitle}
+                </h4>
+                <p className="mt-1.5 text-xs leading-relaxed text-amber-800">
+                  {text.alertBody}
                 </p>
-                <p className="mt-1.5 text-sm font-medium leading-6 text-red-900">{text.maximumBody}</p>
               </div>
             </div>
           </div>
-        </aside>
+
+          {/* GA Contact & Support Card */}
+          <div className="rounded-xl border border-line bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <HelpCircle size={16} className="text-brand" />
+              <h3 className="text-sm font-bold text-ink">
+                {text.helpTitle}
+              </h3>
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-slate-500">
+              {text.helpDesc}
+            </p>
+            <a
+              href="https://outlook.office.com/mail/deeplink/compose?to=Treebuppha.Saraphan@yageo.com&subject=TOKIN%20OT%20Transport%20Inquiry"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 flex items-center justify-center gap-2 w-full rounded-lg bg-brand px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-dark hover:shadow active:scale-[0.99]"
+            >
+              <Mail size={14} />
+              <span>{text.contactButton}</span>
+              <ExternalLink size={12} className="opacity-75" />
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   );
