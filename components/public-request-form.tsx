@@ -26,6 +26,7 @@ import {
   TimeMaskInput,
 } from "@/components/ui";
 import { OtGuidelines } from "@/components/ot-guidelines";
+import { CarServiceGuidelines } from "@/components/car-service-guidelines";
 import { GoogleMapLinks } from "@/components/google-map-links";
 import {
   CompanyUserField,
@@ -736,6 +737,7 @@ export default function PublicRequestForm({
                 setErrorField(undefined);
               }}
               onReset={handleReset}
+              onShowGuidelines={() => setShowGuidelines(true)}
               onProceedToReview={() => void submit(undefined, false)}
               onConfirmSubmit={() => void submit(undefined, true)}
             />
@@ -811,39 +813,39 @@ export default function PublicRequestForm({
         </div>
       )}
 
-      {requestType === "overtime" && (
-        <>
-          {/* Guidelines Modal Popup */}
-          {showGuidelines && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-sm animate-fade-in">
-              <div className="relative w-full max-w-5xl overflow-hidden rounded-2xl border border-line bg-white shadow-2xl">
-                <button
-                  type="button"
-                  onClick={() => setShowGuidelines(false)}
-                  aria-label="Close OT rules"
-                  className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 hover:scale-105 active:scale-95"
-                >
-                  <X size={18} />
-                </button>
+      {/* Guidelines Modal Popup (OT & Car Service) */}
+      {showGuidelines && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-xs animate-fade-in">
+          <div className="relative w-full max-w-4xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setShowGuidelines(false)}
+              aria-label="Close rules dialog"
+              className="absolute right-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-md border border-slate-700 bg-slate-800 text-slate-300 transition hover:bg-slate-700 hover:text-white"
+            >
+              <X size={16} />
+            </button>
 
-                <div className="max-h-[82vh] overflow-y-auto">
-                  <OtGuidelines />
-                </div>
-
-                <div className="flex justify-end border-t border-line bg-white px-5 py-3 sm:px-7">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowGuidelines(false)}
-                    className="px-5 rounded-lg font-semibold"
-                  >
-                    Close
-                  </Button>
-                </div>
-              </div>
+            <div className="max-h-[82vh] overflow-y-auto">
+              {requestType === "overtime" ? (
+                <OtGuidelines />
+              ) : (
+                <CarServiceGuidelines />
+              )}
             </div>
-          )}
-        </>
+
+            <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-5 py-3 sm:px-6">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowGuidelines(false)}
+                className="px-5 font-semibold text-xs"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </PublicFrame>
   );
