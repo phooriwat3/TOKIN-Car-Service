@@ -66,8 +66,8 @@ export function BrandLogo({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center justify-start overflow-visible",
-        compact ? "h-8 sm:h-9" : "h-10 sm:h-11",
+        "inline-flex shrink-0 items-center justify-start",
+        compact ? "h-8 sm:h-9" : "h-11 sm:h-12",
         className,
       )}
       aria-label="TOKIN Corporation"
@@ -75,10 +75,9 @@ export function BrandLogo({
       <picture className="h-full w-auto flex shrink-0 items-center">
         <img
           src="/tokin-logo-clear.png"
-          alt="TOKIN"
-          className="h-full w-auto max-h-full max-w-none select-none object-contain drop-shadow-sm"
+          alt="TOKIN - a YAGEO company"
+          className="h-full w-auto max-h-full max-w-none select-none object-contain"
           onError={(e) => {
-            // If image fails, toggle display to fallback
             e.currentTarget.style.display = "none";
           }}
         />
