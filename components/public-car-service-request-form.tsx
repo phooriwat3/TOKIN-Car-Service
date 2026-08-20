@@ -264,7 +264,6 @@ export function PublicCarServiceRequestForm(
         aria-labelledby="employee-section-heading"
       >
         <SectionHeader
-          step="1"
           title="Employee & Approver information"
           description="Search by English name to select your company directory record and your designated approver."
           id="employee-section-heading"
@@ -475,7 +474,6 @@ export function PublicCarServiceRequestForm(
         aria-labelledby="trip-section-heading"
       >
         <SectionHeader
-          step="2"
           title="Trip & schedule details"
           description="Provide the date, schedule, pickup, destination, and purpose for this trip."
           id="trip-section-heading"
@@ -712,27 +710,21 @@ function Progress({
 }
 
 function SectionHeader({
-  step,
   title,
   description,
   id,
 }: {
-  step: string;
+  step?: string;
   title: string;
   description: string;
   id: string;
 }) {
   return (
-    <div className="flex items-start gap-3 border-b border-line bg-[#f7f8fa] px-5 py-4 sm:px-6">
-      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#102d44] text-xs font-semibold text-white">
-        {step}
-      </span>
-      <div>
-        <h2 id={id} className="font-semibold text-ink">
-          {title}
-        </h2>
-        <p className="mt-0.5 text-xs leading-5 text-gray-500">{description}</p>
-      </div>
+    <div className="border-b border-line bg-[#f8fafc] px-5 py-4 sm:px-6">
+      <h2 id={id} className="text-sm sm:text-base font-semibold text-ink">
+        {title}
+      </h2>
+      <p className="mt-0.5 text-xs text-gray-500">{description}</p>
     </div>
   );
 }
