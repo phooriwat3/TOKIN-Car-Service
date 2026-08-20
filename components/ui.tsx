@@ -623,6 +623,32 @@ export function TimeMaskInput({
     }
   };
 
+  const handleWheel = (
+    e: React.WheelEvent<HTMLDivElement>,
+    type: "hour" | "minute",
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const step = e.deltaY > 0 ? 1 : -1;
+    if (type === "hour") {
+      const next = Math.min(23, Math.max(0, currentHour + step));
+      if (next !== currentHour) {
+        selectHour(next);
+        if (hoursRef.current) {
+          hoursRef.current.scrollTop = next * ITEM_HEIGHT;
+        }
+      }
+    } else {
+      const next = Math.min(59, Math.max(0, currentMinute + step));
+      if (next !== currentMinute) {
+        selectMinute(next);
+        if (minutesRef.current) {
+          minutesRef.current.scrollTop = next * ITEM_HEIGHT;
+        }
+      }
+    }
+  };
+
   const hoursList = Array.from({ length: 24 }, (_, i) => i);
   const minutesList = Array.from({ length: 60 }, (_, i) => i);
 
@@ -686,13 +712,14 @@ export function TimeMaskInput({
       {open && (
         <div className="absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg transition-all animate-in fade-in zoom-in-95">
           {/* Dual Wheel Drum Container */}
-          <div className="relative flex h-[135px] items-center justify-center overflow-hidden rounded-lg bg-slate-50 border border-slate-100">
+          <div className="relative flex h-[135px] items-center justify-center overflow-hidden rounded-lg bg-slate-50 border border-slate-100 select-none">
             {/* Center Selection Highlight Bar */}
             <div className="pointer-events-none absolute inset-x-1 top-1/2 h-9 -translate-y-1/2 rounded-md bg-white border border-slate-200/80 shadow-2xs" />
 
             {/* Hours Wheel */}
             <div
               ref={hoursRef}
+              onWheel={(e) => handleWheel(e, "hour")}
               onScroll={(e) => {
                 const target = e.currentTarget;
                 const idx = Math.round(target.scrollTop / ITEM_HEIGHT);
@@ -700,7 +727,7 @@ export function TimeMaskInput({
                   selectHour(idx);
                 }
               }}
-              className="h-[135px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
+              className="h-[135px] w-1/2 overflow-y-auto snap-y snap-mandatory text-center scrollbar-none overscroll-contain"
               style={{ scrollbarWidth: "none" }}
             >
               <div className="h-[49.5px]" />
@@ -736,6 +763,7 @@ export function TimeMaskInput({
             {/* Minutes Wheel */}
             <div
               ref={minutesRef}
+              onWheel={(e) => handleWheel(e, "minute")}
               onScroll={(e) => {
                 const target = e.currentTarget;
                 const idx = Math.round(target.scrollTop / ITEM_HEIGHT);
@@ -743,7 +771,7 @@ export function TimeMaskInput({
                   selectMinute(idx);
                 }
               }}
-              className="h-[135px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
+              className="h-[135px] w-1/2 overflow-y-auto snap-y snap-mandatory text-center scrollbar-none overscroll-contain"
               style={{ scrollbarWidth: "none" }}
             >
               <div className="h-[49.5px]" />
