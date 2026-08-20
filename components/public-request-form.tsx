@@ -862,53 +862,37 @@ function Info({ label, value }: { label: string; value: string }) {
 function RequestProgress() {
   const steps = [
     {
-      stepNum: "1",
-      title: "1. Submit Request",
-      body: "Choose transport type and fill in employee & trip details.",
+      step: "1",
+      title: "Submit request",
+      desc: "Fill in employee & trip details",
     },
     {
-      stepNum: "2",
-      title: "2. Verify & Approve",
-      body: "Car Service: Manager email approval. OT: Tiger OpenSpace sync.",
+      step: "2",
+      title: "Verification & Approval",
+      desc: "Manager approval or Tiger OpenSpace sync",
     },
     {
-      stepNum: "3",
-      title: "3. Fleet Dispatch",
-      body: "GA assigns vehicle & driver. Track details via your Manage Link.",
+      step: "3",
+      title: "Vehicle dispatch",
+      desc: "GA assigns fleet & sends confirmation",
     },
   ];
 
   return (
-    <section className="mt-10 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-5 text-slate-800 sm:p-6">
-      <div className="flex flex-col gap-1 border-b border-slate-200/80 pb-3.5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
-            How It Works • ขั้นตอนการดำเนินการ
-          </p>
-          <p className="text-sm font-semibold text-slate-900">
-            What happens after you submit a request
-          </p>
-        </div>
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
-          <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-          3-step standard process
-        </span>
-      </div>
-
-      <div className="mt-4.5 grid gap-4 sm:grid-cols-3 sm:gap-6">
-        {steps.map((step) => (
-          <div key={step.stepNum} className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-700">
-                {step.stepNum}
-              </span>
-              <p className="text-xs font-bold text-slate-900">
-                {step.title}
-              </p>
+    <section className="mt-12 border-t border-slate-200/80 pt-6">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        How it works
+      </p>
+      <div className="mt-4 grid gap-6 sm:grid-cols-3">
+        {steps.map((item) => (
+          <div key={item.step} className="flex items-start gap-3">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">
+              {item.step}
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-slate-800">{item.title}</p>
+              <p className="mt-0.5 text-xs text-slate-500">{item.desc}</p>
             </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
-              {step.body}
-            </p>
           </div>
         ))}
       </div>
