@@ -862,60 +862,37 @@ function Info({ label, value }: { label: string; value: string }) {
 function RequestProgress() {
   const steps = [
     {
-      icon: <MailCheck size={18} />,
-      stepNum: "01",
+      step: "1",
       title: "Submit request",
-      body: "Enter company and trip details",
+      desc: "Fill in employee & trip details",
     },
     {
-      icon: <ShieldCheck size={18} />,
-      stepNum: "02",
-      title: "Department approval",
-      body: "Sent to your department approver",
+      step: "2",
+      title: "Verification & Approval",
+      desc: "Manager approval or Tiger OpenSpace sync",
     },
     {
-      icon: <Car size={18} />,
-      stepNum: "03",
-      title: "Transport assigned",
-      body: "Receive vehicle & driver details by email",
+      step: "3",
+      title: "Vehicle dispatch",
+      desc: "GA assigns fleet & sends confirmation",
     },
   ];
 
   return (
-    <section className="mt-10 border-t border-line pt-8">
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">
-          What happens next
-        </p>
-        <span className="text-xs font-medium text-gray-400">
-          3-step process
-        </span>
-      </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-        {steps.map((step, index) => (
-          <div key={step.title} className="contents sm:flex sm:flex-1 sm:items-center sm:gap-2">
-            <div className="flex flex-1 items-start gap-3 rounded-xl border border-line bg-white p-4 shadow-card transition hover:border-brand/30 sm:p-4">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-light text-brand">
-                {step.icon}
-              </span>
-              <div className="min-w-0 flex-1">
-                <span className="text-[11px] font-bold tracking-wider text-brand/70 uppercase">
-                  Step {step.stepNum}
-                </span>
-                <p className="mt-0.5 text-sm font-bold text-ink leading-snug">
-                  {step.title}
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                  {step.body}
-                </p>
-              </div>
+    <section className="mt-12 border-t border-slate-200/80 pt-6">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        How it works
+      </p>
+      <div className="mt-4 grid gap-6 sm:grid-cols-3">
+        {steps.map((item) => (
+          <div key={item.step} className="flex items-start gap-3">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">
+              {item.step}
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-slate-800">{item.title}</p>
+              <p className="mt-0.5 text-xs text-slate-500">{item.desc}</p>
             </div>
-
-            {index < steps.length - 1 && (
-              <div className="hidden sm:flex shrink-0 items-center justify-center text-gray-300">
-                <ArrowRight size={16} className="text-gray-300" />
-              </div>
-            )}
           </div>
         ))}
       </div>
