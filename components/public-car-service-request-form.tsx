@@ -8,6 +8,7 @@ import {
   Input,
   Select,
   Textarea,
+  TimeMaskInput,
 } from "@/components/ui";
 import {
   CompanyUserField,
@@ -504,41 +505,33 @@ export function PublicCarServiceRequestForm(
               )}
             </Field>
 
-            <div>
-              <Field label="Start time">
-                <Input
-                  id="start-time"
-                  required
-                  type="time"
-                  value={props.startTime}
-                  onChange={(e) => props.onStartTimeChange(e.target.value)}
-                />
-              </Field>
-              <div className="mt-2">
-                <QuickTime
-                  options={["08:00", "09:00", "10:00", "13:00", "14:00"]}
-                  onSelect={props.onStartTimeChange}
-                />
-              </div>
-            </div>
+            <Field label="Start time">
+              <TimeMaskInput
+                id="start-time"
+                required
+                value={props.startTime}
+                onChange={props.onStartTimeChange}
+              />
+              {props.errorField === "start-time" && (
+                <p className="mt-1.5 text-xs font-semibold text-danger">
+                  ⚠️ {props.error}
+                </p>
+              )}
+            </Field>
 
-            <div>
-              <Field label="End time">
-                <Input
-                  id="end-time"
-                  required
-                  type="time"
-                  value={props.endTime}
-                  onChange={(e) => props.onEndTimeChange(e.target.value)}
-                />
-              </Field>
-              <div className="mt-2">
-                <QuickTime
-                  options={["12:00", "15:00", "16:00", "17:00", "18:00"]}
-                  onSelect={props.onEndTimeChange}
-                />
-              </div>
-            </div>
+            <Field label="End time">
+              <TimeMaskInput
+                id="end-time"
+                required
+                value={props.endTime}
+                onChange={props.onEndTimeChange}
+              />
+              {props.errorField === "end-time" && (
+                <p className="mt-1.5 text-xs font-semibold text-danger">
+                  ⚠️ {props.error}
+                </p>
+              )}
+            </Field>
 
             <Field label="Pickup location">
               <Input
@@ -729,31 +722,7 @@ function SectionHeader({
   );
 }
 
-function QuickTime({
-  options,
-  onSelect,
-}: {
-  options: string[];
-  onSelect: (value: string) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-2">
-      <span className="mr-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-        Quick time
-      </span>
-      {options.map((time) => (
-        <button
-          key={time}
-          type="button"
-          onClick={() => onSelect(time)}
-          className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
-        >
-          {time}
-        </button>
-      ))}
-    </div>
-  );
-}
+
 
 function ApprovalRouteNotice({
   approverName,
