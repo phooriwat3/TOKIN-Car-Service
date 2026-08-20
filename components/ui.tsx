@@ -627,13 +627,13 @@ export function TimeMaskInput({
   const minutesList = Array.from({ length: 60 }, (_, i) => i);
 
   return (
-    <div className="relative space-y-2" ref={containerRef}>
+    <div className="relative space-y-1.5" ref={containerRef}>
       <div className="relative flex items-center">
         <Input
           id={id}
           type="text"
           inputMode="numeric"
-          placeholder="17:20 (24-hr)"
+          placeholder="17:20"
           maxLength={5}
           required={required}
           disabled={disabled}
@@ -642,7 +642,7 @@ export function TimeMaskInput({
           onBlur={handleBlur}
           onClick={() => setOpen(true)}
           className={cn(
-            "font-mono text-sm tracking-wider pr-14 cursor-pointer",
+            "font-mono text-sm tracking-wider pr-10 cursor-pointer",
             className,
           )}
         />
@@ -650,20 +650,16 @@ export function TimeMaskInput({
           type="button"
           disabled={disabled}
           onClick={() => setOpen((prev) => !prev)}
-          className="absolute right-2 flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
-          title="Open 24-hr Time Wheel Picker"
+          className="absolute right-2 flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+          title="Select time (24-hour)"
         >
-          <Clock size={14} className="text-gray-500" />
-          <span className="text-slate-800">24 น.</span>
+          <Clock size={15} />
         </button>
       </div>
 
       {/* Quick preset buttons below input */}
       {quickTimes && quickTimes.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-          <span className="mr-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-            QUICK TIME :
-          </span>
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           {quickTimes.map((time) => (
             <button
               key={time}
@@ -674,13 +670,13 @@ export function TimeMaskInput({
                 setOpen(false);
               }}
               className={cn(
-                "rounded-md border px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                "rounded-md border px-2.5 py-0.5 font-mono text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                 value === time
-                  ? "border-brand-500 bg-brand-50 text-brand-700"
-                  : "border-slate-200 bg-slate-50 text-slate-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700",
+                  ? "border-brand bg-brand text-white font-semibold shadow-2xs"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900",
               )}
             >
-              {time} น.
+              {time}
             </button>
           ))}
         </div>
@@ -688,17 +684,11 @@ export function TimeMaskInput({
 
       {/* Compact & Minimal 24-Hr Floating Time Wheel Picker */}
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1.5 w-52 rounded-xl border border-slate-200 bg-white p-2.5 shadow-xl transition-all animate-in fade-in zoom-in-95">
-          {/* Top Column Header */}
-          <div className="mb-1.5 flex items-center justify-between px-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            <span className="w-1/2 text-center">Hour</span>
-            <span className="w-1/2 text-center">Minute</span>
-          </div>
-
+        <div className="absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg transition-all animate-in fade-in zoom-in-95">
           {/* Dual Wheel Drum Container */}
-          <div className="relative flex h-[144px] items-center justify-center overflow-hidden rounded-lg bg-slate-50/80 border border-slate-100">
+          <div className="relative flex h-[135px] items-center justify-center overflow-hidden rounded-lg bg-slate-50 border border-slate-100">
             {/* Center Selection Highlight Bar */}
-            <div className="pointer-events-none absolute inset-x-1 top-1/2 h-9 -translate-y-1/2 rounded-md bg-slate-200/70 border-y border-slate-300/80" />
+            <div className="pointer-events-none absolute inset-x-1 top-1/2 h-9 -translate-y-1/2 rounded-md bg-white border border-slate-200/80 shadow-2xs" />
 
             {/* Hours Wheel */}
             <div
@@ -710,10 +700,10 @@ export function TimeMaskInput({
                   selectHour(idx);
                 }
               }}
-              className="h-[144px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
+              className="h-[135px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
               style={{ scrollbarWidth: "none" }}
             >
-              <div className="h-[54px]" />
+              <div className="h-[49.5px]" />
               {hoursList.map((h) => {
                 const isSelected = h === currentHour;
                 return (
@@ -725,21 +715,21 @@ export function TimeMaskInput({
                         hoursRef.current.scrollTop = h * ITEM_HEIGHT;
                     }}
                     className={cn(
-                      "flex h-9 snap-center items-center justify-center font-mono text-base cursor-pointer transition-all duration-100 select-none",
+                      "flex h-9 snap-center items-center justify-center font-mono text-sm cursor-pointer transition-all duration-100 select-none",
                       isSelected
-                        ? "font-bold text-slate-900 scale-105"
-                        : "font-medium text-slate-400 hover:text-slate-600",
+                        ? "font-bold text-slate-900 scale-110"
+                        : "font-normal text-slate-400 hover:text-slate-600",
                     )}
                   >
                     {String(h).padStart(2, "0")}
                   </div>
                 );
               })}
-              <div className="h-[54px]" />
+              <div className="h-[49.5px]" />
             </div>
 
             {/* Separator Colon */}
-            <div className="flex h-9 items-center justify-center font-mono text-base font-bold text-slate-900 select-none z-10 px-0.5">
+            <div className="flex h-9 items-center justify-center font-mono text-sm font-bold text-slate-900 select-none z-10 px-0.5">
               :
             </div>
 
@@ -753,10 +743,10 @@ export function TimeMaskInput({
                   selectMinute(idx);
                 }
               }}
-              className="h-[144px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
+              className="h-[135px] w-1/2 overflow-y-auto scroll-smooth snap-y snap-mandatory text-center scrollbar-none"
               style={{ scrollbarWidth: "none" }}
             >
-              <div className="h-[54px]" />
+              <div className="h-[49.5px]" />
               {minutesList.map((m) => {
                 const isSelected = m === currentMinute;
                 return (
@@ -768,17 +758,17 @@ export function TimeMaskInput({
                         minutesRef.current.scrollTop = m * ITEM_HEIGHT;
                     }}
                     className={cn(
-                      "flex h-9 snap-center items-center justify-center font-mono text-base cursor-pointer transition-all duration-100 select-none",
+                      "flex h-9 snap-center items-center justify-center font-mono text-sm cursor-pointer transition-all duration-100 select-none",
                       isSelected
-                        ? "font-bold text-slate-900 scale-105"
-                        : "font-medium text-slate-400 hover:text-slate-600",
+                        ? "font-bold text-slate-900 scale-110"
+                        : "font-normal text-slate-400 hover:text-slate-600",
                     )}
                   >
                     {String(m).padStart(2, "0")}
                   </div>
                 );
               })}
-              <div className="h-[54px]" />
+              <div className="h-[49.5px]" />
             </div>
           </div>
         </div>
