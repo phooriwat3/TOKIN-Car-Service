@@ -13,6 +13,7 @@ import {
   HelpCircle,
   MailCheck,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import {
   Button,
@@ -814,15 +815,15 @@ export default function PublicRequestForm({
         <>
           {/* Guidelines Modal Popup */}
           {showGuidelines && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 animate-fade-in">
-              <div className="relative w-full max-w-5xl overflow-hidden border border-white/20 bg-white shadow-modal">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-sm animate-fade-in">
+              <div className="relative w-full max-w-5xl overflow-hidden rounded-2xl border border-line bg-white shadow-2xl">
                 <button
                   type="button"
                   onClick={() => setShowGuidelines(false)}
                   aria-label="Close OT rules"
-                  className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center border border-white/20 bg-black/10 text-xl font-medium leading-none text-white transition hover:bg-white/15"
+                  className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 hover:scale-105 active:scale-95"
                 >
-                  &times;
+                  <X size={18} />
                 </button>
 
                 <div className="max-h-[82vh] overflow-y-auto">
@@ -834,7 +835,7 @@ export default function PublicRequestForm({
                     type="button"
                     variant="secondary"
                     onClick={() => setShowGuidelines(false)}
-                    className="px-5"
+                    className="px-5 rounded-lg font-semibold"
                   >
                     Close
                   </Button>
