@@ -66,14 +66,14 @@
   --line-2: #cbd5e1;
 
   /* === Sidebar === */
-  --sidebar-bg-from: #0c1e35;
-  --sidebar-bg-to: #05101e;
-  --sidebar-active-bg: rgba(255, 255, 255, 0.09);
-  --sidebar-hover-bg: rgba(255, 255, 255, 0.055);
-  --sidebar-border: rgba(255, 255, 255, 0.07);
-  --sidebar-text: rgba(255, 255, 255, 0.85);
-  --sidebar-text-muted: rgba(148, 163, 184, 0.8);
-  --sidebar-accent: #f59e0b;
+  --sidebar-bg-from: #ffffff;
+  --sidebar-bg-to: #ffffff;
+  --sidebar-active-bg: var(--brand-50);
+  --sidebar-hover-bg: var(--surface-2);
+  --sidebar-border: var(--line);
+  --sidebar-text: var(--ink);
+  --sidebar-text-muted: var(--text-secondary);
+  --sidebar-accent: var(--brand-500);
 
   /* === Typography === */
   --font-display: "Inter", "Sarabun", "Segoe UI", system-ui, sans-serif;

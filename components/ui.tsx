@@ -133,18 +133,27 @@ export const Textarea = React.forwardRef<
 Textarea.displayName = "Textarea";
 
 /* ─── Field ─── */
+export function DualLabel({ en, th }: { en: string; th: string }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5">
+      <span className="font-semibold text-slate-800">{en}</span>
+      <span className="text-[12px] font-normal text-slate-500">({th})</span>
+    </span>
+  );
+}
+
 export function Field({
   label,
   error,
   children,
 }: {
-  label: string;
+  label: React.ReactNode;
   error?: string;
   children: React.ReactNode;
 }) {
   return (
-    <label className="block space-y-2">
-      <span className="text-[13px] font-semibold text-slate-700">{label}</span>
+    <label className="block space-y-1.5">
+      <span className="block text-[13px] font-medium text-slate-700">{label}</span>
       {children}
       {error && (
         <span className="flex items-center gap-1 text-xs text-danger">

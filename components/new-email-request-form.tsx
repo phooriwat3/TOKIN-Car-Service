@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Car, Clock3, Plus, Trash2, Users } from "lucide-react";
+import { ArrowRight, Car, Clock3, Plus, Trash2, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useApp } from "@/components/app-provider";
 import {
   Button,
@@ -72,7 +73,7 @@ export default function NewEmailRequestForm() {
       .eq("role", "approver")
       .eq("is_active", true)
       .order("full_name")
-      .then(({ data: rows, error: queryError }) => {
+      .then(({ data: rows, error: queryError }: { data: any; error: any }) => {
         if (queryError)
           return setError(`Unable to load approvers: ${queryError.message}`);
         setApprovers(
@@ -213,20 +214,22 @@ export default function NewEmailRequestForm() {
     return (
       <>
         <PageHeader
-          title="Create car request"
-          description="Choose the form that matches the transportation request."
+          title="Create transport request"
+          description="Choose the request type that matches your transportation requirement."
         />
         <div className="grid gap-5 md:grid-cols-2">
           <Choice
-            icon={<Clock3 />}
+            eyebrow="Daily employee transport"
             title="OVERTIME / HOLIDAY WORK"
-            body="Request transport for multiple employees working overtime or on a holiday."
+            body="Transportation for employees working overtime or on a public holiday."
+            note="Submit by 16:00"
             onClick={() => setRequestType("overtime")}
           />
           <Choice
-            icon={<Car />}
+            eyebrow="Business travel"
             title="CAR SERVICE REQUISITION"
-            body="Request a vehicle for a business trip outside the company."
+            body="Vehicle request for official business travel outside the company premises."
+            note="For off-site company trips"
             onClick={() => setRequestType("outside_company")}
           />
         </div>
@@ -241,134 +244,149 @@ export default function NewEmailRequestForm() {
             ? "OVERTIME / HOLIDAY WORK"
             : "CAR SERVICE REQUISITION"
         }
-        description={requestType === "overtime" ? "Submit OT transportation for Tiger Space verification and GA planning." : "The selected approver will receive a secure approval link by email."}
+        description={
+          requestType === "overtime"
+            ? "Submit OT transportation for Tiger OpenSpace verification and GA fleet scheduling."
+            : "Request a company vehicle. The designated approver will receive a secure email approval link."
+        }
       />
-      <form onSubmit={submit} className="space-y-5">
-        <Card className="p-5">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="font-bold">Request information</h2>
+      <form onSubmit={submit} className="space-y-6">
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 bg-[#f8fafc] px-5 py-4 sm:px-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900 sm:text-base">Request information</h2>
+              <p className="mt-0.5 text-xs text-slate-500">Provide the requester details and general travel parameters.</p>
+            </div>
             <Button
               type="button"
               variant="ghost"
+              size="sm"
               onClick={() => setRequestType(null)}
             >
               Change form
             </Button>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Requester">
-              <Input disabled value={`${user.fullName} (${user.email})`} />
-            </Field>
-            <Field label="Department">
-              <Input disabled value={user.department} />
-            </Field>
-            <Field label="Using date">
-              <Input
-                required
-                type="date"
-                value={usingDate}
-                onChange={(e) => setUsingDate(e.target.value)}
-              />
-            </Field>
-            {requestType === "outside_company" && (
-            <Field label="Approver">
-              <Select
-                required
-                value={approverId}
-                onChange={(e) => setApproverId(e.target.value)}
-              >
-                <option value="">Search / select approver</option>
-                {approvers.map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.fullName} · {x.email}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            )}
-            {requestType === "outside_company" && (
-              <>
-                <Field label="Start time">
-                  <Input
-                    required
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                  />
-                </Field>
-                <Field label="End time">
-                  <Input
-                    required
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                  />
-                </Field>
-                <Field label="Pickup location">
-                  <Input
-                    required
-                    value={pickupLocation}
-                    onChange={(e) => setPickupLocation(e.target.value)}
-                  />
-                </Field>
-                <Field label="Destination">
-                  <Input
-                    required
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                  />
-                </Field>
-                <Field label="Meeting point">
+
+          <div className="p-5 sm:p-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label="Requester">
+                <Input disabled value={`${user.fullName} (${user.email})`} />
+              </Field>
+              <Field label="Department">
+                <Input disabled value={user.department} />
+              </Field>
+              <Field label="Using date">
+                <Input
+                  required
+                  type="date"
+                  value={usingDate}
+                  onChange={(e) => setUsingDate(e.target.value)}
+                />
+              </Field>
+              {requestType === "outside_company" && (
+                <Field label="Approver">
                   <Select
-                    value={meetingPoint}
-                    onChange={(e) => setMeetingPoint(e.target.value as any)}
+                    required
+                    value={approverId}
+                    onChange={(e) => setApproverId(e.target.value)}
                   >
-                    <option value="front_area">Front area</option>
-                    <option value="loading_area">Loading area</option>
+                    <option value="">Search or select approver</option>
+                    {approvers.map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.fullName} · {x.email}
+                      </option>
+                    ))}
                   </Select>
                 </Field>
-              </>
+              )}
+              {requestType === "outside_company" && (
+                <>
+                  <Field label="Start time">
+                    <Input
+                      required
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="End time">
+                    <Input
+                      required
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Pickup location">
+                    <Input
+                      required
+                      placeholder="TOKIN Main Office"
+                      value={pickupLocation}
+                      onChange={(e) => setPickupLocation(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Destination">
+                    <Input
+                      required
+                      placeholder="e.g. Supplier site / External work location"
+                      value={destination}
+                      onChange={(e) => setDestination(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Meeting point">
+                    <Select
+                      value={meetingPoint}
+                      onChange={(e) => setMeetingPoint(e.target.value as any)}
+                    >
+                      <option value="front_area">Front Area</option>
+                      <option value="loading_area">Loading Area</option>
+                    </Select>
+                  </Field>
+                </>
+              )}
+            </div>
+            {requestType === "outside_company" && (
+              <div className="mt-4">
+                <Field label="Purpose / work summary">
+                  <Textarea
+                    required
+                    placeholder="State the purpose of travel or work description..."
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
+                  />
+                </Field>
+              </div>
+            )}
+            {requestType === "outside_company" && destination.trim() && (
+              <div className="mt-4">
+                <GoogleMapLinks
+                  origin={pickupLocation}
+                  destination={destination}
+                />
+              </div>
+            )}
+            {requestType === "outside_company" && (
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <Field label="Passenger names">
+                  <Textarea
+                    placeholder={"Enter 1 passenger name per line:\n1. John Doe\n2. Jane Smith"}
+                    value={passengers}
+                    onChange={(e) => setPassengers(e.target.value)}
+                  />
+                </Field>
+                <label className="flex items-center gap-3 self-start pt-8 text-sm text-slate-700 font-medium cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={withStaff}
+                    onChange={(e) => setWithStaff(e.target.checked)}
+                    className="h-4 w-4 accent-brand rounded border-slate-300"
+                  />
+                  <span>Travel with GA staff</span>
+                </label>
+              </div>
             )}
           </div>
-          {requestType === "outside_company" && (
-            <div className="mt-4">
-              <Field label="Purpose / work summary">
-                <Textarea
-                  required
-                  value={purpose}
-                  onChange={(e) => setPurpose(e.target.value)}
-                />
-              </Field>
-            </div>
-          )}
-          {requestType === "outside_company" && destination.trim() && (
-            <div className="mt-4">
-              <GoogleMapLinks
-                origin={pickupLocation}
-                destination={destination}
-              />
-            </div>
-          )}
-          {requestType === "outside_company" && (
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <Field label="Passenger names (one per line)">
-                <Textarea
-                  value={passengers}
-                  onChange={(e) => setPassengers(e.target.value)}
-                />
-              </Field>
-              <label className="flex items-center gap-3 self-start pt-8 text-sm">
-                <input
-                  type="checkbox"
-                  checked={withStaff}
-                  onChange={(e) => setWithStaff(e.target.checked)}
-                  className="h-4 w-4 accent-brand"
-                />
-                Travel with GA staff
-              </label>
-            </div>
-          )}
-        </Card>
+        </section>
 
         {requestType === "overtime" && (
           <Card className="p-5 border-amber-200 bg-amber-50/30 mb-5">
@@ -466,41 +484,44 @@ export default function NewEmailRequestForm() {
         )}
 
         {requestType === "overtime" && (
-          <Card className="p-5">
-            <div className="mb-4 flex items-center justify-between">
+          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 bg-[#f8fafc] px-5 py-4 sm:px-6 flex items-center justify-between">
               <div>
-                <h2 className="font-bold">Employees</h2>
-                <p className="text-sm text-gray-500">
-                  Add everyone included in this OVERTIME / HOLIDAY WORK request.
+                <h2 className="text-sm font-semibold text-slate-900 sm:text-base">OT Employee roster</h2>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Add all employees participating in this overtime / holiday work request.
                 </p>
               </div>
               <Button
                 type="button"
                 variant="secondary"
+                size="sm"
                 onClick={() => setEmployees((x) => [...x, emptyEmployee()])}
               >
-                <Plus size={16} /> Add employee
+                <Plus size={15} /> Add employee
               </Button>
             </div>
-            <div className="space-y-4">
+
+            <div className="p-5 sm:p-6 space-y-4">
               {employees.map((employee, index) => (
                 <div
                   key={index}
-                  className="border border-line bg-canvas p-4 shadow-panel"
+                  className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 sm:p-5 transition-colors hover:border-slate-300"
                 >
                   <div className="mb-3 flex justify-between items-center">
-                    <p className="font-bold text-ink text-sm">
+                    <p className="font-bold text-slate-800 text-xs uppercase tracking-wider">
                       Employee {index + 1}
                     </p>
                     <Button
                       type="button"
                       variant="ghost"
+                      size="sm"
                       disabled={employees.length === 1}
                       onClick={() =>
                         setEmployees((x) => x.filter((_, i) => i !== index))
                       }
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={15} className="text-slate-400 hover:text-red-600" />
                     </Button>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-3">
@@ -541,6 +562,7 @@ export default function NewEmailRequestForm() {
                     <Field label="Employee number">
                       <Input
                         required
+                        placeholder="e.g. 100456"
                         value={employee.employeeId}
                         onChange={(e) =>
                           updateEmployee(index, "employeeId", e.target.value)
@@ -613,6 +635,7 @@ export default function NewEmailRequestForm() {
                       <Input
                         required={employee.transportRequired}
                         disabled={!employee.transportRequired}
+                        placeholder="e.g. Bang Saen Junction / Wat Som Poi Stop"
                         value={employee.busStop}
                         onChange={(e) =>
                           updateEmployee(index, "busStop", e.target.value)
@@ -623,21 +646,28 @@ export default function NewEmailRequestForm() {
                 </div>
               ))}
             </div>
-          </Card>
+          </section>
         )}
 
         {requestType === "overtime" && !otWindowOpen && (
-          <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             OT request submission is closed. Current Thailand time:{" "}
-            {bangkokTime(clock)}. Available from 08:00 to 17:00.
+            <strong>{bangkokTime(clock)}</strong>. Available from 08:00 to 17:00.
           </p>
         )}
         {error && (
-          <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
           </p>
         )}
-        <div className="flex justify-end">
+        <div className="flex flex-col-reverse gap-3 border-t border-slate-200/80 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setRequestType(null)}
+          >
+            Cancel
+          </Button>
           <Button
             disabled={
               submitting || (requestType === "overtime" && !otWindowOpen)
@@ -652,30 +682,43 @@ export default function NewEmailRequestForm() {
 }
 
 function Choice({
-  icon,
+  eyebrow,
   title,
   body,
+  note,
   onClick,
 }: {
-  icon: React.ReactNode;
+  eyebrow: string;
   title: string;
   body: string;
+  note?: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-lg border border-line bg-white p-7 text-left shadow-panel transition hover:border-brand hover:bg-blue-50"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500/20 cursor-pointer"
     >
-      <span className="mb-5 grid h-12 w-12 place-items-center rounded-lg bg-blue-100 text-brand">
-        {icon}
-      </span>
-      <h2 className="text-lg font-bold">{title}</h2>
-      <p className="mt-2 text-sm text-gray-500">{body}</p>
-      <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand">
-        <Users size={16} /> Open form
-      </span>
+      <div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
+            {eyebrow}
+          </span>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-600">
+            {note || "Select request type"}
+          </span>
+        </div>
+        <h2 className="mt-4 text-base font-bold tracking-tight text-slate-900 sm:text-lg">
+          {title}
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">{body}</p>
+      </div>
+      <div className="mt-6 flex w-full items-center justify-start border-t border-slate-100 pt-4">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 transition-colors group-hover:text-brand-700">
+          Open form <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+        </span>
+      </div>
     </button>
   );
 }

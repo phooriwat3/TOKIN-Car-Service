@@ -58,7 +58,7 @@ export function TigerSpaceReportImport() {
         type: "array",
         cellDates: true,
       });
-      const parsed = workbook.SheetNames.flatMap((sheetName) => {
+      const parsed = workbook.SheetNames.flatMap((sheetName: string) => {
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
           header: 1,

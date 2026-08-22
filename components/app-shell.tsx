@@ -156,19 +156,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   const SidebarContent = () => (
-    <div className="flex h-full flex-col">
-      <div className="relative flex h-[72px] shrink-0 items-center gap-3 px-5">
-        <div className="flex h-10 items-center justify-center rounded-md bg-white px-2">
-          <BrandLogo compact />
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold leading-tight text-white">Transport operations</p>
-          <p className="mt-1 truncate text-[11px] font-medium text-slate-400">{portalLabel[role]}</p>
-        </div>
-        <div className="absolute inset-x-5 bottom-0 h-px bg-white/10" />
+    <div className="flex h-full flex-col bg-white">
+      <div className="relative flex h-[72px] shrink-0 items-center justify-between px-5 border-b border-slate-100">
+        <BrandLogo />
+        <span className="truncate text-[11px] font-semibold text-slate-500 rounded-md bg-slate-100 px-2 py-0.5">
+          {portalLabel[role]}
+        </span>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-5">
-        <SectionLabel className="mb-2 px-3 text-white/30">
+        <SectionLabel className="mb-2.5 px-3 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
           Navigation
         </SectionLabel>
         {links[role].map((x) => {
@@ -180,36 +176,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href={x.href}
               onClick={() => setOpen(false)}
               className={cn(
-                'group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+                'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
                 isActive
-                  ? 'bg-white/[0.10] text-white'
-                  : 'text-white/70 hover:bg-white/[0.055] hover:text-white/90',
+                  ? 'bg-brand-50 text-brand-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
               )}
             >
               {isActive && (
-                <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-[#f59e0b]" />
+                <span className="absolute left-0 top-2 bottom-2 w-1 bg-brand-600 rounded-r-full" />
               )}
-              <I size={17} className={cn('flex-shrink-0', isActive ? 'text-white' : 'text-slate-400 group-hover:text-white')} />
+              <I size={18} className={cn('flex-shrink-0 transition-colors', isActive ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-600')} />
               <span className="flex-1">{x.label}</span>
             </Link>
           );
         })}
       </nav>
-      <div className="border-t border-white/[0.07] p-4">
+      <div className="border-t border-slate-100 p-4 bg-slate-50/50">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-white/10 text-xs font-bold text-white">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-brand-100 text-xs font-bold text-brand-700">
             {getInitials(user.fullName)}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">{user.fullName}</p>
-            <p className="truncate text-xs text-slate-400/80">{user.department}</p>
+            <p className="truncate text-sm font-semibold text-slate-900">{user.fullName}</p>
+            <p className="truncate text-xs text-slate-500">{user.department}</p>
           </div>
           <button
             type="button"
             title="Sign out"
             aria-label="Sign out"
             onClick={handleSignOut}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-white/[0.07] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-200/60 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20"
           >
             <LogOut size={16} />
           </button>
@@ -221,8 +217,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-canvas">
       <aside
-        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-white/[0.06] shadow-sidebar lg:flex"
-        style={{ background: 'var(--sidebar-bg-from)' }}
+        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-slate-200/90 bg-white shadow-sm lg:flex"
       >
         <SidebarContent />
       </aside>
@@ -231,18 +226,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             aria-label="Close navigation menu"
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs"
             onClick={() => setOpen(false)}
           />
           <aside
-            className="relative flex h-full w-64 flex-col border-r border-white/[0.06] shadow-modal animate-slide-in"
-            style={{ background: 'var(--sidebar-bg-from)' }}
+            className="relative flex h-full w-64 flex-col border-r border-slate-200/90 bg-white shadow-modal animate-slide-in"
           >
             <SidebarContent />
             <button
               type="button"
               aria-label="Close navigation menu"
-              className="absolute right-3 top-4 flex h-8 w-8 items-center justify-center text-white/70 hover:bg-white/10 hover:text-white transition"
+              className="absolute right-3 top-4 flex h-8 w-8 items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
               onClick={() => setOpen(false)}
             >
               <X size={18} />

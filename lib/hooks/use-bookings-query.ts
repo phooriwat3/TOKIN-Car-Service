@@ -93,15 +93,15 @@ export function useUpdateBookingMutation() {
       }
       return res.json();
     },
-    onMutate: async ({ id, patch }) => {
+    onMutate: async ({ id, patch }: { id: string; patch: Partial<Booking> }) => {
       await queryClient.cancelQueries({ queryKey: ["booking", id] });
-      const previousBooking = queryClient.getQueryData<Booking>([
+      const previousBooking: any = queryClient.getQueryData([
         "booking",
         id,
       ]);
 
       if (previousBooking) {
-        queryClient.setQueryData<Booking>(["booking", id], {
+        queryClient.setQueryData(["booking", id], {
           ...previousBooking,
           ...patch,
         });
@@ -109,12 +109,12 @@ export function useUpdateBookingMutation() {
 
       return { previousBooking };
     },
-    onError: (_err, { id }, context) => {
+    onError: (_err: unknown, { id }: { id: string }, context: any) => {
       if (context?.previousBooking) {
         queryClient.setQueryData(["booking", id], context.previousBooking);
       }
     },
-    onSettled: (_data, _error, { id }) => {
+    onSettled: (_data: unknown, _error: unknown, { id }: { id: string }) => {
       void queryClient.invalidateQueries({ queryKey: ["booking", id] });
       void queryClient.invalidateQueries({ queryKey: ["bookings"] });
     },

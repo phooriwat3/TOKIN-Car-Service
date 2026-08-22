@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Button,
   Card,
@@ -579,7 +580,6 @@ export default function PublicRequestForm({
           </div>
           <div className="grid min-w-0 gap-5 md:grid-cols-2">
             <Choice
-              icon={<Clock3 />}
               eyebrow="Daily employee transport"
               title="OVERTIME / HOLIDAY WORK"
               body="Transportation for employees working overtime or on a public holiday."
@@ -588,7 +588,6 @@ export default function PublicRequestForm({
               onClick={() => setRequestType("overtime")}
             />
             <Choice
-              icon={<Car />}
               eyebrow="Business travel"
               title="CAR SERVICE REQUISITION"
               body="Vehicle request for business travel outside the company premises."
@@ -1018,7 +1017,6 @@ export function PublicFrame({
 }
 
 function Choice({
-  icon,
   eyebrow,
   title,
   body,
@@ -1026,7 +1024,6 @@ function Choice({
   href,
   onClick,
 }: {
-  icon: React.ReactNode;
   eyebrow: string;
   title: string;
   body: string;
@@ -1036,48 +1033,38 @@ function Choice({
 }) {
   const content = (
     <>
-      <div className="flex items-start justify-between gap-4">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-light text-brand transition-colors group-hover:bg-brand group-hover:text-white sm:h-14 sm:w-14">
-          {icon}
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
+          {eyebrow}
         </span>
-        <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-600">
+        <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-600">
           {note}
         </span>
       </div>
-      <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand">
-        {eyebrow}
-      </p>
-      <h2 className="mt-1 break-words text-lg font-bold leading-snug text-ink">
+      <h2 className="mt-4 break-words text-lg font-bold leading-snug text-slate-900">
         {title}
       </h2>
-      <p className="mt-2 flex-1 text-sm leading-6 text-gray-500">{body}</p>
-      <div className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-brand">
-        <span>Start request</span>
-        <ArrowRight
-          size={15}
-          className="transition-transform group-hover:translate-x-0.5"
-        />
+      <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{body}</p>
+      <div className="mt-6 flex items-center justify-start border-t border-slate-100 pt-4">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 transition-colors group-hover:text-brand-700">
+          Start request <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+        </span>
       </div>
     </>
   );
 
+  const containerClasses = "group flex min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md sm:p-7";
+
   if (href) {
     return (
-      <a
-        href={href}
-        className="group flex min-w-0 flex-col rounded-xl border border-line bg-white p-6 text-left shadow-card transition-colors duration-150 hover:border-brand/50 hover:bg-[#fbfdff] sm:p-8"
-      >
+      <a href={href} className={containerClasses}>
         {content}
       </a>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex min-w-0 flex-col rounded-xl border border-line bg-white p-6 text-left shadow-card transition-colors duration-150 hover:border-brand/50 hover:bg-[#fbfdff] sm:p-8"
-    >
+    <button type="button" onClick={onClick} className={containerClasses}>
       {content}
     </button>
   );

@@ -25,7 +25,7 @@ export function CompanyUserField({
   required = false,
   disabled = false,
 }: {
-  label: string;
+  label: React.ReactNode;
   inputId?: string;
   describedBy?: string;
   value: string;

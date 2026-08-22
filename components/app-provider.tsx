@@ -113,7 +113,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     void hydrate();
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (event) => {
+      (event: any) => {
         if (
           event === "SIGNED_IN" ||
           event === "TOKEN_REFRESHED" ||
