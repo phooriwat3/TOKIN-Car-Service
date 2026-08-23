@@ -252,94 +252,34 @@ export function SectionLabel({
 }
 
 /* ─── Stat (KPI metric card) ─── */
-const statToneStyles = {
-  blue: {
-    border: "border-t-brand-600",
-    badge: "bg-brand-50 text-brand-700 border-brand-200/60",
-  },
-  amber: {
-    border: "border-t-amber-500",
-    badge: "bg-amber-50 text-amber-800 border-amber-200/60",
-  },
-  green: {
-    border: "border-t-emerald-500",
-    badge: "bg-emerald-50 text-emerald-800 border-emerald-200/60",
-  },
-  violet: {
-    border: "border-t-violet-500",
-    badge: "bg-violet-50 text-violet-800 border-violet-200/60",
-  },
-  red: {
-    border: "border-t-red-500",
-    badge: "bg-red-50 text-red-800 border-red-200/60",
-  },
-} as const;
-
-export type StatTone = keyof typeof statToneStyles;
+export type StatTone = "blue" | "amber" | "green" | "violet" | "red";
 
 export function Stat({
   label,
   value,
-  icon,
-  tone,
-  trend,
   href,
   className,
 }: {
   label: string;
   value: number | string;
   icon?: React.ReactNode;
-  tone: StatTone;
+  tone?: StatTone;
   trend?: { value: number; label: string };
   href?: string;
   className?: string;
 }) {
-  const styles = statToneStyles[tone];
-  const trendPositive = trend ? trend.value >= 0 : false;
-
   const card = (
     <div
       className={cn(
-        "rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 border-t-4",
-        styles.border,
-        href && "hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300",
+        "rounded-xl border border-slate-200 bg-white p-5 shadow-2xs transition-all duration-150",
+        href && "hover:border-slate-300 hover:shadow-sm cursor-pointer",
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-          {label}
-        </span>
-        {icon && (
-          <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg border text-xs font-semibold shrink-0", styles.badge)}>
-            {icon}
-          </span>
-        )}
-      </div>
-      <p className="mt-3 text-3xl font-bold font-display tracking-tight text-slate-900 tabular-nums sm:text-[34px]">
+      <p className="text-xs font-semibold text-slate-500">{label}</p>
+      <p className="mt-2.5 text-3xl font-bold font-sans tracking-tight text-slate-900 tabular-nums sm:text-[32px]">
         {value}
       </p>
-      {trend && (
-        <div className="mt-2 flex items-center gap-1.5 text-xs">
-          <span
-            className={cn(
-              "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold text-[11px]",
-              trendPositive
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-red-50 text-red-700",
-            )}
-          >
-            {trendPositive ? (
-              <TrendingUp size={12} strokeWidth={2.5} />
-            ) : (
-              <TrendingDown size={12} strokeWidth={2.5} />
-            )}
-            {trendPositive ? "+" : ""}
-            {trend.value}%
-          </span>
-          {trend.label && <span className="text-slate-500">{trend.label}</span>}
-        </div>
-      )}
     </div>
   );
 
@@ -347,7 +287,7 @@ export function Stat({
     return (
       <Link
         href={href}
-        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/50 focus-visible:ring-offset-2 rounded-xl"
+        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20 rounded-xl"
       >
         {card}
       </Link>

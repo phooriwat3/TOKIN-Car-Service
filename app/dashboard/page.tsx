@@ -137,30 +137,22 @@ export default function Dashboard() {
               : "Waiting for approval / OT check"
           }
           value={pending}
-          icon={<Clock3 size={18} />}
-          tone="amber"
           href={listPathByRole[role]}
         />
         <Stat
           label="Trips in motion"
           value={active}
-          icon={<Car size={18} />}
-          tone="blue"
           href={listPathByRole[role]}
         />
         <Stat
           label="Completed requests"
           value={complete}
-          icon={<CheckCircle2 size={18} />}
-          tone="green"
           href={listPathByRole[role]}
         />
         {role === "admin" && (
           <Stat
             label="Ready for GA"
             value={readyForGa}
-            icon={<Gauge size={18} />}
-            tone="violet"
             href="/admin/bookings"
           />
         )}
