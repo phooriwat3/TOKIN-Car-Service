@@ -258,7 +258,7 @@ export function PublicOvertimeRequestForm(
               required
               value={props.requesterName}
               onChange={(value) => props.onRequesterChange("name", value)}
-              placeholder="Start typing your English name"
+              placeholder="Search English name or email..."
               onSelectUser={props.onDirectorySelect}
               describedBy="employee-search-help"
             />
@@ -280,6 +280,7 @@ export function PublicOvertimeRequestForm(
               id="company-email"
               required
               type="email"
+              placeholder="name@yageo.com"
               className={
                 props.errorField === "company-email"
                   ? "border-danger ring-2 ring-danger/20"
@@ -311,7 +312,7 @@ export function PublicOvertimeRequestForm(
                   ? "border-danger ring-2 ring-danger/20"
                   : ""
               }
-              placeholder="7-digit employee number"
+              placeholder="e.g. 100456 (7-digit ID)"
               value={props.employeeId}
               onChange={(event) =>
                 props.onRequesterChange(

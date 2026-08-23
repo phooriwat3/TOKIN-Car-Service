@@ -277,7 +277,7 @@ export function PublicCarServiceRequestForm(
               required
               value={props.requesterName}
               onChange={(value) => props.onRequesterChange("name", value)}
-              placeholder="Start typing your English name"
+              placeholder="Search English name or email..."
               onSelectUser={props.onDirectorySelect}
               describedBy="employee-search-help"
             />
@@ -300,6 +300,7 @@ export function PublicCarServiceRequestForm(
               id="company-email"
               required
               type="email"
+              placeholder="name@yageo.com"
               className={
                 props.errorField === "company-email"
                   ? "border-danger ring-2 ring-danger/20"
@@ -324,7 +325,7 @@ export function PublicCarServiceRequestForm(
             <Input
               id="employee-number"
               required
-              placeholder="7-digit employee ID"
+              placeholder="e.g. 100456 (7-digit ID)"
               className={
                 props.errorField === "employee-number"
                   ? "border-danger ring-2 ring-danger/20"
@@ -389,7 +390,7 @@ export function PublicCarServiceRequestForm(
                   required
                   value={props.approverName}
                   onChange={(value) => props.onApproverChange("name", value)}
-                  placeholder="Type approver's English name"
+                  placeholder="Search approver's name or email..."
                   onSelectUser={props.onApproverDirectorySelect}
                   describedBy="approver-search-help"
                 />
