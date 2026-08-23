@@ -157,11 +157,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col bg-white">
-      <div className="relative flex h-[72px] shrink-0 items-center justify-between px-5 border-b border-slate-100">
+      <div className="relative flex h-[72px] shrink-0 items-center px-5 border-b border-slate-100">
         <BrandLogo />
-        <span className="truncate text-[11px] font-semibold text-slate-500 rounded-md bg-slate-100 px-2 py-0.5">
-          {portalLabel[role]}
-        </span>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-5">
         <SectionLabel className="mb-2.5 px-3 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
