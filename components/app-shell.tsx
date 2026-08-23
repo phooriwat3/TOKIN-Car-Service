@@ -157,7 +157,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col bg-white">
-      <div className="relative flex h-[72px] shrink-0 items-center px-5 border-b border-slate-100">
+      <div className="relative flex h-[72px] shrink-0 items-center justify-center px-5 border-b border-slate-100">
         <BrandLogo />
       </div>
       <nav className="flex-1 space-y-1 px-3 py-5">
