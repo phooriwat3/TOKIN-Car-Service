@@ -758,7 +758,7 @@ export function TimeMaskInput({
       {open && (
         <div className="absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg transition-all animate-in fade-in zoom-in-95">
           {/* Dual Wheel Drum Container */}
-          <div className="relative flex h-[135px] items-center justify-center overflow-hidden rounded-lg bg-slate-50 border border-slate-100 select-none">
+          <div className="relative flex h-[135px] items-center justify-center overflow-hidden rounded-lg bg-slate-50 border border-slate-100 select-none touch-pan-y">
             {/* Center Selection Highlight Bar */}
             <div className="pointer-events-none absolute inset-x-1 top-1/2 h-9 -translate-y-1/2 rounded-md bg-white border border-slate-200/80 shadow-2xs" />
 
@@ -772,10 +772,10 @@ export function TimeMaskInput({
                   selectHour(idx);
                 }
               }}
-              className="h-[135px] w-1/2 overflow-y-auto snap-y snap-mandatory text-center scrollbar-none overscroll-contain"
-              style={{ scrollbarWidth: "none" }}
+              className="h-[135px] w-1/2 overflow-x-hidden overflow-y-auto snap-y snap-mandatory text-center scrollbar-none overscroll-contain touch-pan-y"
+              style={{ scrollbarWidth: "none", touchAction: "pan-y" }}
             >
-              <div className="h-[49.5px]" />
+              <div className="h-[49.5px] w-full shrink-0" />
               {hoursList.map((h) => {
                 const isSelected = h === currentHour;
                 return (
@@ -787,7 +787,7 @@ export function TimeMaskInput({
                         hoursRef.current.scrollTop = h * ITEM_HEIGHT;
                     }}
                     className={cn(
-                      "flex h-9 snap-center items-center justify-center font-mono text-sm cursor-pointer transition-all duration-100 select-none",
+                      "flex h-9 w-full overflow-hidden snap-center items-center justify-center font-mono text-sm cursor-pointer transition-all duration-100 select-none touch-pan-y",
                       isSelected
                         ? "font-bold text-slate-900 scale-110"
                         : "font-normal text-slate-400 hover:text-slate-600",
@@ -797,11 +797,11 @@ export function TimeMaskInput({
                   </div>
                 );
               })}
-              <div className="h-[49.5px]" />
+              <div className="h-[49.5px] w-full shrink-0" />
             </div>
 
             {/* Separator Colon */}
-            <div className="flex h-9 items-center justify-center font-mono text-sm font-bold text-slate-900 select-none z-10 px-0.5">
+            <div className="flex h-9 shrink-0 items-center justify-center font-mono text-sm font-bold text-slate-900 select-none z-10 px-0.5">
               :
             </div>
 
@@ -815,10 +815,10 @@ export function TimeMaskInput({
                   selectMinute(idx);
                 }
               }}
-              className="h-[135px] w-1/2 overflow-y-auto snap-y snap-mandatory text-center scrollbar-none overscroll-contain"
-              style={{ scrollbarWidth: "none" }}
+              className="h-[135px] w-1/2 overflow-x-hidden overflow-y-auto snap-y snap-mandatory text-center scrollbar-none overscroll-contain touch-pan-y"
+              style={{ scrollbarWidth: "none", touchAction: "pan-y" }}
             >
-              <div className="h-[49.5px]" />
+              <div className="h-[49.5px] w-full shrink-0" />
               {minutesList.map((m) => {
                 const isSelected = m === currentMinute;
                 return (
@@ -830,7 +830,7 @@ export function TimeMaskInput({
                         minutesRef.current.scrollTop = m * ITEM_HEIGHT;
                     }}
                     className={cn(
-                      "flex h-9 snap-center items-center justify-center font-mono text-sm cursor-pointer transition-all duration-100 select-none",
+                      "flex h-9 w-full overflow-hidden snap-center items-center justify-center font-mono text-sm cursor-pointer transition-all duration-100 select-none touch-pan-y",
                       isSelected
                         ? "font-bold text-slate-900 scale-110"
                         : "font-normal text-slate-400 hover:text-slate-600",
@@ -840,7 +840,7 @@ export function TimeMaskInput({
                   </div>
                 );
               })}
-              <div className="h-[49.5px]" />
+              <div className="h-[49.5px] w-full shrink-0" />
             </div>
           </div>
         </div>
