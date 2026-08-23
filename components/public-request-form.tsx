@@ -281,7 +281,7 @@ export default function PublicRequestForm({
         );
       if (!isOtRequestWindowOpen())
         return failValidation(
-          "OT requests can be submitted only from 08:00 to 16:00 (Thailand time).",
+          "OT requests can be submitted only from 08:00 to 16:00.",
         );
       if (!usingDate)
         return failValidation(

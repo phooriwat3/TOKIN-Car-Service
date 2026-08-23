@@ -210,7 +210,7 @@ export function PublicOvertimeRequestForm(
           <Clock3 className="mt-0.5 shrink-0 text-amber-700" size={18} />
           <div>
             <p className="font-semibold text-slate-900">
-              Booking Window: {OT_REQUEST_START} – {OT_REQUEST_END} (Bangkok Time: {bangkokTime()})
+              Booking Window: {OT_REQUEST_START} – {OT_REQUEST_END}
             </p>
             <p className="mt-0.5 text-xs text-amber-800">
               Requests received by {OT_NORMAL_REQUEST_CUTOFF} enter the normal transport-planning batch. Submissions after {OT_NORMAL_REQUEST_CUTOFF} are subject to vehicle availability.

@@ -120,7 +120,7 @@ export default function NewEmailRequestForm() {
       return setError("Please select an approver.");
     if (requestType === "overtime" && !isOtRequestWindowOpen())
       return setError(
-        "OT requests can be submitted only from 08:00 to 17:00 (Thailand time).",
+        "OT requests can be submitted only from 08:00 to 17:00.",
       );
     if (!usingDate || (requestType !== "overtime" && !purpose.trim()))
       return setError("Date and purpose are required.");
@@ -651,8 +651,7 @@ export default function NewEmailRequestForm() {
 
         {requestType === "overtime" && !otWindowOpen && (
           <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            OT request submission is closed. Current Thailand time:{" "}
-            <strong>{bangkokTime(clock)}</strong>. Available from 08:00 to 17:00.
+            OT request submission is currently closed. Submissions are available from 08:00 to 17:00.
           </p>
         )}
         {error && (

@@ -167,7 +167,7 @@ export default function PublicManageRequest({
     if (!request) return;
     if (request.requestType === "overtime" && !otWindowOpen) {
       setMessage(
-        "OT requests can be edited only from 08:00 to 16:00 (Thailand time).",
+        "OT requests can be edited only from 08:00 to 16:00.",
       );
       return;
     }
