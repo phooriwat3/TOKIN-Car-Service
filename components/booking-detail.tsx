@@ -1,11 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, Clock, MapPin, Users, Mail, Car } from "lucide-react";
+import { useState } from "react";
+import {
+  CalendarDays,
+  Clock,
+  MapPin,
+  Users,
+  Mail,
+  Car,
+  Printer,
+  FileText,
+} from "lucide-react";
 import { useApp } from "./app-provider";
-import { Badge, Card, Empty } from "./ui";
+import { Badge, Button, Card, Empty } from "./ui";
 import { statusLabel, totalCost } from "@/lib/business";
 import { formatThaiDateTime } from "@/lib/date-format";
+import { BookingActivityLog } from "./booking-activity-log";
+import { DriverDispatchSlipModal } from "./driver-dispatch-slip-modal";
 
 export function BookingDetail({
   id,
@@ -15,6 +27,8 @@ export function BookingDetail({
   admin?: boolean;
 }) {
   const { data } = useApp();
+  const [showSlipModal, setShowSlipModal] = useState(false);
+
   const b = data.bookings.find((x) => x.id === id);
   if (!b)
     return (
@@ -30,6 +44,11 @@ export function BookingDetail({
     b.requestType === "overtime" ||
     (b.overtimeEmployees && b.overtimeEmployees.length > 0);
 
+  const hasAssignment =
+    b.assignment?.vehicleId ||
+    (b.assignment?.manualTransportUnits &&
+      b.assignment.manualTransportUnits.length > 0);
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -39,10 +58,25 @@ export function BookingDetail({
           </p>
           <h1 className="text-2xl font-bold text-ink">{b.destination}</h1>
         </div>
-        <Badge status={b.status}>{statusLabel(b.status)}</Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          {admin && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowSlipModal(true)}
+              className="gap-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+              title="View and print official driver dispatch slip"
+            >
+              <Printer size={14} className="text-brand" />
+              <span>Print Dispatch Slip</span>
+            </Button>
+          )}
+          <Badge status={b.status}>{statusLabel(b.status)}</Badge>
+        </div>
       </div>
 
       <div className="grid gap-5">
+
         <Card className="p-5">
           <h2 className="mb-4 font-bold text-ink">Trip request</h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -369,6 +403,19 @@ export function BookingDetail({
             />
           </div>
         </Card>
+      )}
+
+      {/* Enterprise Audit Trail & Lifecycle History */}
+      <BookingActivityLog booking={b} />
+
+      {/* Driver Dispatch Slip Modal */}
+      {showSlipModal && (
+        <DriverDispatchSlipModal
+          booking={b}
+          vehicle={vehicle}
+          driver={driver}
+          onClose={() => setShowSlipModal(false)}
+        />
       )}
     </div>
   );
