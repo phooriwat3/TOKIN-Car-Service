@@ -1,4 +1,4 @@
-# Car Service Requisition System
+# Car Service Requisition System.
 
 Role-based company transport requisition workflow built with Next.js 16, TypeScript, Tailwind CSS, and Supabase.
 
