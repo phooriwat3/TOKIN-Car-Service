@@ -237,21 +237,21 @@ export default function Dashboard() {
               label="Urgent requests"
               value={adminQueues.urgent.length}
               tone="amber"
-              href="/admin/bookings"
+              href="/admin/bookings?queue=urgent"
             />
             <OperationsMetric
               icon={<ListChecks size={18} />}
               label="Awaiting OT verification"
               value={adminQueues.verification.length}
               tone="violet"
-              href="/admin/bookings"
+              href="/admin/bookings?queue=ot_verification"
             />
             <OperationsMetric
               icon={<Car size={18} />}
               label="Unassigned approved trips"
               value={adminQueues.unassigned.length}
               tone="blue"
-              href="/admin/bookings"
+              href="/admin/bookings?queue=unassigned"
             />
             <OperationsMetric
               icon={<ShieldAlert size={18} />}

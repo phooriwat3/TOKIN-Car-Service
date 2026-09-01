@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   createColumnHelper,
@@ -64,6 +65,26 @@ type DatePreset =
   | "this_month"
   | "custom";
 
+const queueDetails = {
+  urgent: {
+    title: "Urgent requests",
+    description: "Showing open requests marked urgent.",
+    tone: "border-amber-200 bg-amber-50 text-amber-900",
+  },
+  ot_verification: {
+    title: "OT verification queue",
+    description: "Showing overtime transport requests awaiting HR/GA verification.",
+    tone: "border-violet-200 bg-violet-50 text-violet-900",
+  },
+  unassigned: {
+    title: "Unassigned approved trips",
+    description: "Showing approved trips that still need a vehicle and driver assignment.",
+    tone: "border-blue-200 bg-blue-50 text-blue-900",
+  },
+} as const;
+
+type OperationsQueue = keyof typeof queueDetails;
+
 export function BookingTable({
   bookings,
   basePath = "/bookings",
@@ -72,6 +93,12 @@ export function BookingTable({
   basePath?: string;
 }) {
   const isAdmin = basePath.includes("/admin");
+  const searchParams = useSearchParams();
+  const queueParam = searchParams.get("queue");
+  const operationsQueue =
+    queueParam && queueParam in queueDetails
+      ? (queueParam as OperationsQueue)
+      : null;
 
   // Filter States
   const [activeTab, setActiveTab] = useState<StatusTab>("all");
@@ -136,6 +163,22 @@ export function BookingTable({
     const todayStr = format(now, "yyyy-MM-dd");
 
     return bookings.filter((b) => {
+      const hasAssignment = Boolean(
+        b.assignment?.vehicleId || b.assignment?.manualTransportUnits?.length,
+      );
+
+      if (operationsQueue === "urgent" && !b.urgent) return false;
+      if (
+        operationsQueue === "ot_verification" &&
+        b.status !== "pending_ot_verification"
+      )
+        return false;
+      if (
+        operationsQueue === "unassigned" &&
+        (!['approved', 'assigned', 'scheduled'].includes(b.status) || hasAssignment)
+      )
+        return false;
+
       // 1. Status Tab filter
       if (activeTab === "action_needed") {
         if (
@@ -184,16 +227,12 @@ export function BookingTable({
       // 4. Assignment status filter
       if (selectedAssignmentStatus === "unassigned") {
         if (
-          b.assignment?.vehicleId ||
-          (b.assignment?.manualTransportUnits &&
-            b.assignment.manualTransportUnits.length > 0)
+          hasAssignment
         )
           return false;
       } else if (selectedAssignmentStatus === "assigned") {
         if (
-          !b.assignment?.vehicleId &&
-          (!b.assignment?.manualTransportUnits ||
-            b.assignment.manualTransportUnits.length === 0)
+          !hasAssignment
         )
           return false;
       }
@@ -231,6 +270,7 @@ export function BookingTable({
     selectedDepartment,
     selectedServiceType,
     selectedAssignmentStatus,
+    operationsQueue,
     datePreset,
     customStartDate,
     customEndDate,
@@ -535,6 +575,21 @@ export function BookingTable({
             setBatchModalOpen(true);
           }}
         />
+      )}
+
+      {operationsQueue && (
+        <div className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between ${queueDetails[operationsQueue].tone}`}>
+          <div>
+            <p className="font-semibold text-sm">{queueDetails[operationsQueue].title}</p>
+            <p className="mt-0.5 text-xs">{queueDetails[operationsQueue].description}</p>
+          </div>
+          <Link
+            href="/admin/bookings"
+            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-current/20 bg-white/70 px-3 py-2 text-xs font-semibold transition hover:bg-white"
+          >
+            Clear queue
+          </Link>
+        </div>
       )}
 
       {/* Enterprise Quick Status Tabs */}
