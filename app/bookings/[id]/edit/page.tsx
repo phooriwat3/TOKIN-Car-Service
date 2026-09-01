@@ -71,24 +71,20 @@ export default function EditRequest({
     const supabase = createClient();
     if (!supabase) return;
     void supabase
-      .from("profiles")
+      .from("active_approver_directory")
       .select(
-        "id,employee_id,full_name,email,role,department:departments(name)",
+        "id,full_name,email,department_name",
       )
-      .eq("role", "approver")
-      .eq("is_active", true)
       .order("full_name")
       .then(({ data: rows, error }: { data: any; error: any }) => {
         if (error) return setError(error.message);
         setApprovers(
           (rows ?? []).map((row: any) => ({
             id: row.id,
-            employeeId: row.employee_id,
+            employeeId: "",
             fullName: row.full_name,
             email: row.email,
-            department: Array.isArray(row.department)
-              ? (row.department[0]?.name ?? "")
-              : (row.department?.name ?? ""),
+            department: row.department_name ?? "",
             role: "approver",
           })),
         );

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Field, Input } from './ui';
 import { Loader2 } from 'lucide-react';
 import { compareCompanyUsersBySearch } from '@/lib/company-search';
+import { createClient } from '@/lib/supabase/client';
 
 export type CompanyUser = {
   displayName: string;
@@ -66,7 +67,7 @@ export function CompanyUserField({
   }, [showDropdown]);
 
   useEffect(() => {
-    if (!showDropdown || disabled || value.trim().length < 1) {
+    if (!showDropdown || disabled || value.trim().length < 3) {
       setResults([]);
       setSearching(false);
       return;
@@ -82,11 +83,23 @@ export function CompanyUserField({
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
       if (!supabaseUrl || !publishableKey) return;
+      const supabase = createClient();
+      if (!supabase) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setResults([]);
+        setShowDropdown(false);
+        return;
+      }
       setSearching(true);
       try {
         const response = await fetch(`${supabaseUrl}/functions/v1/search-company-users`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', apikey: publishableKey },
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: publishableKey,
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({ query: value.trim() }),
         });
         const result = await response.json();
@@ -107,7 +120,7 @@ export function CompanyUserField({
       } finally {
         setSearching(false);
       }
-    }, 120);
+    }, 250);
 
     return () => {
       window.clearTimeout(timer);
@@ -151,7 +164,7 @@ export function CompanyUserField({
         }}
         onFocus={() => {
           selectedUserNameRef.current = null; // Clear lock when user focuses to search again
-          if (value.trim().length >= 1) {
+          if (value.trim().length >= 3) {
             setShowDropdown(true);
           }
         }}

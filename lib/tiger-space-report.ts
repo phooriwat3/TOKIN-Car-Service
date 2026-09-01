@@ -68,6 +68,7 @@ export function normalizeTigerTime(value: unknown) {
   const raw = text(value);
   const match = raw.match(/^(\d{1,2}):(\d{2})$/);
   if (!match) return "";
+  if (Number(match[1]) > 23 || Number(match[2]) > 59) return "";
   return `${match[1].padStart(2, "0")}:${match[2]}`;
 }
 

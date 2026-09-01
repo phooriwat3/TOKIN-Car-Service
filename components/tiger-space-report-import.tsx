@@ -53,19 +53,26 @@ export function TigerSpaceReportImport() {
     setMessage("");
     setApprovedOnlyConfirmed(false);
     try {
-      const XLSX = await import("xlsx");
-      const workbook = XLSX.read(await file.arrayBuffer(), {
-        type: "array",
-        cellDates: true,
-      });
-      const parsed = workbook.SheetNames.flatMap((sheetName: string) => {
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
-          header: 1,
-          defval: null,
-          raw: false,
+      if (!file.name.toLowerCase().endsWith(".xlsx")) {
+        throw new Error("Upload a modern .xlsx Tiger Space report.");
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("The report is too large. Upload a file under 10 MB.");
+      }
+
+      const ExcelJS = await import("exceljs");
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(await file.arrayBuffer());
+      const parsed = workbook.worksheets.flatMap((sheet) => {
+        const rows: unknown[][] = [];
+        sheet.eachRow({ includeEmpty: true }, (row) => {
+          rows.push(
+            Array.from({ length: Math.max(27, row.cellCount) }, (_item, index) =>
+              row.getCell(index + 1).text || null,
+            ),
+          );
         });
-        return parseTigerSpaceSheet(sheetName, rows);
+        return parseTigerSpaceSheet(sheet.name, rows);
       });
       if (!parsed.length)
         throw new Error(
@@ -82,7 +89,7 @@ export function TigerSpaceReportImport() {
         ),
       );
       setMessage(
-        `Read ${parsed.length} approved OT rows from ${workbook.SheetNames.length} sheet(s).`,
+        `Read ${parsed.length} approved OT rows from ${workbook.worksheets.length} sheet(s).`,
       );
     } catch (cause) {
       setFileName("");
@@ -158,7 +165,7 @@ export function TigerSpaceReportImport() {
             <h2 className="font-bold text-ink">Tiger Space report matching</h2>
           </div>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">
-            Upload the approved normal-OT report (.xls or .xlsx). The system
+            Upload the approved normal-OT report (.xlsx). The system
             suggests matches using employee number, OT date, and start/end time.
             HR remains the final verifier.
           </p>
@@ -168,7 +175,7 @@ export function TigerSpaceReportImport() {
           {loading ? "Reading..." : "Choose report"}
           <input
             type="file"
-            accept=".xls,.xlsx"
+            accept=".xlsx"
             disabled={loading || confirming}
             className="sr-only"
             onChange={(event) => {

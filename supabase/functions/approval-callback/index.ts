@@ -36,29 +36,28 @@ Deno.serve(async (request) => {
     const comments = typeof body.comments === 'string' ? body.comments.trim().slice(0, 2000) : '';
     if (action !== 'approved' && !comments) return json({ error: 'Comments are required.' }, 400);
 
-    const { data: booking, error: lookupError } = await db.from('bookings')
-      .select('id,status,approver_name,approver_email').eq('id', bookingId).single();
-    if (lookupError || !booking) return json({ error: 'Request not found.' }, 404);
-    if (booking.status !== 'pending_approval') return json({ ok: true, alreadyProcessed: true, status: booking.status });
-
-    const { error: approvalError } = await db.from('approvals').insert({
-      booking_id: booking.id,
-      approver_id: null,
-      approver_name: typeof body.approverName === 'string' ? body.approverName.trim().slice(0, 200) : booking.approver_name,
-      approver_email: typeof body.approverEmail === 'string' ? body.approverEmail.trim().toLowerCase().slice(0, 240) : booking.approver_email,
-      action,
-      comments,
+    const { data, error } = await db.rpc('process_approval_callback', {
+      p_booking_id: bookingId,
+      p_action: action,
+      p_comments: comments,
+      p_approver_name: typeof body.approverName === 'string'
+        ? body.approverName.trim().slice(0, 200)
+        : '',
+      p_approver_email: typeof body.approverEmail === 'string'
+        ? body.approverEmail.trim().toLowerCase().slice(0, 240)
+        : '',
     });
-    if (approvalError) throw approvalError;
+    if (error) throw error;
+    const result = data as { outcome?: string; booking_id?: string; status?: string } | null;
+    if (!result?.booking_id || !result.status)
+      throw new Error('Approval processing returned an invalid response.');
 
-    const { error: updateError } = await db.from('bookings').update({
-      status: action,
-      reject_reason: action === 'approved' ? null : comments,
-      updated_at: new Date().toISOString(),
-    }).eq('id', booking.id).eq('status', 'pending_approval');
-    if (updateError) throw updateError;
-
-    return json({ ok: true, requestId: booking.id, status: action });
+    return json({
+      ok: true,
+      requestId: result.booking_id,
+      status: result.status,
+      alreadyProcessed: result.outcome === 'already_processed',
+    });
   } catch (cause) {
     return json({ error: cause instanceof Error ? cause.message : 'Unable to record approval.' }, 500);
   }

@@ -49,24 +49,21 @@ Deno.serve(async (request) => {
     }
     if (booking.status !== 'pending_approval') return json({ error: `This request is already ${booking.status}.` }, 409);
 
-    const { data: updated, error: updateError } = await db.from('bookings').update({
-      status: action,
-      reject_reason: action === 'approved' ? null : comments,
-      updated_at: new Date().toISOString(),
-    }).eq('id', booking.id).eq('status', 'pending_approval').eq('revision_no', access.revision_no)
-      .select('id,booking_no,status').maybeSingle();
-    if (updateError) throw updateError;
-    if (!updated) return json({ error: 'This request was already processed.' }, 409);
-
-    const { error: approvalError } = await db.from('approvals').insert({
-      booking_id: booking.id,
-      approver_id: null,
-      approver_name: booking.approver_name,
-      approver_email: booking.approver_email || access.subject_email,
-      action,
-      comments,
+    const { data: decision, error: decisionError } = await db.rpc('process_approval_callback', {
+      p_booking_id: booking.id,
+      p_action: action,
+      p_comments: comments,
+      p_approver_name: booking.approver_name ?? '',
+      p_approver_email: booking.approver_email || access.subject_email || '',
     });
-    if (approvalError) throw approvalError;
+    if (decisionError) throw decisionError;
+    const result = decision as { outcome?: string; status?: string } | null;
+    if (result?.outcome === 'already_processed') {
+      return json({ ok: true, alreadyProcessed: true, requestId: booking.id, status: result.status });
+    }
+    if (result?.outcome !== 'processed' || result.status !== action)
+      throw new Error('Approval processing returned an invalid response.');
+
     await db.from('request_access_tokens').update({ used_at: new Date().toISOString() }).eq('id', access.id);
 
     let requesterNotificationStatus: 'sent' | 'failed' | 'not_configured' | 'not_required' = 'not_required';

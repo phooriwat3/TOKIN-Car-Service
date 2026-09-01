@@ -1,13 +1,23 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+const appBaseUrl = () =>
+  Deno.env.get('APP_BASE_URL')?.trim().replace(/\/+$/, '') ||
+  'https://carservice.tokin.co.th';
+
+const corsHeaders = (request: Request) => {
+  const origin = request.headers.get('origin');
+  const allowedOrigin = origin === appBaseUrl() ? origin : appBaseUrl();
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Vary': 'Origin',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Cache-Control': 'no-store',
+  };
 };
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+const json = (request: Request, body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
-  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  headers: { ...corsHeaders(request), 'Content-Type': 'application/json' },
 });
 
 type CompanyUser = {
@@ -62,28 +72,40 @@ function computeSearchScore(displayName: string, mail: string, query: string): n
   return 0;
 }
 Deno.serve(async (request) => {
-  if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
+  if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(request) });
+  if (request.method !== 'POST') return json(request, { error: 'Method not allowed.' }, 405);
 
   try {
+    const authorization = request.headers.get('authorization') ?? '';
+    const accessToken = authorization.replace(/^Bearer\s+/i, '');
+    if (!accessToken) return json(request, { error: 'Authentication is required.' }, 401);
+
     const body = await request.json();
     const query = typeof body.query === 'string' ? body.query.trim().slice(0, 100) : '';
-    if (query.length < 1) return json({ users: [] });
+    if (query.length < 3) return json(request, { error: 'Enter at least 3 characters.' }, 400);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const flowUrl = Deno.env.get('POWER_AUTOMATE_USER_SEARCH_FLOW_URL');
-    if (!supabaseUrl || !serviceRoleKey || !flowUrl) return json({ users: [] });
+    if (!supabaseUrl || !anonKey || !serviceRoleKey || !flowUrl) return json(request, { users: [] });
 
+    const authClient = createClient(supabaseUrl, anonKey, { auth: { persistSession: false } });
+    const { data: authData, error: authError } = await authClient.auth.getUser(accessToken);
+    if (authError || !authData.user) return json(request, { error: 'Authentication is required.' }, 401);
     const db = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+    const { data: profile, error: profileError } = await db.from('profiles')
+      .select('id,is_active').eq('id', authData.user.id).maybeSingle();
+    if (profileError || !profile?.is_active) return json(request, { error: 'Active company access is required.' }, 403);
+
     const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const bytes = new TextEncoder().encode(`search:${forwarded}:${request.headers.get('user-agent') || ''}`);
+    const bytes = new TextEncoder().encode(`search:${authData.user.id}:${forwarded}`);
     const digest = await crypto.subtle.digest('SHA-256', bytes);
     const fingerprint = Array.from(new Uint8Array(digest)).map(x => x.toString(16).padStart(2, '0')).join('');
     const since = new Date(Date.now() - 10 * 60_000).toISOString();
     const { count } = await db.from('public_request_attempts').select('id', { count: 'exact', head: true })
       .eq('fingerprint', fingerprint).gte('created_at', since);
-    if ((count ?? 0) >= 30) return json({ error: 'Too many searches. Please try again later.' }, 429);
+    if ((count ?? 0) >= 30) return json(request, { error: 'Too many searches. Please try again later.' }, 429);
     await db.from('public_request_attempts').insert({ fingerprint });
 
     const response = await fetch(flowUrl, {
@@ -91,7 +113,7 @@ Deno.serve(async (request) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
     });
-    if (!response.ok) return json({ users: [] });
+    if (!response.ok) return json(request, { users: [] });
     const result = await response.json();
     const source: CompanyUser[] = Array.isArray(result) ? result : Array.isArray(result?.users) ? result.users : [];
     
@@ -115,8 +137,8 @@ Deno.serve(async (request) => {
     });
 
     const users = sortedUsers.slice(0, 8);
-    return json({ users });
+    return json(request, { users });
   } catch {
-    return json({ users: [] });
+    return json(request, { users: [] });
   }
 });
