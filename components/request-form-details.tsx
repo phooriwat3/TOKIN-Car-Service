@@ -23,7 +23,7 @@ export function RequestFormDetails({ id }: { id: string }) {
             booking.requestOrigin === "hr_direct"
               ? "HR-CREATED OT TRANSPORT"
               : booking.requestType === "overtime"
-              ? "OVERTIME / HOLIDAY WORK"
+              ? "OVERTIME TRANSPORT"
               : "CAR SERVICE REQUISITION"
           }
         />

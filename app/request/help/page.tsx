@@ -244,7 +244,7 @@ function HelpContent() {
                     <Badge color="amber">Cut-off 15:30</Badge>
                   </div>
                   <p className="font-bold text-ink text-sm">
-                    Overtime / Holiday Work
+                    Overtime Transport
                   </p>
                   <p className="text-xs text-gray-500 leading-5">
                     For employees staying late for approved OT or working on a
@@ -309,7 +309,7 @@ function HelpContent() {
                 <Step
                   number={1}
                   title="Select request type"
-                  body="Choose 'Overtime / Holiday Work' for OT rides or 'Car Service Requisition' for official business travel."
+                  body="Choose 'Overtime Transport' for OT rides or 'Car Service Requisition' for official business travel."
                 />
                 <Step
                   number={2}

@@ -630,7 +630,7 @@ function count(report: Report) {
 }
 function typeLabel(booking: Booking) {
   return booking.requestType === "overtime"
-    ? "OVERTIME / HOLIDAY WORK"
+    ? "OVERTIME TRANSPORT"
     : "CAR SERVICE REQUISITION";
 }
 function dateText(value: string) {

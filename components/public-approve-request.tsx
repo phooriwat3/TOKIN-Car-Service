@@ -241,7 +241,7 @@ export default function PublicApproveRequest({
             label="Request type"
             value={
               request.requestType === "overtime"
-                ? "OVERTIME / HOLIDAY WORK"
+                ? "OVERTIME TRANSPORT"
                 : "CAR SERVICE REQUISITION"
             }
           />

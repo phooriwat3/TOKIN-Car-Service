@@ -581,8 +581,8 @@ export default function PublicRequestForm({
           <div className="grid min-w-0 gap-5 md:grid-cols-2">
             <Choice
               eyebrow="Daily employee transport"
-              title="OVERTIME / HOLIDAY WORK"
-              body="Transportation for employees working overtime or on a public holiday."
+              title="OVERTIME TRANSPORT"
+              body="Request company transport for approved overtime or holiday work."
               note="Submit by 16:00"
               href="/request/overtime"
               onClick={() => setRequestType("overtime")}

@@ -188,11 +188,10 @@ export function PublicOvertimeRequestForm(
             Employee transportation request
           </p>
           <h1 className="mt-1.5 text-2xl font-bold tracking-[-0.02em] text-ink sm:text-[30px]">
-            OVERTIME / HOLIDAY WORK
+            OVERTIME TRANSPORT
           </h1>
           <p className="mt-1.5 max-w-2xl text-sm leading-6 text-gray-500">
-            Submit an individual transportation request for overtime or holiday
-            work.
+            Request company transport for approved overtime or holiday work.
           </p>
         </div>
         <Button
