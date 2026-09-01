@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
   Car,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   ClipboardList,
   HelpCircle,
@@ -64,10 +65,25 @@ function Step({
 }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div className="border-b border-line py-4 last:border-0">
-      <p className="font-semibold text-sm text-ink">{question}</p>
-      <p className="mt-1.5 text-sm leading-6 text-gray-500">{answer}</p>
+    <div className="border-b border-line last:border-0">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-expanded={isOpen}
+        className="flex w-full items-center justify-between gap-4 py-4 text-left"
+      >
+        <span className="font-semibold text-sm text-ink">{question}</span>
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <p className="-mt-1 pb-4 text-sm leading-6 text-gray-500">{answer}</p>
+      )}
     </div>
   );
 }
@@ -225,6 +241,24 @@ function HelpContent() {
           </p>
         </div>
 
+        <section className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 shadow-card sm:flex sm:items-center sm:justify-between sm:gap-6">
+          <div className="flex gap-3">
+            <Timer className="mt-0.5 shrink-0 text-amber-700" size={18} />
+            <div>
+              <p className="font-bold">Plan before you request</p>
+              <p className="mt-1 leading-5 text-amber-900">
+                Overtime Transport: submit by 15:30 (requests close at 16:00). Off-site Business Transport: submit at least 24 hours in advance.
+              </p>
+            </div>
+          </div>
+          <Link
+            href={backUrl}
+            className="mt-3 inline-flex shrink-0 items-center justify-center rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 transition hover:border-amber-500 hover:bg-amber-100 sm:mt-0"
+          >
+            Start a request
+          </Link>
+        </section>
+
         <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
           {/* ── LEFT / MAIN column ── */}
           <div className="space-y-6 lg:col-span-2">
@@ -264,6 +298,12 @@ function HelpContent() {
                       Drop-off at your usual bus stop / route
                     </li>
                   </ul>
+                  <Link
+                    href="/request/overtime"
+                    className="inline-flex pt-1 text-xs font-semibold text-brand hover:text-brand-dark"
+                  >
+                    Start Overtime Transport →
+                  </Link>
                 </div>
 
                 {/* Car Service */}
@@ -295,6 +335,12 @@ function HelpContent() {
                       Specify meeting point &amp; passenger details
                     </li>
                   </ul>
+                  <Link
+                    href="/request/car-service"
+                    className="inline-flex pt-1 text-xs font-semibold text-brand hover:text-brand-dark"
+                  >
+                    Start Off-site Business Transport →
+                  </Link>
                 </div>
               </div>
             </section>
