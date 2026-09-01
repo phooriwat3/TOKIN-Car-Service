@@ -13,6 +13,7 @@ import type {
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   deleteAllBookings as persistDeleteAllBookings,
+  deleteAllFleetResources as persistDeleteAllFleetResources,
   insertBooking,
   loadAppData,
   loadProfile,
@@ -35,6 +36,7 @@ type Ctx = {
   signInWithMicrosoft: (nextPath: string) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAllBookings: () => Promise<number>;
+  deleteAllFleetResources: () => Promise<{ vehicles: number; drivers: number }>;
   updateBooking: (id: string, patch: Partial<Booking>) => Promise<void>;
   addBooking: (booking: Booking) => Promise<Booking>;
   resubmitBooking: (booking: Booking) => Promise<void>;
@@ -196,6 +198,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return deleted;
   };
 
+  const deleteAllFleetResources = async (): Promise<{
+    vehicles: number;
+    drivers: number;
+  }> => {
+    if (role !== "admin") throw new Error("Admin role required.");
+    if (data.bookings.length) {
+      throw new Error("Delete all bookings before clearing fleet resources.");
+    }
+    const counts = { vehicles: data.vehicles.length, drivers: data.drivers.length };
+    if (!supabase) {
+      setData((current) => ({ ...current, vehicles: [], drivers: [] }));
+      return counts;
+    }
+    const deleted = await persistDeleteAllFleetResources(supabase);
+    await refresh();
+    return deleted;
+  };
+
   const updateBooking = async (id: string, patch: Partial<Booking>) => {
     if (!supabase) {
       setData((current) => ({
@@ -303,6 +323,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       signInWithMicrosoft,
       signOut,
       deleteAllBookings,
+      deleteAllFleetResources,
       updateBooking,
       addBooking,
       resubmitBooking,

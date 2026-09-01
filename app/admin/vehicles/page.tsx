@@ -1,4 +1,4 @@
-import { Vehicles } from "@/components/resource-management";
+import { AdminDailyTransportSetup } from "@/components/admin-daily-transport-setup";
 export default function Page() {
-  return <Vehicles />;
+  return <AdminDailyTransportSetup />;
 }

@@ -1,5 +1,5 @@
-import { DriverManagement } from "@/components/driver-management";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <DriverManagement />;
+  redirect("/admin/vehicles");
 }

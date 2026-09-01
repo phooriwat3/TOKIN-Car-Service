@@ -227,6 +227,19 @@ export async function deleteAllBookings(supabase: SupabaseClient): Promise<numbe
   return Number(data ?? 0);
 }
 
+export async function deleteAllFleetResources(
+  supabase: SupabaseClient,
+): Promise<{ vehicles: number; drivers: number }> {
+  const { data, error } = await supabase.rpc("delete_all_fleet_resources", {
+    p_confirmation: "DELETE ALL FLEET RESOURCES",
+  });
+  throwIfError(error);
+  return {
+    vehicles: Number(data?.vehicles ?? 0),
+    drivers: Number(data?.drivers ?? 0),
+  };
+}
+
 export async function insertBooking(
   supabase: SupabaseClient,
   booking: Booking,
