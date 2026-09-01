@@ -2,8 +2,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  BarChart3, CalendarDays, CarFront, ChevronRight,
-  ClipboardList, LayoutDashboard, LogOut, Menu, Plus, UserPlus, X,
+  BarChart3, CalendarDays, Car, CarFront, ChevronRight,
+  ClipboardList, LayoutDashboard, LogOut, Menu, Plus, UserPlus, UsersRound, X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from './app-provider';
@@ -23,6 +23,8 @@ const links: Record<Role, { href: string; label: string; icon: any }[]> = {
     { href: '/admin/bookings/new', label: 'Create employee OT ride', icon: UserPlus },
     { href: '/admin/bookings', label: 'All bookings', icon: ClipboardList },
     { href: '/admin/calendar', label: 'Schedule', icon: CalendarDays },
+    { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
+    { href: '/admin/drivers', label: 'Drivers', icon: UsersRound },
     { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
   ],
   driver: [
