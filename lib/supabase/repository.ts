@@ -219,6 +219,14 @@ export async function loadAppData(supabase: SupabaseClient): Promise<AppData> {
   };
 }
 
+export async function deleteAllBookings(supabase: SupabaseClient): Promise<number> {
+  const { data, error } = await supabase.rpc("delete_all_bookings", {
+    p_confirmation: "DELETE ALL BOOKINGS",
+  });
+  throwIfError(error);
+  return Number(data ?? 0);
+}
+
 export async function insertBooking(
   supabase: SupabaseClient,
   booking: Booking,

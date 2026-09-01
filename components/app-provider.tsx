@@ -12,6 +12,7 @@ import type {
 } from "@/lib/types";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
+  deleteAllBookings as persistDeleteAllBookings,
   insertBooking,
   loadAppData,
   loadProfile,
@@ -33,6 +34,7 @@ type Ctx = {
   signIn: (email: string, password: string) => Promise<void>;
   signInWithMicrosoft: (nextPath: string) => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAllBookings: () => Promise<number>;
   updateBooking: (id: string, patch: Partial<Booking>) => Promise<void>;
   addBooking: (booking: Booking) => Promise<Booking>;
   resubmitBooking: (booking: Booking) => Promise<void>;
@@ -182,6 +184,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteAllBookings = async (): Promise<number> => {
+    if (role !== "admin") throw new Error("Admin role required.");
+    const count = data.bookings.length;
+    if (!supabase) {
+      setData((current) => ({ ...current, bookings: [] }));
+      return count;
+    }
+    const deleted = await persistDeleteAllBookings(supabase);
+    await refresh();
+    return deleted;
+  };
+
   const updateBooking = async (id: string, patch: Partial<Booking>) => {
     if (!supabase) {
       setData((current) => ({
@@ -288,6 +302,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signInWithMicrosoft,
       signOut,
+      deleteAllBookings,
       updateBooking,
       addBooking,
       resubmitBooking,
