@@ -223,7 +223,7 @@ export default function NewEmailRequestForm() {
           />
           <Choice
             eyebrow="Business travel"
-            title="CAR SERVICE REQUISITION"
+            title="OFF-SITE BUSINESS TRANSPORT"
             body="Vehicle request for official business travel outside the company premises."
             note="For off-site company trips"
             onClick={() => setRequestType("outside_company")}
@@ -238,7 +238,7 @@ export default function NewEmailRequestForm() {
         title={
           requestType === "overtime"
             ? "OVERTIME TRANSPORT"
-            : "CAR SERVICE REQUISITION"
+            : "OFF-SITE BUSINESS TRANSPORT"
         }
         description={
           requestType === "overtime"

@@ -308,7 +308,7 @@ export function BookingTable({
         `"${b.usingDate || ""}"`,
         `"${b.startTime || ""}"`,
         `"${b.endTime || ""}"`,
-        `"${isOt ? "Overtime Transport" : "Car Service"}"`,
+        `"${isOt ? "Overtime Transport" : "Off-site Business Transport"}"`,
         `"${b.department || ""}"`,
         `"${b.requesterName || ""}"`,
         `"${b.requesterEmployeeId || ""}"`,
@@ -394,7 +394,7 @@ export function BookingTable({
                       : "bg-blue-50 text-blue-700"
                   }`}
                 >
-                  {isOt ? "OT Transport" : "Car Service"}
+                  {isOt ? "OT Transport" : "Off-site Transport"}
                 </span>
                 {info.row.original.urgent && (
                   <span className="inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
@@ -781,7 +781,7 @@ export function BookingTable({
                     className="w-full rounded-md border border-line bg-white px-2.5 py-1.5 text-xs text-ink focus:border-brand focus:outline-none"
                   >
                     <option value="all">All Types</option>
-                    <option value="car_service">General Car Service</option>
+                    <option value="car_service">Off-site Business Transport</option>
                     <option value="overtime">Overtime Transport (OT)</option>
                   </select>
                 </div>

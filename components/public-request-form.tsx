@@ -589,7 +589,7 @@ export default function PublicRequestForm({
             />
             <Choice
               eyebrow="Business travel"
-              title="CAR SERVICE REQUISITION"
+              title="OFF-SITE BUSINESS TRANSPORT"
               body="Vehicle request for business travel outside the company premises."
               note="For off-site company trips"
               href="/request/car-service"
@@ -778,7 +778,7 @@ export default function PublicRequestForm({
 
             <dl className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-3 px-5 py-4 text-sm">
               <dt className="text-gray-500">Request type</dt>
-              <dd className="font-medium text-ink">Car Service Requisition</dd>
+              <dd className="font-medium text-ink">Off-site Business Transport</dd>
               <dt className="text-gray-500">Requester</dt>
               <dd className="font-medium text-ink">{requesterName || "—"}</dd>
               <dt className="text-gray-500">Using date </dt>

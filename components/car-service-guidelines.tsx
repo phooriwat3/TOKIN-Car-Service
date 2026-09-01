@@ -17,7 +17,7 @@ import {
 const translations = {
   th: {
     headerCategory: "ข้อกำหนดและนโยบายภายใน • TOKIN TRANSPORT",
-    title: "แนวทางการขอใช้รถยนต์ส่วนกลางไปปฏิบัติงาน (Car Service)",
+    title: "แนวทางการขอใช้รถยนต์ส่วนกลางไปปฏิบัติงาน (Off-site Business Transport)",
     description:
       "ระเบียบและแนวทางปฏิบัติสำหรับการขอใช้รถยนต์ของบริษัทฯ และพนักงานขับรถ เพื่อการเดินทางไปติดต่องานภายนอกสถานที่อย่างปลอดภัยและเป็นไปตามขั้นตอน",
     langTh: "ไทย",
@@ -65,7 +65,7 @@ const translations = {
   },
   en: {
     headerCategory: "INTERNAL POLICY & GUIDELINES • TOKIN TRANSPORT",
-    title: "Car Service Requisition Guidelines",
+    title: "Off-site Business Transport Guidelines",
     description:
       "Standard operating procedures and policy guidelines for requesting company business vehicles and drivers for official off-site business travel.",
     langTh: "ไทย",
@@ -91,7 +91,7 @@ const translations = {
       {
         no: "3",
         title: "Authorized Business Purpose",
-        body: "Car service is restricted to official company business, including client meetings, vendor audits, government agency liaison, and inter-plant travel.",
+        body: "Off-site business transport is restricted to official company business, including client meetings, vendor audits, government agency liaison, and inter-plant travel.",
       },
       {
         no: "4",

@@ -242,7 +242,7 @@ export default function PublicApproveRequest({
             value={
               request.requestType === "overtime"
                 ? "OVERTIME TRANSPORT"
-                : "CAR SERVICE REQUISITION"
+                : "OFF-SITE BUSINESS TRANSPORT"
             }
           />
           <Info

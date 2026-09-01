@@ -148,7 +148,7 @@ export function PublicCarServiceRequestForm(
             />
             <Summary
               label="Request type"
-              value="Car Service Requisition (Off-site Business)"
+              value="Off-site Business Transport"
             />
             <Summary
               label="Using date"
@@ -205,10 +205,10 @@ export function PublicCarServiceRequestForm(
       <div className="flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
-            Business Travel / Car Service
+            Off-site Business Transport
           </p>
           <h1 className="mt-1.5 text-2xl font-bold tracking-[-0.02em] text-ink sm:text-[30px]">
-            CAR SERVICE REQUISITION
+            OFF-SITE BUSINESS TRANSPORT
           </h1>
           <p className="mt-1.5 max-w-2xl text-sm leading-6 text-gray-500">
             Request a company vehicle and driver for official off-site business travel.
@@ -243,7 +243,7 @@ export function PublicCarServiceRequestForm(
             onClick={props.onShowGuidelines}
             className="min-h-10 justify-self-start text-xs font-semibold text-brand underline underline-offset-2 hover:text-brand-dark sm:justify-self-end"
           >
-            View car service rules
+            View transport rules
           </button>
         )}
       </div>

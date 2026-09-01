@@ -275,7 +275,7 @@ function HelpContent() {
                     <Badge color="blue">24h Advance Notice</Badge>
                   </div>
                   <p className="font-bold text-ink text-sm">
-                    Car Service Requisition
+                    Off-site Business Transport
                   </p>
                   <p className="text-xs text-gray-500 leading-5">
                     For official off-site company travel (customer visits,
@@ -309,7 +309,7 @@ function HelpContent() {
                 <Step
                   number={1}
                   title="Select request type"
-                  body="Choose 'Overtime Transport' for OT rides or 'Car Service Requisition' for official business travel."
+                  body="Choose 'Overtime Transport' for OT rides or 'Off-site Business Transport' for official business travel."
                 />
                 <Step
                   number={2}
@@ -319,7 +319,7 @@ function HelpContent() {
                 <Step
                   number={3}
                   title="Fill trip details & approver"
-                  body="For OT: select date, shift hours, and bus stop. For Car Service: select travel date, hours, pickup/destination, purpose, and choose your Department Approver."
+                  body="For OT: select date, shift hours, and bus stop. For Off-site Business Transport: select travel date, hours, pickup/destination, purpose, and choose your Department Approver."
                 />
                 <Step
                   number={4}
@@ -366,7 +366,7 @@ function HelpContent() {
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2 pt-1">
                   <div className="rounded border border-blue-200/60 bg-white/70 p-2.5">
-                    <p className="font-bold text-ink text-xs">Car Service Requisition</p>
+                    <p className="font-bold text-ink text-xs">Off-site Business Transport</p>
                     <p className="mt-1 text-slate-600 leading-normal">
                       A 1-click approval email is sent directly to your selected Department Approver. GA assigns vehicles after manager approval.
                     </p>
@@ -401,11 +401,11 @@ function HelpContent() {
                   answer="Standard requests should be submitted by 15:30 Thailand time to enter normal batch planning. Submissions between 15:30–16:00 are allocated subject to available van capacity, and the window closes at 16:00."
                 />
                 <FaqItem
-                  question="How far in advance should I request a Car Service?"
-                  answer="Car Service requisitions should be submitted at least 24 hours (1 working day) in advance to allow GA to allocate fleet vehicles and schedule drivers."
+                  question="How far in advance should I request off-site business transport?"
+                  answer="Off-site business transport requests should be submitted at least 24 hours (1 working day) in advance to allow GA to allocate fleet vehicles and schedule drivers."
                 />
                 <FaqItem
-                  question="Who approves my Car Service request?"
+                  question="Who approves my off-site business transport request?"
                   answer="Select your active Department Manager/Approver from the directory search in the form. An email notification with a 1-click approval button will be sent to them directly."
                 />
                 <FaqItem
@@ -472,8 +472,8 @@ function HelpContent() {
               <ul className="space-y-1.5 leading-5 text-amber-900/90 list-disc pl-4">
                 <li><strong>OT:</strong> Submit by 15:30 (Closes 16:00)</li>
                 <li><strong>OT:</strong> Submit in Tiger OpenSpace first</li>
-                <li><strong>Car Service:</strong> 24-hr advance notice</li>
-                <li><strong>Car Service:</strong> Manager email approval</li>
+                <li><strong>Off-site transport:</strong> 24-hr advance notice</li>
+                <li><strong>Off-site transport:</strong> Manager email approval</li>
                 <li>Save your Manage Link to track driver &amp; vehicle</li>
               </ul>
             </div>

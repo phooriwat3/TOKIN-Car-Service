@@ -631,7 +631,7 @@ function count(report: Report) {
 function typeLabel(booking: Booking) {
   return booking.requestType === "overtime"
     ? "OVERTIME TRANSPORT"
-    : "CAR SERVICE REQUISITION";
+    : "OFF-SITE BUSINESS TRANSPORT";
 }
 function dateText(value: string) {
   const [y, m, d] = value.split("-");

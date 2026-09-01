@@ -103,7 +103,7 @@ export function DriverDispatchSlipModal({
                   </h1>
                 </div>
                 <p className="mt-1 font-semibold text-xs text-slate-500 uppercase tracking-wider">
-                  Car Service &amp; Transport Requisition System
+                  Business Transport Requisition System
                 </p>
               </div>
 
@@ -123,7 +123,7 @@ export function DriverDispatchSlipModal({
                 ใบสั่งงานและบันทึกการใช้ยานพาหนะ (DRIVER DISPATCH SLIP)
               </h2>
               <span className="mt-0.5 inline-block text-xs text-slate-500">
-                {isOt ? "[ OT Transport / บริการรับส่งล่วงเวลา ]" : "[ General Car Service / บริการรถยนต์ส่วนกลาง ]"}
+                {isOt ? "[ OT Transport / บริการรับส่งล่วงเวลา ]" : "[ Off-site Business Transport / บริการรถยนต์ส่วนกลาง ]"}
               </span>
             </div>
 
