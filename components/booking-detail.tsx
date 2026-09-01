@@ -18,6 +18,7 @@ import { statusLabel, totalCost } from "@/lib/business";
 import { formatThaiDateTime } from "@/lib/date-format";
 import { BookingActivityLog } from "./booking-activity-log";
 import { DriverDispatchSlipModal } from "./driver-dispatch-slip-modal";
+import type { Booking } from "@/lib/types";
 
 export function BookingDetail({
   id,
@@ -49,6 +50,38 @@ export function BookingDetail({
     (b.assignment?.manualTransportUnits &&
       b.assignment.manualTransportUnits.length > 0);
 
+  const nextActions: Partial<
+    Record<Booking["status"], { title: string; description: string }>
+  > = {
+    pending_approval: {
+      title: "Awaiting manager review",
+      description: `The request is waiting for ${b.approverName || "the department approver"} to approve or return it for changes.`,
+    },
+    changes_requested: {
+      title: "Requester action required",
+      description: "Update the request details and resubmit it for approval.",
+    },
+    pending_ot_verification: {
+      title: "Awaiting OT verification",
+      description: "HR/GA must match this request against the Tiger Space OT report before planning transport.",
+    },
+    approved: {
+      title: "Awaiting fleet assignment",
+      description: "GA can now assign the vehicle and driver.",
+    },
+    assigned: {
+      title: b.assignment?.accepted ? "Trip is scheduled" : "Awaiting driver acknowledgement",
+      description: b.assignment?.accepted
+        ? "The driver has acknowledged the assignment. The trip can start at the scheduled pickup time."
+        : "The assigned driver needs to acknowledge this trip.",
+    },
+    in_progress: {
+      title: "Trip in progress",
+      description: "The driver should record arrival time, final mileage, and expenses when the trip is complete.",
+    },
+  };
+  const nextAction = nextActions[b.status];
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -76,6 +109,19 @@ export function BookingDetail({
       </div>
 
       <div className="grid gap-5">
+
+        {nextAction && (
+          <div
+            role="status"
+            className="rounded-lg border border-brand-200 bg-brand-50 px-5 py-4"
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">
+              Next action
+            </p>
+            <h2 className="mt-1 font-bold text-ink">{nextAction.title}</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{nextAction.description}</p>
+          </div>
+        )}
 
         <Card className="p-5">
           <h2 className="mb-4 font-bold text-ink">Trip request</h2>
