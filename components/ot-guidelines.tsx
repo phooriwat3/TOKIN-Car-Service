@@ -5,6 +5,7 @@ import {
   AlertCircle,
   Calendar,
   CheckCircle2,
+  ChevronDown,
   Clock,
   ExternalLink,
   HelpCircle,
@@ -24,7 +25,7 @@ const translations = {
     langEn: "English",
     summaryTitle: "ข้อมูลสรุปสำคัญ (Key Highlights)",
     summaryItems: [
-      { label: "เวลาตัดรอบประจำวัน", value: "16:00 น.", note: "ส่งคำขอก่อนเวลานี้เพื่อจัดรถรอบปกติ" },
+      { label: "เวลาส่งคำขอปกติ", value: "15:30 น.", note: "ระบบปิดรับคำขอเวลา 16:00 น." },
       { label: "ระบบอนุมัติเวลาทำงาน", value: "Tiger OpenSpace", note: "บันทึกคำขอในระบบควบคู่กับการจองรถ" },
       { label: "การยกเลิก / แก้ไข", value: "Manage Link", note: "กดยกเลิกผ่านลิงก์ของตนเองก่อน 16:00 น." },
     ],
@@ -33,7 +34,7 @@ const translations = {
       {
         no: "1",
         title: "กำหนดเวลาส่งคำขอ (Cut-off Time)",
-        body: "ระบบเปิดรับคำขอระหว่างเวลา 06:00 – 22:00 น. โดยคำขอที่ส่งก่อนเวลา 16:00 น. จะถูกนำไปจัดสรรในรอบรถปกติประจำวัน เพื่อให้ทีมงานธุรการ (GA) จัดเตรียมจำนวนรถตู้และเส้นทางได้อย่างมีประสิทธิภาพ",
+        body: "ระบบเปิดรับคำขอระหว่างเวลา 06:00 – 22:00 น. ส่งคำขอภายใน 15:30 น. เพื่อเข้าสู่รอบจัดรถปกติ โดยระบบปิดรับคำขอเวลา 16:00 น. เพื่อให้ทีมงานธุรการ (GA) จัดเตรียมจำนวนรถตู้และเส้นทางได้อย่างมีประสิทธิภาพ",
       },
       {
         no: "2",
@@ -72,7 +73,7 @@ const translations = {
     langEn: "English",
     summaryTitle: "Key Highlights",
     summaryItems: [
-      { label: "Daily Batch Cut-off", value: "16:00", note: "Submit before 16:00 for standard route planning" },
+      { label: "Standard Submission", value: "15:30", note: "Requests close at 16:00" },
       { label: "Work Authorization", value: "Tiger OpenSpace", note: "Submit OT requisition in Tiger OpenSpace system" },
       { label: "Cancellation / Edit", value: "Manage Link", note: "Cancel via your link before 16:00" },
     ],
@@ -81,7 +82,7 @@ const translations = {
       {
         no: "1",
         title: "Daily Submission Cut-off",
-        body: "The service window is 06:00 – 22:00. Requests submitted by 16:00 enter standard route optimization and vehicle allocation handled by General Affairs (GA).",
+        body: "The service window is 06:00–22:00. Submit by 15:30 to enter standard route planning; requests close at 16:00. General Affairs (GA) then optimizes routes and allocates vehicles.",
       },
       {
         no: "2",
@@ -117,6 +118,7 @@ type Language = keyof typeof translations;
 
 export function OtGuidelines() {
   const [lang, setLang] = useState<Language>("th");
+  const [expandedRule, setExpandedRule] = useState<string | null>(null);
   const t = translations[lang];
 
   return (
@@ -186,24 +188,39 @@ export function OtGuidelines() {
 
       {/* Main Body */}
       <div className="p-6 sm:p-8 space-y-6">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex gap-3">
+            <AlertCircle className="mt-0.5 shrink-0 text-amber-700" size={18} />
+            <div>
+              <p className="font-bold text-amber-950">{lang === "th" ? "ก่อนส่งคำขอ OT Transport" : "Before you request Overtime Transport"}</p>
+              <p className="mt-1 text-sm leading-6 text-amber-900">{lang === "th" ? "ส่งคำขอภายใน 15:30 น. ระบบปิด 16:00 น. และต้องยื่น OT ใน Tiger OpenSpace ก่อน" : "Submit by 15:30; requests close at 16:00. Submit your OT in Tiger OpenSpace first."}</p>
+            </div>
+          </div>
+        </div>
+
         <div>
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-            {t.rulesTitle}
-          </h3>
-          <div className="mt-4 divide-y divide-slate-100 border-y border-slate-100">
+          <h3 className="text-sm font-bold text-slate-900">{lang === "th" ? "ตรวจสอบก่อนเริ่ม" : "Quick checklist"}</h3>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {[lang === "th" ? "ยื่น OT ใน Tiger OpenSpace" : "Submit OT in Tiger OpenSpace", lang === "th" ? "เลือกเวลาเลิกงานและจุดลงรถ" : "Confirm shift end time and drop-off", lang === "th" ? "บันทึก Manage Link หลังส่งคำขอ" : "Save your Manage Link after submitting"].map((item) => (
+              <div key={item} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-700">
+                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-600" />{item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-bold text-slate-900">{lang === "th" ? "รายละเอียดนโยบาย" : "Full policy details"}</h3>
+          <p className="mt-1 text-xs text-slate-500">{lang === "th" ? "เปิดเฉพาะหัวข้อที่ต้องการอ่าน" : "Open a topic only when you need more detail."}</p>
+          <div className="mt-3 divide-y overflow-hidden rounded-xl border border-slate-200">
             {t.rules.map((rule) => (
-              <div key={rule.no} className="flex items-start gap-4 py-4">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
-                  {rule.no}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-semibold text-slate-900">
-                    {rule.title}
-                  </h4>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
-                    {rule.body}
-                  </p>
-                </div>
+              <div key={rule.no}>
+                <button type="button" onClick={() => setExpandedRule((current) => current === rule.no ? null : rule.no)} aria-expanded={expandedRule === rule.no} className="flex w-full items-center gap-3 p-4 text-left hover:bg-slate-50">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">{rule.no}</span>
+                  <span className="flex-1 text-sm font-semibold text-slate-900">{rule.title}</span>
+                  <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${expandedRule === rule.no ? "rotate-180" : ""}`} />
+                </button>
+                {expandedRule === rule.no && <p className="border-t bg-slate-50 px-4 py-3 pl-12 text-xs leading-6 text-slate-600 sm:text-sm">{rule.body}</p>}
               </div>
             ))}
           </div>

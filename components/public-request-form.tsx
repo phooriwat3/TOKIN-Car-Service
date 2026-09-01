@@ -840,7 +840,7 @@ export default function PublicRequestForm({
                 onClick={() => setShowGuidelines(false)}
                 className="px-5 font-semibold text-xs"
               >
-                Close
+                I understand, continue
               </Button>
             </div>
           </div>

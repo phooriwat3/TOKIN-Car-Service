@@ -5,6 +5,7 @@ import {
   AlertCircle,
   Car,
   CheckCircle2,
+  ChevronDown,
   Clock,
   ExternalLink,
   HelpCircle,
@@ -117,6 +118,7 @@ type Language = keyof typeof translations;
 
 export function CarServiceGuidelines() {
   const [lang, setLang] = useState<Language>("th");
+  const [expandedRule, setExpandedRule] = useState<string | null>(null);
   const t = translations[lang];
 
   return (
@@ -186,24 +188,39 @@ export function CarServiceGuidelines() {
 
       {/* Main Body */}
       <div className="p-6 sm:p-8 space-y-6">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <div className="flex gap-3">
+            <AlertCircle className="mt-0.5 shrink-0 text-blue-700" size={18} />
+            <div>
+              <p className="font-bold text-blue-950">{lang === "th" ? "ก่อนส่งคำขอ Off-site Business Transport" : "Before you request Off-site Business Transport"}</p>
+              <p className="mt-1 text-sm leading-6 text-blue-900">{lang === "th" ? "ส่งคำขอล่วงหน้าอย่างน้อย 24 ชั่วโมง และเลือกผู้อนุมัติของแผนกให้ถูกต้อง" : "Submit at least 24 hours in advance and choose the correct Department Approver."}</p>
+            </div>
+          </div>
+        </div>
+
         <div>
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-            {t.rulesTitle}
-          </h3>
-          <div className="mt-4 divide-y divide-slate-100 border-y border-slate-100">
+          <h3 className="text-sm font-bold text-slate-900">{lang === "th" ? "ตรวจสอบก่อนเริ่ม" : "Quick checklist"}</h3>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {[lang === "th" ? "ส่งคำขอล่วงหน้า 1 วันทำการ" : "Submit one working day ahead", lang === "th" ? "ระบุจุดรับและปลายทางให้ชัดเจน" : "Confirm pickup and destination", lang === "th" ? "เลือกผู้อนุมัติของแผนก" : "Choose your Department Approver"].map((item) => (
+              <div key={item} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-700">
+                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-600" />{item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-bold text-slate-900">{lang === "th" ? "รายละเอียดนโยบาย" : "Full policy details"}</h3>
+          <p className="mt-1 text-xs text-slate-500">{lang === "th" ? "เปิดเฉพาะหัวข้อที่ต้องการอ่าน" : "Open a topic only when you need more detail."}</p>
+          <div className="mt-3 divide-y overflow-hidden rounded-xl border border-slate-200">
             {t.rules.map((rule) => (
-              <div key={rule.no} className="flex items-start gap-4 py-4">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
-                  {rule.no}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-semibold text-slate-900">
-                    {rule.title}
-                  </h4>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
-                    {rule.body}
-                  </p>
-                </div>
+              <div key={rule.no}>
+                <button type="button" onClick={() => setExpandedRule((current) => current === rule.no ? null : rule.no)} aria-expanded={expandedRule === rule.no} className="flex w-full items-center gap-3 p-4 text-left hover:bg-slate-50">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">{rule.no}</span>
+                  <span className="flex-1 text-sm font-semibold text-slate-900">{rule.title}</span>
+                  <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${expandedRule === rule.no ? "rotate-180" : ""}`} />
+                </button>
+                {expandedRule === rule.no && <p className="border-t bg-slate-50 px-4 py-3 pl-12 text-xs leading-6 text-slate-600 sm:text-sm">{rule.body}</p>}
               </div>
             ))}
           </div>
