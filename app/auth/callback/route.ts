@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const allowedDestinations = new Set(["/admin/bookings"]);
+const allowedDestinations = new Set([
+  "/admin/bookings",
+  "/request",
+  "/request/overtime",
+  "/request/car-service",
+]);
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -19,7 +24,7 @@ export async function GET(request: Request) {
     }
   }
 
-  const loginPath = "/admin/login";
+  const loginPath = requestedNext.startsWith("/request") ? "/request" : "/admin/login";
   const loginUrl = new URL(loginPath, requestUrl.origin);
   loginUrl.searchParams.set("error", "microsoft_sign_in_failed");
   return NextResponse.redirect(loginUrl);

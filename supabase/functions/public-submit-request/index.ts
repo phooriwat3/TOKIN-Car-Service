@@ -66,6 +66,22 @@ Deno.serve(async (request: Request) => {
     const db = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
+    const accessToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+    if (!accessToken) return json({ error: "Company sign-in is required." }, 401);
+    const auth = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    });
+    const { data: authData, error: authError } = await auth.auth.getUser(accessToken);
+    if (authError || !authData.user)
+      return json({ error: "Your sign-in has expired. Please sign in again." }, 401);
+    const { data: requesterProfile, error: requesterProfileError } = await db
+      .from("profiles")
+      .select("id,employee_id,full_name,department_id,department:departments(id,name,code,is_active)")
+      .eq("id", authData.user.id)
+      .eq("is_active", true)
+      .single();
+    if (requesterProfileError || !requesterProfile)
+      return json({ error: "Your company account is not active for Transport. Please contact the Transport administrator." }, 403);
     const payload = (await request.json()) as PublicRequest;
     if (payload.website) return json({ error: "Request rejected." }, 400);
 
@@ -103,26 +119,16 @@ Deno.serve(async (request: Request) => {
       );
     }
 
-    const requesterName = requiredText(
-      payload.requester?.name,
-      "Requester name",
-      200,
-    );
-    const requesterEmail = email(payload.requester?.email, "Requester email");
+    const requesterName = requiredText(requesterProfile.full_name, "Requester name", 200);
+    const requesterEmail = email(authData.user.email, "Company email");
     const requesterDepartment = requiredText(
-      payload.requester?.department,
+      (requesterProfile.department as { name?: string } | null)?.name,
       "Requester department",
       200,
     );
-    const departmentCode = requesterDepartment.trim().toUpperCase().replace(/\s+/g, " ");
-    const { data: department, error: departmentError } = await db
-      .from("departments")
-      .select("id,name,code")
-      .eq("code", departmentCode)
-      .eq("is_active", true)
-      .single();
-    if (departmentError || !department)
-      throw new Error("Selected department is unavailable. Please contact Admin.");
+    const department = requesterProfile.department as { id: string; name: string; code: string; is_active: boolean } | null;
+    if (!department?.is_active)
+      throw new Error("Your department is unavailable. Please contact Admin.");
 
     let selectedApprover: { id: string; full_name: string; email: string } | undefined;
     if (payload.requestType === "outside_company") {
@@ -185,13 +191,10 @@ Deno.serve(async (request: Request) => {
     const { data: booking, error: bookingError } = await db
       .from("bookings")
       .insert({
-        requester_id: null,
+        requester_id: authData.user.id,
         requester_name: requesterName,
         requester_email: requesterEmail,
-        requester_employee_id:
-          typeof payload.requester.employeeId === "string"
-            ? payload.requester.employeeId.trim().slice(0, 100)
-            : null,
+        requester_employee_id: requesterProfile.employee_id,
         requester_department: department.name,
         department_id: department.id,
         status:

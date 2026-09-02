@@ -1,5 +1,5 @@
-import PublicRequestForm from "@/components/public-request-form";
+import { RequestSignInGate } from "@/components/request-sign-in-gate";
 
 export default function RequestPage() {
-  return <PublicRequestForm />;
+  return <RequestSignInGate />;
 }

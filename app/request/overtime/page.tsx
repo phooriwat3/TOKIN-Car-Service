@@ -1,4 +1,4 @@
-import PublicRequestForm from "@/components/public-request-form";
+import { RequestSignInGate } from "@/components/request-sign-in-gate";
 
 export const metadata = {
   title: "Overtime Transport Request | TOKIN Transport",
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function OvertimeRequestPage() {
-  return <PublicRequestForm initialType="overtime" />;
+  return <RequestSignInGate initialType="overtime" />;
 }

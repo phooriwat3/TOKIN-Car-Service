@@ -1,4 +1,4 @@
-import PublicRequestForm from "@/components/public-request-form";
+import { RequestSignInGate } from "@/components/request-sign-in-gate";
 
 export const metadata = {
   title: "Off-site Business Transport | TOKIN Transport",
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function CarServiceRequestPage() {
-  return <PublicRequestForm initialType="outside_company" />;
+  return <RequestSignInGate initialType="outside_company" />;
 }
