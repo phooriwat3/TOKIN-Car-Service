@@ -32,6 +32,7 @@ export function AdminAssignmentPanel({
   const { data, updateBooking, configured } = useApp();
   const booking = data.bookings.find((item) => item.id === id);
   const isOt = booking?.requestType === "overtime";
+  const transportMemories = data.transportMemories ?? [];
   const passengers = useMemo(() => {
     if (!booking) return [];
     if (isOt) {
@@ -108,6 +109,25 @@ export function AdminAssignmentPanel({
         unitIndex === index ? { ...unit, [field]: value } : unit,
       ),
     );
+
+  const applyRememberedUnit = (index: number, memoryId: string) => {
+    const memory = transportMemories.find((item) => item.id === memoryId);
+    if (!memory) return;
+    setUnits((current) =>
+      current.map((unit, unitIndex) =>
+        unitIndex === index
+          ? {
+              ...unit,
+              licensePlate: memory.licensePlate,
+              brand: memory.brand,
+              vehicleType: memory.vehicleType,
+              driverName: memory.driverName,
+              driverPhone: memory.driverPhone,
+            }
+          : unit,
+      ),
+    );
+  };
 
   const assignPassenger = (passengerId: string, unitId: string) =>
     setUnits((current) =>
@@ -328,6 +348,28 @@ export function AdminAssignmentPanel({
                     <Trash2 size={15} /> Remove
                   </Button>
                 </div>
+                {transportMemories.length > 0 && (
+                  <div className="mb-4 rounded-lg border border-brand/20 bg-brand-50/40 p-3">
+                    <label className="mb-1.5 block text-xs font-semibold text-brand-900">
+                      Use remembered vehicle and driver
+                    </label>
+                    <Select
+                      aria-label={`Use remembered vehicle and driver for vehicle ${index + 1}`}
+                      value=""
+                      onChange={(event) => applyRememberedUnit(index, event.target.value)}
+                    >
+                      <option value="">Select a previous transport unit</option>
+                      {transportMemories.map((memory) => (
+                        <option key={memory.id} value={memory.id}>
+                          {memory.licensePlate} · {memory.driverName} · {memory.vehicleType}
+                        </option>
+                      ))}
+                    </Select>
+                    <p className="mt-1.5 text-xs text-brand-800/80">
+                      Saved automatically after you confirm a vehicle and driver assignment.
+                    </p>
+                  </div>
+                )}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <Field label="License plate / vehicle ID *">
                     <Input

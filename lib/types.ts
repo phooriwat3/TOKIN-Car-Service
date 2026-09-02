@@ -67,6 +67,16 @@ export interface ManualTransportUnit {
   driverPhone: string;
   employeeIds: string[];
 }
+export interface TransportUnitMemory {
+  id: string;
+  licensePlate: string;
+  brand: string;
+  vehicleType: string;
+  driverName: string;
+  driverPhone: string;
+  timesUsed: number;
+  lastUsedAt: string;
+}
 export interface Assignment {
   vehicleId?: string;
   driverId?: string;
@@ -201,6 +211,7 @@ export interface AppData {
   bookings: Booking[];
   vehicles: Vehicle[];
   drivers: Driver[];
+  transportMemories?: TransportUnitMemory[];
   approvers?: User[];
   notifications?: AppNotification[];
   auditLogs?: AuditLog[];

@@ -39,6 +39,7 @@ export const demoUsers: User[] = [
   },
 ];
 export const seedData: AppData = {
+  transportMemories: [],
   vehicles: [
     {
       id: "v1",

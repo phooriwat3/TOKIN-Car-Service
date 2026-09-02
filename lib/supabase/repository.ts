@@ -4,6 +4,7 @@ import type {
   AssignmentDraft,
   Booking,
   Driver,
+  TransportUnitMemory,
   User,
   Vehicle,
 } from "@/lib/types";
@@ -162,7 +163,7 @@ function mapBooking(row: any): Booking {
 }
 
 export async function loadAppData(supabase: SupabaseClient): Promise<AppData> {
-  const [bookingsResult, vehiclesResult, driversResult] = await Promise.all([
+  const [bookingsResult, vehiclesResult, driversResult, memoriesResult] = await Promise.all([
     supabase
       .from("bookings")
       .select(
@@ -182,10 +183,15 @@ export async function loadAppData(supabase: SupabaseClient): Promise<AppData> {
       .order("created_at", { ascending: false }),
     supabase.from("vehicles").select("*").order("license_plate"),
     supabase.from("drivers").select("*").order("full_name"),
+    supabase
+      .from("transport_unit_memories")
+      .select("*")
+      .order("last_used_at", { ascending: false }),
   ]);
   throwIfError(bookingsResult.error);
   throwIfError(vehiclesResult.error);
   throwIfError(driversResult.error);
+  throwIfError(memoriesResult.error);
 
   return {
     bookings: (bookingsResult.data ?? []).map(mapBooking),
@@ -214,6 +220,18 @@ export async function loadAppData(supabase: SupabaseClient): Promise<AppData> {
         licenseExpiry: row.license_expiry,
         active: row.is_active,
         notes: row.notes ?? undefined,
+      }),
+    ),
+    transportMemories: (memoriesResult.data ?? []).map(
+      (row: any): TransportUnitMemory => ({
+        id: row.id,
+        licensePlate: row.license_plate,
+        brand: row.brand ?? "",
+        vehicleType: row.vehicle_type,
+        driverName: row.driver_name,
+        driverPhone: row.driver_phone ?? "",
+        timesUsed: Number(row.times_used ?? 0),
+        lastUsedAt: row.last_used_at,
       }),
     ),
   };
