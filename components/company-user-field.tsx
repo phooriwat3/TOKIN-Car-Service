@@ -38,7 +38,6 @@ export function CompanyUserField({
 }) {
   const [results, setResults] = useState<CompanyUser[]>([]);
   const [searching, setSearching] = useState(false);
-  const [requiresSignIn, setRequiresSignIn] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -85,23 +84,20 @@ export function CompanyUserField({
       const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
       if (!supabaseUrl || !publishableKey) return;
       const supabase = createClient();
-      if (!supabase) return;
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setRequiresSignIn(true);
-        setResults([]);
-        setShowDropdown(false);
-        return;
-      }
-      setRequiresSignIn(false);
+      const { data: { session } } = supabase
+        ? await supabase.auth.getSession()
+        : { data: { session: null } };
       setSearching(true);
       try {
-        const response = await fetch(`${supabaseUrl}/functions/v1/search-company-users`, {
+        const endpoint = session?.access_token
+          ? "search-company-users"
+          : "public-search-employee-directory";
+        const response = await fetch(`${supabaseUrl}/functions/v1/${endpoint}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             apikey: publishableKey,
-            Authorization: `Bearer ${session.access_token}`,
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
           },
           body: JSON.stringify({ query: value.trim() }),
         });
@@ -189,11 +185,6 @@ export function CompanyUserField({
   return (
     <div ref={containerRef} className="relative">
       {label ? <Field label={label}>{inputContent}</Field> : inputContent}
-      {requiresSignIn && (
-        <p className="mt-1.5 text-xs leading-5 text-slate-500" role="status">
-          Company directory search is available after sign-in. You can still enter the details manually.
-        </p>
-      )}
 
       {showDropdown && results.length > 0 && coords.width > 0 && typeof document !== 'undefined' && createPortal(
         <div

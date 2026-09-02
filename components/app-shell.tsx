@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart3, CalendarDays, CarFront, ChevronRight,
-  ClipboardList, LayoutDashboard, LogOut, Menu, Plus, UserPlus, X,
+  ClipboardList, LayoutDashboard, LogOut, Menu, Plus, UserPlus, Users, X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from './app-provider';
@@ -24,6 +24,7 @@ const links: Record<Role, { href: string; label: string; icon: any }[]> = {
     { href: '/admin/bookings', label: 'All bookings', icon: ClipboardList },
     { href: '/admin/calendar', label: 'Schedule', icon: CalendarDays },
     { href: '/admin/vehicles', label: 'Daily transport setup', icon: CarFront },
+    { href: '/admin/employees', label: 'Employee directory', icon: Users },
     { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
   ],
   driver: [
