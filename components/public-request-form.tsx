@@ -55,23 +55,6 @@ const emptyEmployee = (): OvertimeEmployee => ({
   busStop: "",
 });
 
-const DEPARTMENTS = [
-  "MD",
-  "HR",
-  "SUST",
-  "FA",
-  "PLN",
-  "PROC",
-  "PE",
-  "IT",
-  "EE",
-  "FAC",
-  "QA",
-  "TA MFG",
-  "SC",
-  "TE",
-];
-
 
 
 export default function PublicRequestForm({
