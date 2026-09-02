@@ -73,7 +73,7 @@ const translations = {
     langEn: "English",
     summaryTitle: "Key Highlights",
     summaryItems: [
-      { label: "Advance Notice Period", value: "24 Hours", note: "Submit at least 1 working day before travel" },
+      { label: "Standard Planning", value: "24 Hours", note: "Urgent and same-day requests are also allowed" },
       { label: "Approval Requirement", value: "Department Approver", note: "Manager email approval required before dispatch" },
       { label: "Vehicle & Driver", value: "GA Fleet Dispatch", note: "Confirmation sent to requester via email" },
     ],
@@ -82,7 +82,7 @@ const translations = {
       {
         no: "1",
         title: "Advance Requisition Window",
-        body: "Please submit your requisition at least 24 hours (1 working day) prior to the travel date to allow General Affairs (GA) to verify fleet availability and schedule drivers.",
+        body: "For standard planning, submit at least 24 hours (1 working day) before travel. Urgent and same-day requests are allowed when a business need arises; provide the reason and note that assignment remains subject to approver and GA availability.",
       },
       {
         no: "2",
@@ -193,7 +193,7 @@ export function CarServiceGuidelines() {
             <AlertCircle className="mt-0.5 shrink-0 text-blue-700" size={18} />
             <div>
               <p className="font-bold text-blue-950">{lang === "th" ? "ก่อนส่งคำขอ Off-site Business Transport" : "Before you request Off-site Business Transport"}</p>
-              <p className="mt-1 text-sm leading-6 text-blue-900">{lang === "th" ? "ส่งคำขอล่วงหน้าอย่างน้อย 24 ชั่วโมง และเลือกผู้อนุมัติของแผนกให้ถูกต้อง" : "Submit at least 24 hours in advance and choose the correct Department Approver."}</p>
+              <p className="mt-1 text-sm leading-6 text-blue-900">{lang === "th" ? "วางแผนล่วงหน้า 24 ชั่วโมงเมื่อทำได้ หรือส่งคำขอเร่งด่วนพร้อมเหตุผลและเลือกผู้อนุมัติของแผนก" : "Plan 24 hours ahead when possible, or submit an urgent request with a reason and the correct Department Approver."}</p>
             </div>
           </div>
         </div>
