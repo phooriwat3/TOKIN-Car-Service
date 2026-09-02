@@ -283,55 +283,52 @@ export function PublicCarServiceRequestForm(
       >
         <SectionHeader
           title="Employee & Approver information"
-          description="Search by English name to select your company directory record and your designated approver."
+          description="Start with your company email to fill your directory record, then select your designated approver."
           id="employee-section-heading"
         />
         <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6">
           <div>
             <CompanyUserField
-              inputId="employee-search"
-              label="Employee name"
+              inputId="company-email"
+              label="Company email"
               required
-              value={props.requesterName}
-              onChange={(value) => props.onRequesterChange("name", value)}
-              placeholder="Search English name or email..."
+              value={props.requesterEmail}
+              onChange={(value) => props.onRequesterChange("email", value)}
+              placeholder="Type your company email..."
               onSelectUser={props.onDirectorySelect}
-              describedBy="employee-search-help"
+              describedBy="company-email-help"
             />
-            {props.errorField === "employee-search" ? (
+            {props.errorField === "company-email" ? (
               <p className="mt-1.5 text-xs font-semibold text-danger">
                 ⚠️ {props.error}
               </p>
             ) : (
               <p
-                id="employee-search-help"
+                id="company-email-help"
                 className="mt-1.5 text-xs text-gray-500"
               >
-                Select your directory result to fill your employee details.
+                Select your email from the directory to fill the fields below.
               </p>
             )}
           </div>
 
-          <Field label="Company email">
+          <Field label="Employee name">
             <Input
-              id="company-email"
+              id="employee-search"
               required
-              type="email"
-              placeholder="name@yageo.com"
+              placeholder="Filled after selecting your email"
               className={
-                props.errorField === "company-email"
+                props.errorField === "employee-search"
                   ? "border-danger ring-2 ring-danger/20"
                   : ""
               }
-              value={props.requesterEmail}
-              readOnly={
-                props.directorySelected && Boolean(props.requesterEmail)
-              }
+              value={props.requesterName}
+              readOnly={props.directorySelected && Boolean(props.requesterName)}
               onChange={(event) =>
-                props.onRequesterChange("email", event.target.value)
+                props.onRequesterChange("name", event.target.value)
               }
             />
-            {props.errorField === "company-email" && (
+            {props.errorField === "employee-search" && (
               <p className="mt-1.5 text-xs font-semibold text-danger">
                 ⚠️ {props.error}
               </p>

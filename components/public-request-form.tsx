@@ -648,7 +648,10 @@ export default function PublicRequestForm({
                 if (field === "name") {
                   setRequesterName(value);
                   setDirectorySelected(false);
-                } else if (field === "email") setRequesterEmail(value);
+                } else if (field === "email") {
+                  setRequesterEmail(value);
+                  setDirectorySelected(false);
+                }
                 else if (field === "employeeId") setEmployeeId(value);
                 else setDepartment(value);
               }}
@@ -709,7 +712,10 @@ export default function PublicRequestForm({
                 if (field === "name") {
                   setRequesterName(value);
                   setDirectorySelected(false);
-                } else if (field === "email") setRequesterEmail(value);
+                } else if (field === "email") {
+                  setRequesterEmail(value);
+                  setDirectorySelected(false);
+                }
                 else if (field === "employeeId") setEmployeeId(value);
                 else setDepartment(value);
               }}
