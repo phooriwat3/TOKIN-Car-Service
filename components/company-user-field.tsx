@@ -42,6 +42,7 @@ export function CompanyUserField({
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectedUserNameRef = useRef<string | null>(null);
+  const searchCacheRef = useRef(new Map<string, CompanyUser[]>());
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
 
   useEffect(() => {
@@ -80,6 +81,13 @@ export function CompanyUserField({
     }
 
     const timer = window.setTimeout(async () => {
+      const cacheKey = value.trim().toLowerCase();
+      const cached = searchCacheRef.current.get(cacheKey);
+      if (cached) {
+        setResults(cached);
+        setShowDropdown(cached.length > 0);
+        return;
+      }
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
       if (!supabaseUrl || !publishableKey) return;
@@ -107,6 +115,7 @@ export function CompanyUserField({
           const sorted = [...result.users].sort((a, b) =>
             compareCompanyUsersBySearch(a, b, queryStr),
           );
+          searchCacheRef.current.set(cacheKey, sorted);
           setResults(sorted);
           setShowDropdown(sorted.length > 0);
         } else {
@@ -119,7 +128,7 @@ export function CompanyUserField({
       } finally {
         setSearching(false);
       }
-    }, 250);
+    }, 120);
 
     return () => {
       window.clearTimeout(timer);
