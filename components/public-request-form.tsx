@@ -72,67 +72,6 @@ const DEPARTMENTS = [
   "TE",
 ];
 
-const normalizeDepartment = (
-  dept: string | undefined,
-  jobTitle?: string,
-): string => {
-  const d = (dept || "").trim().toLowerCase();
-  const j = (jobTitle || "").trim().toLowerCase();
-
-  if (
-    /\bga\b/i.test(j) ||
-    j.includes("general affairs") ||
-    d === "general affairs"
-  )
-    return "HR";
-  if (j.includes("ta mfg") || d.includes("ta mfg")) return "TA MFG";
-  if (
-    /\bpe\b/i.test(j) ||
-    j.includes("production engineering") ||
-    /\bpe\b/i.test(d)
-  )
-    return "PE";
-  if (
-    /\bit\b/i.test(j) ||
-    j.includes("information technology") ||
-    /\bit\b/i.test(d)
-  )
-    return "IT";
-  if (/\bqa\b/i.test(j) || j.includes("quality assurance") || /\bqa\b/i.test(d))
-    return "QA";
-  if (
-    j.includes("managing director") ||
-    /\bmd\b/i.test(j) ||
-    d.includes("managing director")
-  )
-    return "MD";
-
-  if (d === "information technology" || d === "it") return "IT";
-  if (d === "human resources" || d === "hr") return "HR";
-  if (d === "md") return "MD";
-  if (d === "sustainability" || d === "sust") return "SUST";
-  if (
-    d === "finance & accounting" ||
-    d === "fa" ||
-    d === "finance" ||
-    d === "accounting"
-  )
-    return "FA";
-  if (d === "planning" || d === "pln") return "PLN";
-  if (d === "procurement" || d === "proc") return "PROC";
-  if (d === "production engineering" || d === "pe") return "PE";
-  if (d === "electrical engineering" || d === "ee") return "EE";
-  if (d === "facilities" || d === "fac") return "FAC";
-  if (d === "quality assurance" || d === "qa") return "QA";
-  if (d === "ta mfg" || d === "manufacturing") return "TA MFG";
-  if (d === "supply chain" || d === "sc") return "SC";
-  if (d === "testing engineering" || d === "te") return "TE";
-
-  const match = DEPARTMENTS.find((x) => x.toLowerCase() === d);
-  if (match) return match;
-  return dept || "";
-};
-
 
 
 export default function PublicRequestForm({
@@ -659,9 +598,7 @@ export default function PublicRequestForm({
                 setRequesterName(person.displayName);
                 setRequesterEmail(person.mail);
                 setEmployeeId(person.employeeId ?? "");
-                setDepartment(
-                  normalizeDepartment(person.department, person.jobTitle),
-                );
+                setDepartment("");
                 setDirectorySelected(true);
               }}
               onConfirmedSelfChange={setConfirmedSelf}
@@ -723,9 +660,7 @@ export default function PublicRequestForm({
                 setRequesterName(person.displayName);
                 setRequesterEmail(person.mail);
                 setEmployeeId(person.employeeId ?? "");
-                setDepartment(
-                  normalizeDepartment(person.department, person.jobTitle),
-                );
+                setDepartment("");
                 setDirectorySelected(true);
               }}
               onConfirmedSelfChange={setConfirmedSelf}
