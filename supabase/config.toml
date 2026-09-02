@@ -2,7 +2,7 @@
 verify_jwt = true
 
 [functions.public-submit-request]
-  verify_jwt = true
+verify_jwt = false
 
 [functions.approval-callback]
 verify_jwt = false

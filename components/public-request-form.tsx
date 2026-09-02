@@ -42,7 +42,6 @@ import {
 import { PublicCarServiceRequestForm } from "@/components/public-car-service-request-form";
 import { overtimeDuration } from "@/lib/overtime";
 import { BrandLogo, PublicFooter } from "@/components/brand";
-import { createClient } from "@/lib/supabase/client";
 
 const emptyEmployee = (): OvertimeEmployee => ({
   employeeId: "",
@@ -138,10 +137,8 @@ const normalizeDepartment = (
 
 export default function PublicRequestForm({
   initialType,
-  requester,
 }: {
   initialType?: RequestType;
-  requester?: { fullName: string; email: string; employeeId: string; department: string };
 } = {}) {
   const [requestType, setRequestType] = useState<RequestType | null>(
     initialType ?? null,
@@ -186,15 +183,6 @@ export default function PublicRequestForm({
     manageUrl?: string;
     submittedAt: string;
   } | null>(null);
-
-  useEffect(() => {
-    if (!requester) return;
-    setRequesterName(requester.fullName);
-    setRequesterEmail(requester.email);
-    setEmployeeId(requester.employeeId);
-    setDepartment(normalizeDepartment(requester.department));
-    setDirectorySelected(true);
-  }, [requester]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -390,11 +378,6 @@ export default function PublicRequestForm({
       const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
       if (!supabaseUrl || !publishableKey)
         throw new Error("Public request service is not configured.");
-      const supabase = createClient();
-      const sessionResult = supabase ? await supabase.auth.getSession() : null;
-      const session = sessionResult?.data.session;
-      if (!session?.access_token)
-        throw new Error("Your sign-in has expired. Please sign in again before submitting.");
       const passengerList = passengers
         .split("\n")
         .map((item) => item.trim())
@@ -413,7 +396,6 @@ export default function PublicRequestForm({
           headers: {
             "Content-Type": "application/json",
             apikey: publishableKey,
-            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             requestType,
