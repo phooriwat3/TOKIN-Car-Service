@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart3, CalendarDays, CarFront, ChevronRight,
-  ClipboardList, LayoutDashboard, LogOut, Menu, Plus, UserPlus, Users, X,
+  ClipboardList, LayoutDashboard, LogOut, Menu, Plus, Settings2, UserPlus, Users, X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from './app-provider';
@@ -190,6 +190,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
+      {role === 'admin' && (
+        <div className="px-3 pb-3">
+          <Link
+            href="/admin/advanced"
+            onClick={() => setOpen(false)}
+            className={cn(
+              'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
+              path === '/admin/advanced'
+                ? 'bg-brand-50 text-brand-700 font-semibold'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+            )}
+          >
+            <Settings2 size={18} className={cn('flex-shrink-0', path === '/admin/advanced' ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-600')} />
+            <span>Advanced</span>
+          </Link>
+        </div>
+      )}
       <div className="border-t border-slate-100 p-4 bg-slate-50/50">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-brand-100 text-xs font-bold text-brand-700">
