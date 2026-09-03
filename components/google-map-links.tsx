@@ -1,4 +1,4 @@
-import { MapPin, Route } from "lucide-react";
+import { Route } from "lucide-react";
 import { destinationStops } from "@/lib/route-stops";
 
 function mapsUrl(
@@ -29,7 +29,6 @@ export function GoogleMapLinks({
   compact?: boolean;
 }) {
   if (!destination.trim()) return null;
-  const multipleStops = destinationStops(destination).length > 1;
   const base =
     "inline-flex h-9 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold transition";
   return (
@@ -37,22 +36,13 @@ export function GoogleMapLinks({
       className={`flex flex-wrap gap-2 ${compact ? "" : "rounded-lg border border-blue-100 bg-blue-50 p-3"}`}
     >
       <a
-        href={mapsUrl("search", origin, destination)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`${base} border border-line bg-white text-ink hover:bg-gray-50`}
-      >
-        <MapPin size={16} />
-        {multipleStops ? "View final stop" : "View destination"}
-      </a>
-      <a
         href={mapsUrl("directions", origin, destination)}
         target="_blank"
         rel="noopener noreferrer"
         className={`${base} bg-brand text-white hover:bg-[#194786]`}
       >
         <Route size={16} />
-        {multipleStops ? "Open route" : "Get directions"}
+        View stops
       </a>
     </div>
   );
