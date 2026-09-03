@@ -22,8 +22,8 @@ export default function AllBookings() {
         }
       />
       <TigerSpaceReportImport />
-      <BookingTable basePath="/admin/bookings" bookings={data.bookings} />
       <AdminEmailTestPanel />
+      <BookingTable basePath="/admin/bookings" bookings={data.bookings} />
       <AdminBookingDataControls />
     </>
   );
