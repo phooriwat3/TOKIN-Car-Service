@@ -85,8 +85,6 @@ export default function PublicRequestForm({
     "front_area" | "loading_area"
   >("front_area");
   const [withStaff, setWithStaff] = useState(false);
-  const [urgent, setUrgent] = useState(false);
-  const [urgentReason, setUrgentReason] = useState("");
   const [passengers, setPassengers] = useState("");
   const [employees, setEmployees] = useState<OvertimeEmployee[]>([
     emptyEmployee(),
@@ -126,8 +124,6 @@ export default function PublicRequestForm({
     setDestination("");
     setPurpose("");
     setPassengers("");
-    setUrgent(false);
-    setUrgentReason("");
     setEmployees([emptyEmployee()]);
     setDirectorySelected(false);
     setConfirmedSelf(false);
@@ -153,8 +149,6 @@ export default function PublicRequestForm({
     setPurpose("");
     setPassengers("");
     setWithStaff(false);
-    setUrgent(false);
-    setUrgentReason("");
     setEmployees([emptyEmployee()]);
     setDirectorySelected(false);
     setConfirmedSelf(false);
@@ -281,11 +275,6 @@ export default function PublicRequestForm({
         return failValidation("Destination is required.", "destination");
       if (!purpose.trim())
         return failValidation("Purpose is required.", "purpose");
-      if ((urgent || usingDate === getTodayString()) && !urgentReason.trim())
-        return failValidation(
-          "Provide the reason for this urgent or same-day request.",
-          "urgent-reason",
-        );
     }
 
     if (!confirmed) {
@@ -350,11 +339,6 @@ export default function PublicRequestForm({
                 : purpose,
             meetingPoint,
             withStaff,
-            urgent:
-              requestType === "outside_company" &&
-              (urgent || usingDate === getTodayString()),
-            urgentReason:
-              requestType === "outside_company" ? urgentReason.trim() : "",
             passengers: requestType === "outside_company" ? passengerList : [],
             overtimeEmployees:
               requestType === "overtime" ? [overtimeEmployee] : [],
@@ -620,8 +604,6 @@ export default function PublicRequestForm({
               purpose={purpose}
               meetingPoint={meetingPoint}
               withStaff={withStaff}
-              urgent={urgent}
-              urgentReason={urgentReason}
               passengers={passengers}
               reviewing={showSubmitConfirmation}
               submitting={submitting}
@@ -668,8 +650,6 @@ export default function PublicRequestForm({
               onPurposeChange={setPurpose}
               onMeetingPointChange={setMeetingPoint}
               onWithStaffChange={setWithStaff}
-              onUrgentChange={setUrgent}
-              onUrgentReasonChange={setUrgentReason}
               onPassengersChange={setPassengers}
               onBackToType={() => {
                 window.location.href = "/request";

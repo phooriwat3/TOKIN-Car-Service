@@ -54,8 +54,6 @@ export type PublicCarServiceRequestFormProps = {
   purpose: string;
   meetingPoint: "front_area" | "loading_area";
   withStaff: boolean;
-  urgent: boolean;
-  urgentReason: string;
   passengers: string;
   reviewing: boolean;
   submitting: boolean;
@@ -75,8 +73,6 @@ export type PublicCarServiceRequestFormProps = {
   onPurposeChange: (value: string) => void;
   onMeetingPointChange: (value: "front_area" | "loading_area") => void;
   onWithStaffChange: (value: boolean) => void;
-  onUrgentChange: (value: boolean) => void;
-  onUrgentReasonChange: (value: string) => void;
   onPassengersChange: (value: string) => void;
   onBackToType: () => void;
   onBackToEdit: () => void;
@@ -89,8 +85,6 @@ export type PublicCarServiceRequestFormProps = {
 export function PublicCarServiceRequestForm(
   props: PublicCarServiceRequestFormProps,
 ) {
-  const isSameDay = props.usingDate === props.minimumDate;
-  const isUrgent = props.urgent || isSameDay;
   const employeeComplete = Boolean(
     props.requesterName.trim() &&
       props.requesterEmail.trim() &&
@@ -107,8 +101,7 @@ export function PublicCarServiceRequestForm(
       props.endTime &&
       props.pickupLocation.trim() &&
       props.destination.trim() &&
-      props.purpose.trim() &&
-      (!isUrgent || props.urgentReason.trim()),
+      props.purpose.trim(),
   );
 
   const activeStep = props.reviewing ? 3 : employeeComplete ? 2 : 1;
@@ -157,16 +150,6 @@ export function PublicCarServiceRequestForm(
               label="Request type"
               value="Off-site Business Transport"
             />
-            <Summary
-              label="Priority"
-              value={isUrgent ? "Urgent / same-day — subject to GA availability" : "Standard request"}
-            />
-            {isUrgent && (
-              <Summary
-                label="Urgent reason"
-                value={props.urgentReason.trim() || "Not provided"}
-              />
-            )}
             <Summary
               label="Using date"
               value={formatUsDate(props.usingDate)}
@@ -582,31 +565,6 @@ export function PublicCarServiceRequestForm(
                 <option value="loading_area">Loading area</option>
               </Select>
             </Field>
-          </div>
-
-          <div className={`rounded-lg border p-4 ${isUrgent ? "border-amber-300 bg-amber-50" : "border-line bg-[#fafbfc]"}`}>
-            <label className="flex cursor-pointer items-start gap-3 text-sm text-gray-700">
-              <input
-                id="urgent-request"
-                type="checkbox"
-                checked={isUrgent}
-                disabled={isSameDay}
-                onChange={(event) => props.onUrgentChange(event.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-brand disabled:cursor-not-allowed"
-              />
-              <span>
-                <strong className="font-semibold text-ink">Urgent or same-day request</strong>
-                <span className="mt-1 block text-xs leading-5 text-gray-600">Urgent requests are allowed, but a vehicle is not guaranteed until the Department Approver and GA confirm availability.</span>
-              </span>
-            </label>
-            {isUrgent && (
-              <div className="mt-3">
-                <Field label="Urgent reason">
-                  <Textarea id="urgent-reason" required className="min-h-20 bg-white" placeholder="Explain why this transport is urgent or cannot be requested 24 hours in advance" value={props.urgentReason} onChange={(event) => props.onUrgentReasonChange(event.target.value)} />
-                </Field>
-                {props.errorField === "urgent-reason" && <p className="mt-1.5 text-xs font-semibold text-danger">⚠️ {props.error}</p>}
-              </div>
-            )}
           </div>
 
           <div>

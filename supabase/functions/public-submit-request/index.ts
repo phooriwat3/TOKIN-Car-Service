@@ -29,8 +29,6 @@ type PublicRequest = {
   purpose: string;
   meetingPoint: "front_area" | "loading_area";
   withStaff?: boolean;
-  urgent?: boolean;
-  urgentReason?: string;
   passengers?: string[];
   overtimeEmployees?: Array<{
     employeeId: string;
@@ -146,18 +144,6 @@ Deno.serve(async (request: Request) => {
       ? email(selectedApprover.email, "Approver email")
       : requesterEmail;
     const usingDate = date(payload.usingDate);
-    const bangkokToday = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Bangkok",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date());
-    const isUrgentOutsideCompany =
-      payload.requestType === "outside_company" &&
-      (Boolean(payload.urgent) || usingDate === bangkokToday);
-    const urgentReason = isUrgentOutsideCompany
-      ? requiredText(payload.urgentReason, "Urgent reason", 1000)
-      : null;
     const startTime = time(payload.startTime, "Start time");
     const endTime = time(payload.endTime, "End time");
     if (endTime <= startTime)
@@ -246,10 +232,10 @@ Deno.serve(async (request: Request) => {
         with_staff: Boolean(payload.withStaff),
         vehicle_type_pref: "any",
         driver_required: true,
-        urgent: isLateOt || isUrgentOutsideCompany,
+        urgent: isLateOt,
         urgent_reason: isLateOt
           ? "Submitted after the 15:30 OT approval batch cutoff."
-          : urgentReason,
+          : null,
         after_hours: payload.requestType === "overtime",
         overtime_transport: payload.requestType === "overtime",
       })
