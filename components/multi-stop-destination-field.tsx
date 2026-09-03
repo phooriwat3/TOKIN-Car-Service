@@ -45,7 +45,7 @@ export function MultiStopDestinationField({
     <Field label="Destination stops">
       <div className="space-y-2">
         {fields.map((stop, index) => (
-          <div className="flex gap-2" key={`${index}-${stop}`}>
+          <div className="flex gap-2" key={index}>
             <Input
               id={index === 0 ? "destination" : `destination-stop-${index + 1}`}
               required={index === 0}
