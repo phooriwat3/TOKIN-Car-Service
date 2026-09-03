@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { Field, Input } from './ui';
 import { Loader2 } from 'lucide-react';
 import { compareCompanyUsersBySearch } from '@/lib/company-search';
-import { createClient } from '@/lib/supabase/client';
 
 export type CompanyUser = {
   displayName: string;
@@ -25,7 +24,6 @@ export function CompanyUserField({
   placeholder,
   required = false,
   disabled = false,
-  useTransportDirectory = false,
 }: {
   label: React.ReactNode;
   inputId?: string;
@@ -36,7 +34,6 @@ export function CompanyUserField({
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
-  useTransportDirectory?: boolean;
 }) {
   const [results, setResults] = useState<CompanyUser[]>([]);
   const [searching, setSearching] = useState(false);
@@ -93,21 +90,13 @@ export function CompanyUserField({
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
       if (!supabaseUrl || !publishableKey) return;
-      const supabase = createClient();
-      const { data: { session } } = supabase
-        ? await supabase.auth.getSession()
-        : { data: { session: null } };
       setSearching(true);
       try {
-        const endpoint = !useTransportDirectory && session?.access_token
-          ? "search-company-users"
-          : "public-search-employee-directory";
-        const response = await fetch(`${supabaseUrl}/functions/v1/${endpoint}`, {
+        const response = await fetch(`${supabaseUrl}/functions/v1/search-company-users`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             apikey: publishableKey,
-            ...(!useTransportDirectory && session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
           },
           body: JSON.stringify({ query: value.trim() }),
         });
@@ -136,7 +125,7 @@ export function CompanyUserField({
       window.clearTimeout(timer);
       setSearching(false);
     };
-  }, [value, disabled, showDropdown, useTransportDirectory]);
+  }, [value, disabled, showDropdown]);
 
 
   useEffect(() => {

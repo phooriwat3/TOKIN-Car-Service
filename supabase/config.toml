@@ -1,5 +1,5 @@
 [functions.search-company-users]
-verify_jwt = true
+verify_jwt = false
 
 [functions.public-submit-request]
 verify_jwt = false

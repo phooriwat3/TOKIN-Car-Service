@@ -6,7 +6,13 @@ const appBaseUrl = () =>
 
 const corsHeaders = (request: Request) => {
   const origin = request.headers.get('origin');
-  const allowedOrigin = origin === appBaseUrl() ? origin : appBaseUrl();
+  const allowedOrigins = new Set([
+    appBaseUrl(),
+    'https://carservice.tokin.co.th',
+    'https://tokin-car-service.vercel.app',
+    'http://localhost:3000',
+  ]);
+  const allowedOrigin = origin && allowedOrigins.has(origin) ? origin : appBaseUrl();
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Vary': 'Origin',
@@ -76,30 +82,20 @@ Deno.serve(async (request) => {
   if (request.method !== 'POST') return json(request, { error: 'Method not allowed.' }, 405);
 
   try {
-    const authorization = request.headers.get('authorization') ?? '';
-    const accessToken = authorization.replace(/^Bearer\s+/i, '');
-    if (!accessToken) return json(request, { error: 'Authentication is required.' }, 401);
-
     const body = await request.json();
     const query = typeof body.query === 'string' ? body.query.trim().slice(0, 100) : '';
     if (query.length < 3) return json(request, { error: 'Enter at least 3 characters.' }, 400);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const flowUrl = Deno.env.get('POWER_AUTOMATE_USER_SEARCH_FLOW_URL');
-    if (!supabaseUrl || !anonKey || !serviceRoleKey || !flowUrl) return json(request, { users: [] });
+    if (!supabaseUrl || !serviceRoleKey || !flowUrl) return json(request, { users: [] });
 
-    const authClient = createClient(supabaseUrl, anonKey, { auth: { persistSession: false } });
-    const { data: authData, error: authError } = await authClient.auth.getUser(accessToken);
-    if (authError || !authData.user) return json(request, { error: 'Authentication is required.' }, 401);
     const db = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
-    const { data: profile, error: profileError } = await db.from('profiles')
-      .select('id,is_active').eq('id', authData.user.id).maybeSingle();
-    if (profileError || !profile?.is_active) return json(request, { error: 'Active company access is required.' }, 403);
 
     const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const bytes = new TextEncoder().encode(`search:${authData.user.id}:${forwarded}`);
+    const userAgent = request.headers.get('user-agent')?.slice(0, 200) || 'unknown';
+    const bytes = new TextEncoder().encode(`company-directory:${forwarded}:${userAgent}`);
     const digest = await crypto.subtle.digest('SHA-256', bytes);
     const fingerprint = Array.from(new Uint8Array(digest)).map(x => x.toString(16).padStart(2, '0')).join('');
     const since = new Date(Date.now() - 10 * 60_000).toISOString();
