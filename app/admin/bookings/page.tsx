@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { useApp } from "@/components/app-provider";
 import { BookingTable } from "@/components/booking-table";
 import { AdminBookingDataControls } from "@/components/admin-booking-data-controls";
+import { AdminEmailTestPanel } from "@/components/admin-email-test-panel";
 import { PageHeader } from "@/components/page-header";
 import { TigerSpaceReportImport } from "@/components/tiger-space-report-import";
 import { Button } from "@/components/ui";
@@ -22,6 +23,7 @@ export default function AllBookings() {
       />
       <TigerSpaceReportImport />
       <BookingTable basePath="/admin/bookings" bookings={data.bookings} />
+      <AdminEmailTestPanel />
       <AdminBookingDataControls />
     </>
   );
