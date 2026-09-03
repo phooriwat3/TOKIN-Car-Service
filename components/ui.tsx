@@ -503,10 +503,55 @@ export function TimeMaskInput({
   className?: string;
   quickTimes?: string[];
 }) {
+  const [useNativeApplePicker, setUseNativeApplePicker] = React.useState(false);
   const [open, setOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const hoursRef = React.useRef<HTMLDivElement>(null);
   const minutesRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const userAgent = navigator.userAgent;
+    const isIPhoneOrIPad = /iPad|iPhone|iPod/.test(userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    setUseNativeApplePicker(isIPhoneOrIPad);
+  }, []);
+
+  if (useNativeApplePicker) {
+    return (
+      <div className="space-y-1.5">
+        <Input
+          id={id}
+          type="time"
+          step="60"
+          required={required}
+          disabled={disabled}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={cn("tabular-nums", className)}
+        />
+        {quickTimes && quickTimes.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            {quickTimes.map((time) => (
+              <button
+                key={time}
+                type="button"
+                disabled={disabled}
+                onClick={() => onChange(time)}
+                className={cn(
+                  "rounded-md border px-2.5 py-0.5 tabular-nums text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                  value === time
+                    ? "border-brand bg-brand text-white font-semibold shadow-2xs"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900",
+                )}
+              >
+                {time}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // Parse current HH and mm
   const [hhStr, mmStr] = (value || "17:20").split(":");
