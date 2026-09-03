@@ -25,6 +25,7 @@ export function CompanyUserField({
   placeholder,
   required = false,
   disabled = false,
+  useTransportDirectory = false,
 }: {
   label: React.ReactNode;
   inputId?: string;
@@ -35,6 +36,7 @@ export function CompanyUserField({
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
+  useTransportDirectory?: boolean;
 }) {
   const [results, setResults] = useState<CompanyUser[]>([]);
   const [searching, setSearching] = useState(false);
@@ -97,7 +99,7 @@ export function CompanyUserField({
         : { data: { session: null } };
       setSearching(true);
       try {
-        const endpoint = session?.access_token
+        const endpoint = !useTransportDirectory && session?.access_token
           ? "search-company-users"
           : "public-search-employee-directory";
         const response = await fetch(`${supabaseUrl}/functions/v1/${endpoint}`, {
@@ -105,7 +107,7 @@ export function CompanyUserField({
           headers: {
             'Content-Type': 'application/json',
             apikey: publishableKey,
-            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            ...(!useTransportDirectory && session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
           },
           body: JSON.stringify({ query: value.trim() }),
         });
@@ -134,7 +136,7 @@ export function CompanyUserField({
       window.clearTimeout(timer);
       setSearching(false);
     };
-  }, [value, disabled, showDropdown]);
+  }, [value, disabled, showDropdown, useTransportDirectory]);
 
 
   useEffect(() => {
