@@ -23,6 +23,9 @@ const emptyUnit = (): ManualTransportUnit => ({
   employeeIds: [],
 });
 
+const normalizeVehicleId = (value: string) =>
+  value.trim().replace(/[\s-]+/g, "").toLocaleLowerCase();
+
 export function AdminAssignmentPanel({
   params,
 }: {
@@ -103,12 +106,29 @@ export function AdminAssignmentPanel({
     index: number,
     field: "licensePlate" | "brand" | "vehicleType" | "driverName" | "driverPhone",
     value: string,
-  ) =>
+  ) => {
+    const remembered = field === "licensePlate" && normalizeVehicleId(value)
+      ? transportMemories.find(
+          (memory) => normalizeVehicleId(memory.licensePlate) === normalizeVehicleId(value),
+        )
+      : undefined;
     setUnits((current) =>
       current.map((unit, unitIndex) =>
-        unitIndex === index ? { ...unit, [field]: value } : unit,
+        unitIndex !== index
+          ? unit
+          : remembered
+            ? {
+                ...unit,
+                licensePlate: remembered.licensePlate,
+                brand: remembered.brand,
+                vehicleType: remembered.vehicleType,
+                driverName: remembered.driverName,
+                driverPhone: remembered.driverPhone,
+              }
+            : { ...unit, [field]: value },
       ),
     );
+  };
 
   const applyRememberedUnit = (index: number, memoryId: string) => {
     const memory = transportMemories.find((item) => item.id === memoryId);
@@ -372,11 +392,32 @@ export function AdminAssignmentPanel({
                 )}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <Field label="License plate / vehicle ID *">
-                    <Input
-                      value={unit.licensePlate}
-                      onChange={(event) => updateUnit(index, "licensePlate", event.target.value)}
-                      placeholder="License plate or temporary vehicle ID"
-                    />
+                    <div className="space-y-1.5">
+                      <Input
+                        value={unit.licensePlate}
+                        onChange={(event) => updateUnit(index, "licensePlate", event.target.value)}
+                        placeholder="License plate or temporary vehicle ID"
+                      />
+                      {unit.licensePlate.trim().length >= 2 && transportMemories
+                        .filter((memory) => normalizeVehicleId(memory.licensePlate).includes(normalizeVehicleId(unit.licensePlate)))
+                        .slice(0, 5)
+                        .map((memory) => (
+                          <button
+                            key={memory.id}
+                            type="button"
+                            onClick={() => applyRememberedUnit(index, memory.id)}
+                            className="block w-full rounded border border-brand/20 bg-white px-2.5 py-1.5 text-left text-xs text-slate-700 transition hover:border-brand/50 hover:bg-brand-50"
+                          >
+                            <strong className="text-brand">{memory.licensePlate}</strong>
+                            <span className="text-slate-500"> · {memory.vehicleType} · {memory.driverName}</span>
+                          </button>
+                        ))}
+                      {transportMemories.some(
+                        (memory) => normalizeVehicleId(memory.licensePlate) === normalizeVehicleId(unit.licensePlate),
+                      ) && (
+                        <p className="text-xs font-medium text-success">Vehicle and driver details filled from saved record.</p>
+                      )}
+                    </div>
                   </Field>
                   <Field label="Provider / vehicle description">
                     <Input
