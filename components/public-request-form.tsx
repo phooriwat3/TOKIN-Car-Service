@@ -340,7 +340,7 @@ export default function PublicRequestForm({
               requestType === "overtime" ? overtimeEmployee.workEnd : endTime,
             pickupLocation,
             destination:
-              requestType === "overtime" ? "Employee bus stops" : destination,
+              requestType === "overtime" ? employee.busStop.trim() : destination,
             purpose:
               requestType === "overtime"
                 ? (employee.workDescription.trim()

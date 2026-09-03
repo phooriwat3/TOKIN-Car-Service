@@ -40,8 +40,8 @@ const typeLabel = (type: RequestType, origin?: RequestData["requestOrigin"]) =>
   origin === "hr_direct"
     ? "HR-CREATED OT TRANSPORT"
     : type === "overtime"
-      ? "OVERTIME / HOLIDAY WORK"
-      : "CAR SERVICE REQUISITION";
+      ? "OVERTIME TRANSPORT"
+      : "OFF-SITE BUSINESS TRANSPORT";
 const dateLabel = (value: string) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || "");
   return match ? match[3] + "/" + match[2] + "/" + match[1] : value;
@@ -80,11 +80,7 @@ const details = (data: RequestData) => {
           ),
         ].join("")
       : "";
-  const employees =
-    data.requestType === "overtime" && data.overtimeEmployees?.length
-      ? `<div style="margin-top:20px;font-size:15px;font-weight:700">Employee details (${data.overtimeEmployees.length})</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:8px;border-collapse:collapse;border:1px solid #dbe3ee"><tr style="background:#eef4fb"><th style="padding:8px;text-align:left;font-size:12px">ID / Employee</th><th style="padding:8px;text-align:left;font-size:12px">Work / Period</th><th style="padding:8px;text-align:left;font-size:12px">Transport</th></tr>${data.overtimeEmployees.map((employee) => `<tr><td style="padding:9px 8px;border-top:1px solid #dbe3ee;font-size:13px;vertical-align:top"><b>${esc(employee.employeeId || "-")}</b><br>${esc(employee.employeeName || "-")}</td><td style="padding:9px 8px;border-top:1px solid #dbe3ee;font-size:13px;vertical-align:top">${esc(employee.workDescription || "-")}<br>${esc(timeLabel(employee.workStart || ""))} - ${esc(timeLabel(employee.workEnd || ""))} - Weekly ${esc(employee.totalWeeklyHours ?? "-")} hrs</td><td style="padding:9px 8px;border-top:1px solid #dbe3ee;font-size:13px;vertical-align:top">${employee.transportRequired ? `Required<br>${esc(employee.busStop || "-")}` : "Not required"}</td></tr>`).join("")}</table>`
-      : "";
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:16px;border-collapse:separate;border-spacing:0;border:1px solid #dbe3ee;border-radius:8px;overflow:hidden">${common}${outside}</table>${employees}`;
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:16px;border-collapse:separate;border-spacing:0;border:1px solid #dbe3ee;border-radius:8px;overflow:hidden">${common}${outside}</table>`;
 };
 
 const layout = (input: {
