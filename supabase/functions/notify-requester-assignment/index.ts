@@ -46,7 +46,7 @@ Deno.serve(async (request: Request) => {
       .from("bookings")
       .select(
         `
-      id,booking_no,revision_no,request_type,request_origin,requester_name,requester_email,using_date,start_time,end_time,pickup_location,destination,purpose,num_passengers,
+      id,booking_no,revision_no,request_type,request_origin,requester_name,requester_email,requester_department,using_date,start_time,end_time,pickup_location,destination,purpose,num_passengers,
       vehicle_assignments(
         vehicle_id,driver_id,notes,manual_transport_units,
         vehicle:vehicles(license_plate,brand,model),
@@ -92,6 +92,17 @@ Deno.serve(async (request: Request) => {
           phone: primaryManualUnit.driverPhone ?? "",
         }
       : { name: driver.full_name, phone: driver.phone };
+    const overtimeStops = Array.from(
+      new Set(
+        (booking.overtime_employees ?? [])
+          .filter((employee: any) => employee.transport_required)
+          .map((employee: any) => String(employee.bus_stop ?? "").trim())
+          .filter(Boolean),
+      ),
+    );
+    const emailDestination = booking.request_type === "overtime" && overtimeStops.length
+      ? overtimeStops.join(" → ")
+      : booking.destination;
 
     const documentToken = randomToken();
     const documentTokenHash = await sha256Hex(documentToken);
@@ -184,11 +195,12 @@ Deno.serve(async (request: Request) => {
       requestType: booking.request_type,
       requestOrigin: booking.request_origin,
       requesterName: booking.requester_name,
+      requesterDepartment: booking.requester_department,
       usingDate: booking.using_date,
       startTime: String(booking.start_time).slice(0, 5),
       endTime: String(booking.end_time).slice(0, 5),
       pickupLocation: booking.pickup_location,
-      destination: booking.destination,
+      destination: emailDestination,
       purpose: booking.purpose,
       vehicle: emailVehicle,
       driver: emailDriver,
@@ -239,16 +251,21 @@ Deno.serve(async (request: Request) => {
         requestId: booking.id,
         requestNo: booking.booking_no,
         requestType: booking.request_type,
+        formLabel: booking.request_type === "overtime"
+          ? "OVERTIME TRANSPORT"
+          : "OFF-SITE BUSINESS TRANSPORT",
         requestOrigin: booking.request_origin,
         requester: {
           name: booking.requester_name,
           email: booking.requester_email,
+          department: booking.requester_department ?? "",
         },
+        department: booking.requester_department ?? "",
         usingDate: booking.using_date,
         startTime: String(booking.start_time).slice(0, 5),
         endTime: String(booking.end_time).slice(0, 5),
         pickupLocation: booking.pickup_location,
-        destination: booking.destination,
+        destination: emailDestination,
         purpose: booking.purpose,
         vehicle: emailVehicle,
         driver: emailDriver,
