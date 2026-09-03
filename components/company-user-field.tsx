@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Field, Input } from './ui';
 import { Loader2 } from 'lucide-react';
 import { compareCompanyUsersBySearch } from '@/lib/company-search';
+import { departmentCode } from '@/lib/department-code';
 
 export type CompanyUser = {
   displayName: string;
@@ -219,7 +220,7 @@ export function CompanyUserField({
                 <span className="text-sm font-bold text-ink truncate">{person.displayName}</span>
                 {person.department && (
                   <span className="flex-shrink-0 rounded bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
-                    {person.department}
+                    {departmentCode(person.department)}
                   </span>
                 )}
               </div>

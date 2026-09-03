@@ -8,6 +8,7 @@ import type {
   User,
   Vehicle,
 } from "@/lib/types";
+import { departmentCode } from "@/lib/department-code";
 
 type ProfileRow = {
   id: string;
@@ -43,7 +44,7 @@ export async function loadProfile(supabase: SupabaseClient): Promise<User> {
     employeeId: row.employee_id,
     fullName: row.full_name,
     email: authData.user.email ?? "",
-    department: one(row.department)?.name ?? "",
+    department: departmentCode(one(row.department)?.name),
     role: row.role,
   };
 }
@@ -63,7 +64,7 @@ function mapBooking(row: any): Booking {
     requesterName: row.requester_name ?? one(row.requester)?.full_name ?? "",
     requesterEmail: row.requester_email ?? "",
     requesterEmployeeId: row.requester_employee_id ?? "",
-    department: row.requester_department ?? one(row.department)?.name ?? "",
+    department: departmentCode(row.requester_department ?? one(row.department)?.name),
     status: row.status,
     requestType: row.request_type ?? "outside_company",
     approverId: row.approver_id ?? "",
