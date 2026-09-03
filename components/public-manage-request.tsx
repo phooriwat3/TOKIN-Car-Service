@@ -20,6 +20,7 @@ import {
   TimeMaskInput,
 } from "@/components/ui";
 import { GoogleMapLinks } from "@/components/google-map-links";
+import { MultiStopDestinationField } from "@/components/multi-stop-destination-field";
 import { CompanyUserField } from "@/components/company-user-field";
 import { isOtRequestWindowOpen } from "@/lib/request-window";
 import { overtimeDuration } from "@/lib/overtime";
@@ -907,14 +908,11 @@ export default function PublicManageRequest({
                         }
                       />
                     </Field>
-                    <Field label="Destination">
-                      <Input
-                        required
-                        disabled={disabled}
-                        value={request.destination}
-                        onChange={(e) => update("destination", e.target.value)}
-                      />
-                    </Field>
+                    <MultiStopDestinationField
+                      value={request.destination}
+                      disabled={disabled}
+                      onChange={(value) => update("destination", value)}
+                    />
                     <Field label="Meeting point">
                       <Select
                         disabled={disabled}

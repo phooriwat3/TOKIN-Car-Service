@@ -15,6 +15,7 @@ import {
   type CompanyUser,
 } from "@/components/company-user-field";
 import { GoogleMapLinks } from "@/components/google-map-links";
+import { MultiStopDestinationField } from "@/components/multi-stop-destination-field";
 
 const DEPARTMENTS = [
   "MD",
@@ -541,15 +542,10 @@ export function PublicCarServiceRequestForm(
               />
             </Field>
 
-            <Field label="Destination">
-              <Input
-                id="destination"
-                required
-                placeholder="e.g. Customer site, Airport, Office"
-                value={props.destination}
-                onChange={(e) => props.onDestinationChange(e.target.value)}
-              />
-            </Field>
+            <MultiStopDestinationField
+              value={props.destination}
+              onChange={props.onDestinationChange}
+            />
 
             <Field label="Meeting point">
               <Select
