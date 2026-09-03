@@ -26,6 +26,7 @@ export function AdminEmailTestPanel() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to send test email.");
       setMessage(`Test email sent to ${recipientEmail}.`);
+      window.dispatchEvent(new Event("email-history-changed"));
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to send test email."); }
     finally { setSending(false); }
   };

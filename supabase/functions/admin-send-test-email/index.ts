@@ -10,7 +10,7 @@ const email = (value: unknown) => {
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
+  if (!["GET", "POST"].includes(request.method)) return json({ error: "Method not allowed." }, 405);
   try {
     const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
     const url = Deno.env.get("SUPABASE_URL");
@@ -23,6 +23,13 @@ Deno.serve(async (request) => {
     const { data: admin } = await db.from("profiles").select("role,is_active,full_name")
       .eq("id", identity.user?.id ?? "").maybeSingle();
     if (!admin?.is_active || admin.role !== "admin") return json({ error: "Administrator access is required." }, 403);
+    if (request.method === "GET") {
+      const { data, error } = await db.from("email_delivery_logs")
+        .select("id,request_no,request_type,recipient_email,event,status,created_at")
+        .order("created_at", { ascending: false }).limit(100);
+      if (error) throw error;
+      return json({ history: data ?? [] });
+    }
     const body = await request.json();
     const recipientEmail = email(body.recipientEmail);
     const requestType = body.requestType === "overtime" ? "overtime" : body.requestType === "outside_company" ? "outside_company" : null;
@@ -60,7 +67,11 @@ Deno.serve(async (request) => {
         emailBodyHtml: template.emailBodyHtml,
       }),
     });
-    if (!response.ok) return json({ error: "Email automation rejected the test message." }, 502);
+    if (!response.ok) {
+      await db.from("email_delivery_logs").insert({ recipient_email: recipientEmail, request_type: requestType, event: "admin.test_email", status: "failed" });
+      return json({ error: "Email automation rejected the test message." }, 502);
+    }
+    await db.from("email_delivery_logs").insert({ recipient_email: recipientEmail, request_type: requestType, event: "admin.test_email", status: "sent" });
     return json({ ok: true });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Unable to send test email." }, 400);

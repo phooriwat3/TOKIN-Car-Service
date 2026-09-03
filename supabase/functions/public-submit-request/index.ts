@@ -456,6 +456,24 @@ Deno.serve(async (request: Request) => {
         requester_manage_email_status: requesterManageEmailStatus,
       })
       .eq("id", booking.id);
+    await db.from("email_delivery_logs").insert([
+      {
+        booking_id: booking.id,
+        request_no: booking.booking_no,
+        request_type: payload.requestType,
+        recipient_email: requesterEmail,
+        event: "request.manage_link_created",
+        status: requesterManageEmailStatus,
+      },
+      ...(payload.requestType === "outside_company" ? [{
+        booking_id: booking.id,
+        request_no: booking.booking_no,
+        request_type: payload.requestType,
+        recipient_email: approverEmail,
+        event: "request.approval_requested",
+        status: approvalEmailStatus === "queued" ? "sent" : approvalEmailStatus,
+      }] : []),
+    ]);
 
     return json(
       {
