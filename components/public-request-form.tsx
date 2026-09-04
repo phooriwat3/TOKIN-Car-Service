@@ -3,7 +3,7 @@ import { formatUsDate, getBangkokDateString } from "@/lib/date-format";
 
 const getTodayString = () => getBangkokDateString();
 
-const isPickupWithinOneHour = (usingDate: string, startTime: string) => {
+const needsImmediateOffsiteAttention = (usingDate: string, startTime: string) => {
   if (usingDate !== getTodayString() || !/^\d{2}:\d{2}$/.test(startTime)) return false;
   const current = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hour12: false,
@@ -12,7 +12,7 @@ const isPickupWithinOneHour = (usingDate: string, startTime: string) => {
     Number(current.find((part) => part.type === "minute")?.value ?? 0);
   const [hour, minute] = startTime.split(":").map(Number);
   const pickupMinutes = hour * 60 + minute;
-  return pickupMinutes >= nowMinutes && pickupMinutes - nowMinutes <= 60;
+  return pickupMinutes - nowMinutes <= 60;
 };
 
 import { useEffect, useRef, useState } from "react";
@@ -193,7 +193,7 @@ export default function PublicRequestForm({
     if (!requestType) return;
     const employee = employees[0] ?? emptyEmployee();
     const isImmediateOffsite = requestType === "outside_company" &&
-      isPickupWithinOneHour(usingDate, startTime);
+      needsImmediateOffsiteAttention(usingDate, startTime);
 
     if (!requesterName.trim())
       return failValidation(
@@ -628,7 +628,7 @@ export default function PublicRequestForm({
               meetingPoint={meetingPoint}
               withStaff={withStaff}
               passengers={passengers}
-              immediateRequest={isPickupWithinOneHour(usingDate, startTime)}
+              immediateRequest={needsImmediateOffsiteAttention(usingDate, startTime)}
               immediateReason={immediateReason}
               reviewing={showSubmitConfirmation}
               submitting={submitting}

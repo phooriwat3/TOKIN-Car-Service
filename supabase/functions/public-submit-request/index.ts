@@ -155,10 +155,8 @@ Deno.serve(async (request: Request) => {
     const bangkokToday = `${todayParts.find((part) => part.type === "year")?.value}-${todayParts.find((part) => part.type === "month")?.value}-${todayParts.find((part) => part.type === "day")?.value}`;
     const [startHour, startMinute] = startTime.split(":").map(Number);
     const minutesUntilPickup = startHour * 60 + startMinute - bangkokMinutes();
-    if (payload.requestType === "outside_company" && usingDate === bangkokToday && minutesUntilPickup < 0)
-      throw new Error("Pickup time has already passed.");
     const isImmediateOutsideCompany = payload.requestType === "outside_company" &&
-      usingDate === bangkokToday && minutesUntilPickup >= 0 && minutesUntilPickup <= 60;
+      usingDate === bangkokToday && minutesUntilPickup <= 60;
     const immediateReason = isImmediateOutsideCompany
       ? requiredText(payload.immediateReason, "Immediate business reason", 1000)
       : null;
@@ -325,8 +323,9 @@ Deno.serve(async (request: Request) => {
 
     let approvalTokenExpiresAt = "";
     let approvalUrl = "";
+    let approvalToken = "";
     if (payload.requestType === "outside_company") {
-      const approvalToken = randomToken();
+      approvalToken = randomToken();
       const approvalTokenHash = await sha256Hex(approvalToken);
       approvalTokenExpiresAt = new Date(
         Date.now() + 7 * 24 * 60 * 60_000,
@@ -460,9 +459,11 @@ Deno.serve(async (request: Request) => {
                 : "Transport approval needed",
               message: `${requesterName} · ${department.code} · ${usingDate} ${startTime}-${endTime}`,
               actionUrl: approvalUrl,
+              approvalToken,
             },
             manageUrl,
             approvalUrl,
+            approvalToken,
             approvalExpiresAt: approvalTokenExpiresAt,
             callbackUrl: `${supabaseUrl}/functions/v1/approval-callback`,
             passengers,
