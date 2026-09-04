@@ -42,7 +42,7 @@ export function GoogleMapLinks({
         className={`${base} bg-brand text-white hover:bg-[#194786]`}
       >
         <Route size={16} />
-        View stops
+        View route
       </a>
     </div>
   );

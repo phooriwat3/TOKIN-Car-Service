@@ -72,9 +72,7 @@ export default function EditRequest({
     if (!supabase) return;
     void supabase
       .from("active_approver_directory")
-      .select(
-        "id,full_name,email,department_name",
-      )
+      .select("id,full_name,email,department_name")
       .order("full_name")
       .then(({ data: rows, error }: { data: any; error: any }) => {
         if (error) return setError(error.message);
@@ -136,10 +134,20 @@ export default function EditRequest({
     try {
       await resubmitBooking({
         ...booking,
-        status: booking.requestType === "overtime" ? "pending_ot_verification" : "pending_approval",
-        approverId: booking.requestType === "outside_company" ? approver?.id : undefined,
-        approverName: booking.requestType === "outside_company" ? approver?.fullName : undefined,
-        approverEmail: booking.requestType === "outside_company" ? approver?.email : undefined,
+        status:
+          booking.requestType === "overtime"
+            ? "pending_ot_verification"
+            : "pending_approval",
+        approverId:
+          booking.requestType === "outside_company" ? approver?.id : undefined,
+        approverName:
+          booking.requestType === "outside_company"
+            ? approver?.fullName
+            : undefined,
+        approverEmail:
+          booking.requestType === "outside_company"
+            ? approver?.email
+            : undefined,
         usingDate,
         startTime:
           booking.requestType === "overtime"
@@ -187,8 +195,12 @@ export default function EditRequest({
       <form onSubmit={submit} className="space-y-6">
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 bg-[#f8fafc] px-5 py-4 sm:px-6">
-            <h2 className="text-sm font-semibold text-slate-900 sm:text-base">Trip details & schedule</h2>
-            <p className="mt-0.5 text-xs text-slate-500">Update the request parameters before resubmitting.</p>
+            <h2 className="text-sm font-semibold text-slate-900 sm:text-base">
+              Trip details & schedule
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Update the request parameters before resubmitting.
+            </p>
           </div>
           <div className="p-5 sm:p-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -201,20 +213,20 @@ export default function EditRequest({
                 />
               </Field>
               {booking.requestType === "outside_company" && (
-              <Field label="Approver">
-                <Select
-                  required
-                  value={approverId}
-                  onChange={(e) => setApproverId(e.target.value)}
-                >
-                  <option value="">Search or select approver</option>
-                  {approvers.map((x) => (
-                    <option key={x.id} value={x.id}>
-                      {x.fullName} · {x.email}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
+                <Field label="Approver">
+                  <Select
+                    required
+                    value={approverId}
+                    onChange={(e) => setApproverId(e.target.value)}
+                  >
+                    <option value="">Search or select approver</option>
+                    {approvers.map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.fullName} · {x.email}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
               )}
               {booking.requestType !== "overtime" && (
                 <>
@@ -276,7 +288,9 @@ export default function EditRequest({
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <Field label="Passenger names">
                   <Textarea
-                    placeholder={"Enter 1 passenger name per line:\n1. John Doe\n2. Jane Smith"}
+                    placeholder={
+                      "Enter 1 passenger name per line:\n1. John Doe\n2. Jane Smith"
+                    }
                     value={passengers}
                     onChange={(e) => setPassengers(e.target.value)}
                   />
@@ -395,8 +409,12 @@ export default function EditRequest({
           <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 bg-[#f8fafc] px-5 py-4 sm:px-6 flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900 sm:text-base">OT Employee roster</h2>
-                <p className="mt-0.5 text-xs text-slate-500">Add or edit employees included in this overtime request.</p>
+                <h2 className="text-sm font-semibold text-slate-900 sm:text-base">
+                  OT Employee roster
+                </h2>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Add or edit employees included in this overtime request.
+                </p>
               </div>
               <Button
                 type="button"
@@ -409,9 +427,14 @@ export default function EditRequest({
             </div>
             <div className="p-5 sm:p-6 space-y-4">
               {employees.map((employee, index) => (
-                <div key={index} className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 sm:p-5 transition-colors hover:border-slate-300">
+                <div
+                  key={index}
+                  className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 sm:p-5 transition-colors hover:border-slate-300"
+                >
                   <div className="mb-3 flex justify-between items-center">
-                    <strong className="text-xs uppercase tracking-wider text-slate-800">Employee {index + 1}</strong>
+                    <strong className="text-xs uppercase tracking-wider text-slate-800">
+                      Employee {index + 1}
+                    </strong>
                     <Button
                       type="button"
                       variant="ghost"
@@ -421,14 +444,17 @@ export default function EditRequest({
                         setEmployees((x) => x.filter((_, i) => i !== index))
                       }
                     >
-                      <Trash2 size={15} className="text-slate-400 hover:text-red-600" />
+                      <Trash2
+                        size={15}
+                        className="text-slate-400 hover:text-red-600"
+                      />
                     </Button>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <Field label="Employee number">
                       <Input
                         required
-                        placeholder="e.g. 100456"
+                        placeholder="7-DIGIT ID"
                         value={employee.employeeId}
                         onChange={(e) =>
                           updateEmployee(index, "employeeId", e.target.value)

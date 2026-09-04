@@ -67,9 +67,7 @@ export default function NewEmailRequestForm() {
     if (!supabase) return;
     void supabase
       .from("active_approver_directory")
-      .select(
-        "id,full_name,email,department_name",
-      )
+      .select("id,full_name,email,department_name")
       .order("full_name")
       .then(({ data: rows, error: queryError }: { data: any; error: any }) => {
         if (queryError)
@@ -115,9 +113,7 @@ export default function NewEmailRequestForm() {
     if (requestType === "outside_company" && !selectedApprover)
       return setError("Please select an approver.");
     if (requestType === "overtime" && !isOtRequestWindowOpen())
-      return setError(
-        "OT requests can be submitted only from 08:00 to 17:00.",
-      );
+      return setError("OT requests can be submitted only from 08:00 to 17:00.");
     if (!usingDate || (requestType !== "overtime" && !purpose.trim()))
       return setError("Date and purpose are required.");
     if (requestType === "outside_company" && !destination.trim())
@@ -150,11 +146,21 @@ export default function NewEmailRequestForm() {
         requesterId: user.id,
         requesterName: user.fullName,
         department: user.department,
-        status: requestType === "overtime" ? "pending_ot_verification" : "pending_approval",
+        status:
+          requestType === "overtime"
+            ? "pending_ot_verification"
+            : "pending_approval",
         requestType,
-        approverId: requestType === "outside_company" ? selectedApprover?.id : undefined,
-        approverName: requestType === "outside_company" ? selectedApprover?.fullName : undefined,
-        approverEmail: requestType === "outside_company" ? selectedApprover?.email : undefined,
+        approverId:
+          requestType === "outside_company" ? selectedApprover?.id : undefined,
+        approverName:
+          requestType === "outside_company"
+            ? selectedApprover?.fullName
+            : undefined,
+        approverEmail:
+          requestType === "outside_company"
+            ? selectedApprover?.email
+            : undefined,
         category:
           requestType === "overtime" ? "overtime_transport" : "business_trip",
         usingDate,
@@ -250,8 +256,12 @@ export default function NewEmailRequestForm() {
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 bg-[#f8fafc] px-5 py-4 sm:px-6 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-slate-900 sm:text-base">Request information</h2>
-              <p className="mt-0.5 text-xs text-slate-500">Provide the requester details and general travel parameters.</p>
+              <h2 className="text-sm font-semibold text-slate-900 sm:text-base">
+                Request information
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Provide the requester details and general travel parameters.
+              </p>
             </div>
             <Button
               type="button"
@@ -365,7 +375,9 @@ export default function NewEmailRequestForm() {
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <Field label="Passenger names">
                   <Textarea
-                    placeholder={"Enter 1 passenger name per line:\n1. John Doe\n2. Jane Smith"}
+                    placeholder={
+                      "Enter 1 passenger name per line:\n1. John Doe\n2. Jane Smith"
+                    }
                     value={passengers}
                     onChange={(e) => setPassengers(e.target.value)}
                   />
@@ -483,9 +495,12 @@ export default function NewEmailRequestForm() {
           <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 bg-[#f8fafc] px-5 py-4 sm:px-6 flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900 sm:text-base">OT Employee roster</h2>
+                <h2 className="text-sm font-semibold text-slate-900 sm:text-base">
+                  OT Employee roster
+                </h2>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  Add all employees participating in this overtime / holiday work request.
+                  Add all employees participating in this overtime / holiday
+                  work request.
                 </p>
               </div>
               <Button
@@ -517,7 +532,10 @@ export default function NewEmailRequestForm() {
                         setEmployees((x) => x.filter((_, i) => i !== index))
                       }
                     >
-                      <Trash2 size={15} className="text-slate-400 hover:text-red-600" />
+                      <Trash2
+                        size={15}
+                        className="text-slate-400 hover:text-red-600"
+                      />
                     </Button>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-3">
@@ -558,7 +576,7 @@ export default function NewEmailRequestForm() {
                     <Field label="Employee number">
                       <Input
                         required
-                        placeholder="e.g. 100456"
+                        placeholder="7-DIGIT ID"
                         value={employee.employeeId}
                         onChange={(e) =>
                           updateEmployee(index, "employeeId", e.target.value)
@@ -647,7 +665,8 @@ export default function NewEmailRequestForm() {
 
         {requestType === "overtime" && !otWindowOpen && (
           <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            OT request submission is currently closed. Submissions are available from 08:00 to 17:00.
+            OT request submission is currently closed. Submissions are available
+            from 08:00 to 17:00.
           </p>
         )}
         {error && (
@@ -668,7 +687,11 @@ export default function NewEmailRequestForm() {
               submitting || (requestType === "overtime" && !otWindowOpen)
             }
           >
-            {submitting ? "Submitting..." : requestType === "overtime" ? "Submit OT request" : "Submit for approval"}
+            {submitting
+              ? "Submitting..."
+              : requestType === "overtime"
+                ? "Submit OT request"
+                : "Submit for approval"}
           </Button>
         </div>
       </form>
@@ -711,7 +734,11 @@ function Choice({
       </div>
       <div className="mt-6 flex w-full items-center justify-start border-t border-slate-100 pt-4">
         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 transition-colors group-hover:text-brand-700">
-          Open form <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+          Open form{" "}
+          <ArrowRight
+            size={15}
+            className="transition-transform group-hover:translate-x-1"
+          />
         </span>
       </div>
     </button>
