@@ -399,6 +399,16 @@ Deno.serve(async (request: Request) => {
             purpose: payload.purpose,
             immediateAction: isImmediateOutsideCompany,
             immediateReason,
+            teamsNotification: payload.requestType === "overtime"
+              ? {
+                  event: "ot_transport_submitted",
+                  audience: "ga_management",
+                  priority: isLateOt ? "high" : "normal",
+                  title: "New Overtime Transport request",
+                  message: `${requesterName} · ${department.code} · ${usingDate} ${startTime}-${endTime}`,
+                  actionUrl: manageUrl,
+                }
+              : null,
             manageUrl,
             expiresAt: manageTokenExpiresAt,
             ...requesterEmailTemplate,
@@ -441,6 +451,16 @@ Deno.serve(async (request: Request) => {
             purpose: payload.purpose,
             immediateAction: isImmediateOutsideCompany,
             immediateReason,
+            teamsNotification: {
+              event: "offsite_approval_requested",
+              audience: "approver",
+              priority: isImmediateOutsideCompany ? "high" : "normal",
+              title: isImmediateOutsideCompany
+                ? "Immediate transport approval needed"
+                : "Transport approval needed",
+              message: `${requesterName} · ${department.code} · ${usingDate} ${startTime}-${endTime}`,
+              actionUrl: approvalUrl,
+            },
             manageUrl,
             approvalUrl,
             approvalExpiresAt: approvalTokenExpiresAt,
