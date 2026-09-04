@@ -1,7 +1,14 @@
 "use client";
 
 import { formatUsDate } from "@/lib/date-format";
-import { Car, Check, Clock3, MapPin, ShieldCheck, UserCheck } from "lucide-react";
+import {
+  Car,
+  Check,
+  Clock3,
+  MapPin,
+  ShieldCheck,
+  UserCheck,
+} from "lucide-react";
 import {
   Button,
   Field,
@@ -56,6 +63,8 @@ export type PublicCarServiceRequestFormProps = {
   meetingPoint: "front_area" | "loading_area";
   withStaff: boolean;
   passengers: string;
+  immediateRequest: boolean;
+  immediateReason: string;
   reviewing: boolean;
   submitting: boolean;
   error: string;
@@ -75,6 +84,7 @@ export type PublicCarServiceRequestFormProps = {
   onMeetingPointChange: (value: "front_area" | "loading_area") => void;
   onWithStaffChange: (value: boolean) => void;
   onPassengersChange: (value: string) => void;
+  onImmediateReasonChange: (value: string) => void;
   onBackToType: () => void;
   onBackToEdit: () => void;
   onReset: () => void;
@@ -88,21 +98,22 @@ export function PublicCarServiceRequestForm(
 ) {
   const employeeComplete = Boolean(
     props.requesterName.trim() &&
-      props.requesterEmail.trim() &&
-      props.employeeId.trim() &&
-      props.department.trim() &&
-      props.approverName.trim() &&
-      props.approverEmail.trim() &&
-      props.confirmedSelf,
+    props.requesterEmail.trim() &&
+    props.employeeId.trim() &&
+    props.department.trim() &&
+    props.approverName.trim() &&
+    props.approverEmail.trim() &&
+    props.confirmedSelf,
   );
 
   const detailsComplete = Boolean(
     props.usingDate &&
-      props.startTime &&
-      props.endTime &&
-      props.pickupLocation.trim() &&
-      props.destination.trim() &&
-      props.purpose.trim(),
+    props.startTime &&
+    props.endTime &&
+    props.pickupLocation.trim() &&
+    props.destination.trim() &&
+    props.purpose.trim() &&
+    (!props.immediateRequest || props.immediateReason.trim()),
   );
 
   const activeStep = props.reviewing ? 3 : employeeComplete ? 2 : 1;
@@ -147,14 +158,14 @@ export function PublicCarServiceRequestForm(
               label="Approver"
               value={`${props.approverName} (${props.approverEmail})`}
             />
-            <Summary
-              label="Request type"
-              value="Off-site Business Transport"
-            />
-            <Summary
-              label="Using date"
-              value={formatUsDate(props.usingDate)}
-            />
+            <Summary label="Request type" value="Off-site Business Transport" />
+            {props.immediateRequest && (
+              <Summary label="Priority" value="Needs immediate action" />
+            )}
+            {props.immediateRequest && (
+              <Summary label="Immediate business reason" value={props.immediateReason} />
+            )}
+            <Summary label="Using date" value={formatUsDate(props.usingDate)} />
             <Summary
               label="Trip schedule"
               value={`${props.startTime} – ${props.endTime}`}
@@ -212,7 +223,8 @@ export function PublicCarServiceRequestForm(
             OFF-SITE BUSINESS TRANSPORT
           </h1>
           <p className="mt-1.5 max-w-2xl text-sm leading-6 text-gray-500">
-            Request a company vehicle and driver for official off-site business travel.
+            Request a company vehicle and driver for official off-site business
+            travel.
           </p>
         </div>
         <Button
@@ -234,7 +246,8 @@ export function PublicCarServiceRequestForm(
               Official Off-Site Business Travel
             </p>
             <p className="mt-0.5 text-xs leading-5 text-gray-600">
-              Submitted requests require approval from your specified supervisor/manager before GA assigns a vehicle.
+              Submitted requests require approval from your specified
+              supervisor/manager before GA assigns a vehicle.
             </p>
           </div>
         </div>
@@ -323,7 +336,7 @@ export function PublicCarServiceRequestForm(
             <Input
               id="employee-number"
               required
-              placeholder="e.g. 100456 (7-digit ID)"
+              placeholder="7-digit ID"
               className={
                 props.errorField === "employee-number"
                   ? "border-danger ring-2 ring-danger/20"
@@ -378,7 +391,8 @@ export function PublicCarServiceRequestForm(
           {/* Approver Selection Sub-section */}
           <div className="sm:col-span-2 border-t border-line pt-4 mt-1">
             <p className="text-xs font-bold uppercase tracking-[0.1em] text-brand mb-3">
-              Approver Information (Chief / Supervisor / Sect.Manager / Dept.Manager)
+              Approver Information (Chief / Supervisor / Sect.Manager /
+              Dept.Manager)
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -401,7 +415,8 @@ export function PublicCarServiceRequestForm(
                     id="approver-search-help"
                     className="mt-1.5 text-xs text-gray-500"
                   >
-                    Select approver from directory to auto-fill their company email.
+                    Select approver from directory to auto-fill their company
+                    email.
                   </p>
                 )}
               </div>
@@ -456,7 +471,8 @@ export function PublicCarServiceRequestForm(
                 <strong className="font-semibold text-ink">
                   I confirm that this request is for official business travel.
                 </strong>{" "}
-                The employee information above will be used for approval and transportation notifications.
+                The employee information above will be used for approval and
+                transportation notifications.
               </span>
             </label>
             {props.errorField === "confirm-self" && (
@@ -562,6 +578,19 @@ export function PublicCarServiceRequestForm(
               </Select>
             </Field>
           </div>
+
+          {props.immediateRequest && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+              <p className="font-semibold text-amber-950">Needs immediate action</p>
+              <p className="mt-1 text-sm leading-5 text-amber-900">Your pickup time is within 60 minutes. This request is sent immediately for approver and GA review; vehicle availability is not guaranteed.</p>
+              <div className="mt-3">
+                <Field label="Immediate business reason">
+                  <Textarea id="immediate-reason" required className="min-h-20 bg-white" placeholder="Explain why transport is needed immediately" value={props.immediateReason} onChange={(event) => props.onImmediateReasonChange(event.target.value)} />
+                </Field>
+                {props.errorField === "immediate-reason" && <p className="mt-1.5 text-xs font-semibold text-danger">⚠️ {props.error}</p>}
+              </div>
+            </div>
+          )}
 
           <div>
             <Field label="Purpose / work summary">
@@ -715,8 +744,6 @@ function SectionHeader({
     </div>
   );
 }
-
-
 
 function ApprovalRouteNotice({
   approverName,

@@ -29,6 +29,7 @@ type PublicRequest = {
   purpose: string;
   meetingPoint: "front_area" | "loading_area";
   withStaff?: boolean;
+  immediateReason?: string;
   passengers?: string[];
   overtimeEmployees?: Array<{
     employeeId: string;
@@ -148,6 +149,19 @@ Deno.serve(async (request: Request) => {
     const endTime = time(payload.endTime, "End time");
     if (endTime <= startTime)
       throw new Error("End time must be after start time.");
+    const todayParts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(new Date());
+    const bangkokToday = `${todayParts.find((part) => part.type === "year")?.value}-${todayParts.find((part) => part.type === "month")?.value}-${todayParts.find((part) => part.type === "day")?.value}`;
+    const [startHour, startMinute] = startTime.split(":").map(Number);
+    const minutesUntilPickup = startHour * 60 + startMinute - bangkokMinutes();
+    if (payload.requestType === "outside_company" && usingDate === bangkokToday && minutesUntilPickup < 0)
+      throw new Error("Pickup time has already passed.");
+    const isImmediateOutsideCompany = payload.requestType === "outside_company" &&
+      usingDate === bangkokToday && minutesUntilPickup >= 0 && minutesUntilPickup <= 60;
+    const immediateReason = isImmediateOutsideCompany
+      ? requiredText(payload.immediateReason, "Immediate business reason", 1000)
+      : null;
 
     const passengers = (payload.passengers ?? [])
       .map((x) => requiredText(x, "Passenger name", 200))
@@ -232,10 +246,10 @@ Deno.serve(async (request: Request) => {
         with_staff: Boolean(payload.withStaff),
         vehicle_type_pref: "any",
         driver_required: true,
-        urgent: isLateOt,
+        urgent: isLateOt || isImmediateOutsideCompany,
         urgent_reason: isLateOt
           ? "Submitted after the 15:30 OT approval batch cutoff."
-          : null,
+          : immediateReason,
         after_hours: payload.requestType === "overtime",
         overtime_transport: payload.requestType === "overtime",
       })
@@ -348,6 +362,8 @@ Deno.serve(async (request: Request) => {
       purpose: payload.purpose,
       meetingPoint: payload.meetingPoint,
       withStaff: payload.withStaff,
+      immediateAction: isImmediateOutsideCompany,
+      immediateReason,
       passengers,
       overtimeEmployees,
     };
@@ -381,6 +397,8 @@ Deno.serve(async (request: Request) => {
             pickupLocation: payload.pickupLocation,
             destination: payload.destination,
             purpose: payload.purpose,
+            immediateAction: isImmediateOutsideCompany,
+            immediateReason,
             manageUrl,
             expiresAt: manageTokenExpiresAt,
             ...requesterEmailTemplate,
@@ -421,6 +439,8 @@ Deno.serve(async (request: Request) => {
             pickupLocation: payload.pickupLocation,
             destination: payload.destination,
             purpose: payload.purpose,
+            immediateAction: isImmediateOutsideCompany,
+            immediateReason,
             manageUrl,
             approvalUrl,
             approvalExpiresAt: approvalTokenExpiresAt,

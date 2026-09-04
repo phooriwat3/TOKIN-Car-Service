@@ -3,6 +3,18 @@ import { formatUsDate, getBangkokDateString } from "@/lib/date-format";
 
 const getTodayString = () => getBangkokDateString();
 
+const isPickupWithinOneHour = (usingDate: string, startTime: string) => {
+  if (usingDate !== getTodayString() || !/^\d{2}:\d{2}$/.test(startTime)) return false;
+  const current = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(new Date());
+  const nowMinutes = Number(current.find((part) => part.type === "hour")?.value ?? 0) * 60 +
+    Number(current.find((part) => part.type === "minute")?.value ?? 0);
+  const [hour, minute] = startTime.split(":").map(Number);
+  const pickupMinutes = hour * 60 + minute;
+  return pickupMinutes >= nowMinutes && pickupMinutes - nowMinutes <= 60;
+};
+
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
@@ -86,6 +98,7 @@ export default function PublicRequestForm({
   >("front_area");
   const [withStaff, setWithStaff] = useState(false);
   const [passengers, setPassengers] = useState("");
+  const [immediateReason, setImmediateReason] = useState("");
   const [employees, setEmployees] = useState<OvertimeEmployee[]>([
     emptyEmployee(),
   ]);
@@ -124,6 +137,7 @@ export default function PublicRequestForm({
     setDestination("");
     setPurpose("");
     setPassengers("");
+    setImmediateReason("");
     setEmployees([emptyEmployee()]);
     setDirectorySelected(false);
     setConfirmedSelf(false);
@@ -148,6 +162,7 @@ export default function PublicRequestForm({
     setMeetingPoint("front_area");
     setPurpose("");
     setPassengers("");
+    setImmediateReason("");
     setWithStaff(false);
     setEmployees([emptyEmployee()]);
     setDirectorySelected(false);
@@ -177,6 +192,8 @@ export default function PublicRequestForm({
     setErrorField(undefined);
     if (!requestType) return;
     const employee = employees[0] ?? emptyEmployee();
+    const isImmediateOffsite = requestType === "outside_company" &&
+      isPickupWithinOneHour(usingDate, startTime);
 
     if (!requesterName.trim())
       return failValidation(
@@ -275,6 +292,11 @@ export default function PublicRequestForm({
         return failValidation("Destination is required.", "destination");
       if (!purpose.trim())
         return failValidation("Purpose is required.", "purpose");
+      if (isImmediateOffsite && !immediateReason.trim())
+        return failValidation(
+          "Provide a short business reason for this immediate transport request.",
+          "immediate-reason",
+        );
     }
 
     if (!confirmed) {
@@ -339,6 +361,7 @@ export default function PublicRequestForm({
                 : purpose,
             meetingPoint,
             withStaff,
+            immediateReason: isImmediateOffsite ? immediateReason.trim() : "",
             passengers: requestType === "outside_company" ? passengerList : [],
             overtimeEmployees:
               requestType === "overtime" ? [overtimeEmployee] : [],
@@ -605,6 +628,8 @@ export default function PublicRequestForm({
               meetingPoint={meetingPoint}
               withStaff={withStaff}
               passengers={passengers}
+              immediateRequest={isPickupWithinOneHour(usingDate, startTime)}
+              immediateReason={immediateReason}
               reviewing={showSubmitConfirmation}
               submitting={submitting}
               error={error}
@@ -651,6 +676,7 @@ export default function PublicRequestForm({
               onMeetingPointChange={setMeetingPoint}
               onWithStaffChange={setWithStaff}
               onPassengersChange={setPassengers}
+              onImmediateReasonChange={setImmediateReason}
               onBackToType={() => {
                 window.location.href = "/request";
               }}

@@ -25,6 +25,8 @@ type RequestData = {
   purpose: string;
   meetingPoint?: string;
   withStaff?: boolean;
+  immediateAction?: boolean;
+  immediateReason?: string | null;
   passengers?: string[];
   overtimeEmployees?: Employee[];
 };
@@ -80,7 +82,10 @@ const details = (data: RequestData) => {
           ),
         ].join("")
       : "";
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:16px;border-collapse:separate;border-spacing:0;border:1px solid #dbe3ee;border-radius:8px;overflow:hidden">${common}${outside}</table>`;
+  const immediate = data.immediateAction
+    ? `<div style="margin-top:16px;padding:12px 14px;background:#fff7ed;border-left:4px solid #f59e0b;color:#9a3412"><b>NEEDS IMMEDIATE ACTION</b><br><span style="font-size:13px">Pickup is within 60 minutes. Reason: ${esc(data.immediateReason || "Not provided")}</span></div>`
+    : "";
+  return `${immediate}<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:16px;border-collapse:separate;border-spacing:0;border:1px solid #dbe3ee;border-radius:8px;overflow:hidden">${common}${outside}</table>`;
 };
 
 const layout = (input: {
