@@ -115,23 +115,21 @@ Deno.serve(async (request) => {
       return json({ error: 'Cancel this Tiger Space transport request and submit a new one to change its details.' }, 409);
     }
     let selectedApprover: { id: string; full_name: string; email: string } | undefined;
+    let approverName = '';
+    let approverEmail = '';
     if (payload.requestType === 'outside_company') {
-      const requestedApproverEmail = email(payload.approver?.email, 'Approver email');
-      const { data: departmentApprovers, error: approversError } = await db.from('profiles')
+      approverEmail = email(payload.approver?.email, 'Approver email');
+      approverName = optionalText(payload.approver?.name, 200) || approverEmail;
+      const { data: departmentApprovers } = await db.from('profiles')
         .select('id,full_name,email').eq('department_id', department.id)
-        .eq('role', 'approver').eq('is_active', true).order('full_name');
-      if (approversError) throw approversError;
+        .eq('role', 'approver').eq('is_active', true);
       selectedApprover = departmentApprovers?.find(
-        (item) => item.email?.trim().toLowerCase() === requestedApproverEmail,
+        (item) => item.email?.trim().toLowerCase() === approverEmail.toLowerCase(),
       );
-      if (!selectedApprover) {
-        throw new Error(`Select an active approver for ${department.code}.`);
+      if (selectedApprover?.full_name) {
+        approverName = selectedApprover.full_name;
       }
     }
-    const approverName = selectedApprover?.full_name ?? '';
-    const approverEmail = selectedApprover
-      ? email(selectedApprover.email, 'Approver email')
-      : '';
     const usingDate = date(payload.usingDate);
     const startTime = time(payload.startTime, 'Start time');
     const endTime = time(payload.endTime, 'End time');
