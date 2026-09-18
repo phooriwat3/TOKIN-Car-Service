@@ -15,6 +15,7 @@ import {
   Info,
   Mail,
   MapPin,
+  MessageSquare,
   PhoneCall,
   ShieldCheck,
   Ticket,
@@ -516,29 +517,57 @@ function HelpContent() {
                 Key Operating Rules
               </p>
               <ul className="space-y-1.5 leading-5 text-amber-900/90 list-disc pl-4">
-                <li><strong>OT:</strong> Submit by 15:30 (Closes 16:00)</li>
-                <li><strong>OT:</strong> Submit in Tiger OpenSpace first</li>
-                <li><strong>Off-site transport:</strong> 24-hr advance notice</li>
-                <li><strong>Off-site transport:</strong> Manager email approval</li>
+                <li>
+                  <strong>OT:</strong> Submit by 15:30 (Closes 16:00)
+                </li>
+                <li>
+                  <strong>OT:</strong> Submit in Tiger OpenSpace first
+                </li>
+                <li>
+                  <strong>Off-site transport:</strong> 24-hr advance notice
+                </li>
+                <li>
+                  <strong>Off-site transport:</strong> Manager email approval
+                </li>
                 <li>Save your Manage Link to track driver &amp; vehicle</li>
               </ul>
             </div>
 
             {/* GA Admin Portal / Contact */}
             <div className="rounded-xl border border-line bg-white p-5 shadow-card space-y-3">
-              <p className="font-bold text-ink text-sm">Need Further Assistance?</p>
-              <p className="text-xs text-gray-500 leading-5">
-                Contact General Affairs (GA) for urgent fleet management or special transport requests.
+              <p className="font-bold text-ink text-sm">
+                Need Further Assistance?
               </p>
-              <a
-                href="https://outlook.office.com/mail/deeplink/compose?to=Treebuppha.Saraphan@yageo.com&subject=TOKIN%20Transport%20Inquiry"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-dark"
-              >
-                <Mail size={14} />
-                Contact GA Admin (Email)
-              </a>
+              <div className="text-xs text-gray-500 leading-5">
+                <p className="font-semibold text-slate-800">
+                  Treebuppha Saraphan
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  SR.SPECIALIST - GA • Capacitor
+                </p>
+                <p className="mt-1">
+                  Contact General Affairs (GA) on MS Teams for fleet management
+                  or transport inquiries.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <a
+                  href="https://teams.microsoft.com/l/chat/0/0?users=Treebuppha.Saraphan@yageo.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-lg bg-[#464EB8] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#3b429f]"
+                >
+                  <MessageSquare size={14} aria-hidden="true" />
+                  Teams chat
+                </a>
+                <a
+                  href="tel:2513"
+                  className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                >
+                  <PhoneCall size={14} aria-hidden="true" />
+                  Call 2513
+                </a>
+              </div>
             </div>
           </div>
         </div>

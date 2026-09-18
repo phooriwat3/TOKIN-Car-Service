@@ -11,6 +11,8 @@ import {
   HelpCircle,
   Mail,
   MapPin,
+  MessageSquare,
+  PhoneCall,
   ShieldCheck,
   UserCheck,
 } from "lucide-react";
@@ -244,16 +246,25 @@ export function OtGuidelines() {
               </p>
               <p className="mt-1 text-slate-600">{t.contactBody}</p>
             </div>
-            <a
-              href="https://outlook.office.com/mail/deeplink/compose?to=Treebuppha.Saraphan@yageo.com&subject=TOKIN%20OT%20Transport%20Inquiry"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 font-semibold text-brand hover:text-brand-dark hover:underline"
-            >
-              <Mail size={13} />
-              <span>{t.contactAction}</span>
-              <ExternalLink size={12} className="opacity-70" />
-            </a>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <a
+                href="https://teams.microsoft.com/l/chat/0/0?users=Treebuppha.Saraphan@yageo.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 font-semibold text-[#464EB8] hover:text-[#3b429f] hover:underline"
+              >
+                <MessageSquare size={13} aria-hidden="true" />
+                <span>{lang === "th" ? "แชทผ่าน MS Teams" : "Chat on MS Teams"}</span>
+                <ExternalLink size={12} className="opacity-70" aria-hidden="true" />
+              </a>
+              <a
+                href="tel:2513"
+                className="inline-flex items-center gap-1.5 font-semibold text-slate-700 hover:text-slate-900 hover:underline"
+              >
+                <PhoneCall size={13} aria-hidden="true" />
+                <span>{lang === "th" ? "โทร GA ต่อ 2513" : "Call GA ext. 2513"}</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>

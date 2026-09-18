@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MessageSquare, PhoneCall } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function TokinIconSvg({ className }: { className?: string }) {
@@ -143,12 +144,23 @@ export function PublicFooter() {
           </Link>
           <span className="h-3 w-px bg-slate-200" />
           <a
-            href="https://outlook.office.com/mail/deeplink/compose?to=Treebuppha.Saraphan@yageo.com&subject=TOKIN%20Transport%20Inquiry"
+            href="https://teams.microsoft.com/l/chat/0/0?users=Treebuppha.Saraphan@yageo.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="transition hover:text-brand"
+            title="Chat with GA on Microsoft Teams"
+            className="inline-flex items-center gap-1 transition hover:text-brand"
           >
-            Contact GA
+            <MessageSquare size={13} aria-hidden="true" />
+            GA Teams
+          </a>
+          <span className="h-3 w-px bg-slate-200" />
+          <a
+            href="tel:2513"
+            title="Call GA extension 2513"
+            className="inline-flex items-center gap-1 transition hover:text-brand"
+          >
+            <PhoneCall size={13} aria-hidden="true" />
+            Call GA 2513
           </a>
           <span className="h-3 w-px bg-slate-200" />
           <Link href="/admin/login" className="transition hover:text-brand">
