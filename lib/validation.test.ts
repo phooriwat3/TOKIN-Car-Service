@@ -8,6 +8,51 @@ import {
 } from "./validation";
 
 describe("Validation helpers & schemas", () => {
+  describe("Booking schema", () => {
+    const validBooking = {
+      category: "business_trip" as const,
+      usingDate: "2099-01-02",
+      startTime: "08:00",
+      endTime: "09:00",
+      pickupLocation: "TOKIN factory",
+      destination: "Customer office",
+      purpose: "Customer meeting",
+      meetingPoint: "front_area" as const,
+      vehicleTypePref: "van" as const,
+      driverRequired: true,
+      urgent: false,
+      afterHours: false,
+      overtimeTransport: false,
+    };
+
+    it("preserves required and invalid passenger messages on Zod 4", () => {
+      const required = bookingSchema.safeParse(validBooking);
+      expect(required.success).toBe(false);
+      if (!required.success) {
+        expect(required.error.issues).toContainEqual(
+          expect.objectContaining({
+            path: ["numPassengers"],
+            message: "Number of passengers is required",
+          }),
+        );
+      }
+
+      const invalid = bookingSchema.safeParse({
+        ...validBooking,
+        numPassengers: "two",
+      });
+      expect(invalid.success).toBe(false);
+      if (!invalid.success) {
+        expect(invalid.error.issues).toContainEqual(
+          expect.objectContaining({
+            path: ["numPassengers"],
+            message: "Enter a valid passenger count",
+          }),
+        );
+      }
+    });
+  });
+
   describe("Thai mobile phone validation", () => {
     it("accepts valid Thai mobile numbers with various formatting", () => {
       expect(isValidThaiMobilePhone("0812345678")).toBe(true);

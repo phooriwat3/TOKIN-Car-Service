@@ -17,11 +17,13 @@ export const bookingSchema = z
     purpose: z.string().min(10),
     numPassengers: z
       .number({
-        required_error: "Number of passengers is required",
-        invalid_type_error: "Enter a valid passenger count",
+        error: (issue) =>
+          issue.input === undefined
+            ? "Number of passengers is required"
+            : "Enter a valid passenger count",
       })
-      .int("Enter a valid passenger count")
-      .min(1, "Number of passengers must be at least 1")
+      .int({ error: "Enter a valid passenger count" })
+      .min(1, { error: "Number of passengers must be at least 1" })
       .max(20),
     meetingPoint: z.enum(["front_area", "loading_area"]),
     vehicleTypePref: z.enum(["van", "car", "pickup", "other", "any"]),

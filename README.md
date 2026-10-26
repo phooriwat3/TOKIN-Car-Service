@@ -14,7 +14,7 @@ Role-based company transport requisition workflow built with Next.js 16, TypeScr
 
 ## Local development
 
-Requirements: Node.js 18.17 or newer and npm.
+Requirements: Node.js 22.12 or newer and npm 10 or newer.
 
 ```bash
 npm install
