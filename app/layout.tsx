@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppProvider } from "@/components/app-provider";
 import { AppShell } from "@/components/app-shell";
+import { MuiProvider } from "@/components/mui-provider";
 import { QueryProvider } from "@/components/query-provider";
 export const metadata: Metadata = {
   title: "TOKIN Transport",
@@ -15,11 +16,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <QueryProvider>
-          <AppProvider>
-            <AppShell>{children}</AppShell>
-          </AppProvider>
-        </QueryProvider>
+        <MuiProvider>
+          <QueryProvider>
+            <AppProvider>
+              <AppShell>{children}</AppShell>
+            </AppProvider>
+          </QueryProvider>
+        </MuiProvider>
       </body>
     </html>
   );

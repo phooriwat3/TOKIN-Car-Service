@@ -197,9 +197,9 @@ function HelpContent() {
   ];
 
   return (
-    <main className="flex min-h-screen flex-col bg-canvas">
+    <main className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top_right,rgba(218,234,249,0.65),transparent_34%),var(--canvas)]">
       {/* Header — same pattern as PublicFrame */}
-      <header className="border-b border-line bg-white px-4 sm:px-6 shadow-sm">
+      <header className="border-b border-line border-t-4 border-t-brand-900 bg-white px-4 shadow-sm sm:px-6">
         <div className="mx-auto flex h-16 min-w-0 max-w-[1080px] items-center justify-between gap-3">
           <Link
             href={backUrl}
@@ -248,7 +248,9 @@ function HelpContent() {
             <div>
               <p className="font-bold">Plan before you request</p>
               <p className="mt-1 leading-5 text-amber-900">
-                Overtime Transport: submit by 15:30 (requests close at 16:00). Off-site Business Transport: submit at least 24 hours in advance.
+                Overtime Transport: submit by 15:30 (requests close at 16:00).
+                Off-site Business Transport: submit at least 24 hours in
+                advance.
               </p>
             </div>
           </div>
@@ -287,15 +289,24 @@ function HelpContent() {
                   </p>
                   <ul className="text-xs text-gray-600 space-y-1.5 pt-1 border-t border-line">
                     <li className="flex items-center gap-1.5">
-                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      <CheckCircle2
+                        size={12}
+                        className="text-success shrink-0"
+                      />
                       Must submit OT in Tiger OpenSpace first
                     </li>
                     <li className="flex items-center gap-1.5">
-                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      <CheckCircle2
+                        size={12}
+                        className="text-success shrink-0"
+                      />
                       Normal cut-off: 15:30 (Window closes 16:00)
                     </li>
                     <li className="flex items-center gap-1.5">
-                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      <CheckCircle2
+                        size={12}
+                        className="text-success shrink-0"
+                      />
                       Drop-off at your usual bus stop / route
                     </li>
                   </ul>
@@ -324,15 +335,24 @@ function HelpContent() {
                   </p>
                   <ul className="text-xs text-gray-600 space-y-1.5 pt-1 border-t border-line">
                     <li className="flex items-center gap-1.5">
-                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      <CheckCircle2
+                        size={12}
+                        className="text-success shrink-0"
+                      />
                       Submit at least 24 hours (1 working day) prior
                     </li>
                     <li className="flex items-center gap-1.5">
-                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      <CheckCircle2
+                        size={12}
+                        className="text-success shrink-0"
+                      />
                       Requires Department Approver email approval
                     </li>
                     <li className="flex items-center gap-1.5">
-                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      <CheckCircle2
+                        size={12}
+                        className="text-success shrink-0"
+                      />
                       Specify meeting point &amp; passenger details
                     </li>
                   </ul>
@@ -413,15 +433,23 @@ function HelpContent() {
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2 pt-1">
                   <div className="rounded border border-blue-200/60 bg-white/70 p-2.5">
-                    <p className="font-bold text-ink text-xs">Off-site Business Transport</p>
+                    <p className="font-bold text-ink text-xs">
+                      Off-site Business Transport
+                    </p>
                     <p className="mt-1 text-slate-600 leading-normal">
-                      A 1-click approval email is sent directly to your selected Department Approver. GA assigns vehicles after manager approval.
+                      A 1-click approval email is sent directly to your selected
+                      Department Approver. GA assigns vehicles after manager
+                      approval.
                     </p>
                   </div>
                   <div className="rounded border border-blue-200/60 bg-white/70 p-2.5">
-                    <p className="font-bold text-ink text-xs">Overtime Transport</p>
+                    <p className="font-bold text-ink text-xs">
+                      Overtime Transport
+                    </p>
                     <p className="mt-1 text-slate-600 leading-normal">
-                      Transport-only booking. GA verifies your approved hours against the <strong>Tiger OpenSpace</strong> report before van dispatch.
+                      Transport-only booking. GA verifies your approved hours
+                      against the <strong>Tiger OpenSpace</strong> report before
+                      van dispatch.
                     </p>
                   </div>
                 </div>
@@ -457,7 +485,7 @@ function HelpContent() {
                 />
                 <FaqItem
                   question="Can I edit or cancel my request after submitting?"
-                  answer="Yes. Open your unique Manage Request link (or find it in your confirmation email) to edit details or cancel before the cutoff time."
+                  answer="Use your Manage Request link while the request is waiting for approval or OT verification. After approval or driver assignment, contact GA; GA will cancel the trip and notify the assigned driver."
                 />
                 <FaqItem
                   question="How do I know which driver or vehicle was assigned to me?"
@@ -501,9 +529,7 @@ function HelpContent() {
               <div className="space-y-3">
                 {manageItems.map((m, i) => (
                   <div key={i} className="flex items-start gap-2.5 text-xs">
-                    <span className="mt-0.5 text-brand shrink-0">
-                      {m.icon}
-                    </span>
+                    <span className="mt-0.5 text-brand shrink-0">{m.icon}</span>
                     <span className="text-gray-600 leading-5">{m.text}</span>
                   </div>
                 ))}

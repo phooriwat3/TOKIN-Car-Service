@@ -1,9 +1,11 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/http.ts';
 import {
-  bangkokMinutes, date, email, optionalText, randomToken, requiredText, sha256Hex, time, token,
+  bangkokMinutes, date, optionalText, randomToken, requiredText, sha256Hex, time, token,
 } from '../_shared/request-access.ts';
 import { approvalEmail } from '../_shared/email-template.ts';
+import { companyEmail } from '../_shared/company-email.ts';
+import { requesterPermissions } from '../_shared/requester-permissions.ts';
 
 type OvertimeEmployee = {
   employeeId: string;
@@ -16,7 +18,6 @@ type OvertimeEmployee = {
   busStop?: string;
 };
 
-const editableStatuses = ['pending_approval', 'pending_ot_verification', 'changes_requested', 'approved', 'assigned'];
 const appBaseUrl = () => {
   const configured = Deno.env.get('APP_BASE_URL')?.trim().replace(/\/+$/, '');
   return configured || 'https://carservice.tokin.co.th';
@@ -59,37 +60,41 @@ Deno.serve(async (request) => {
     if (!current || current.revision_no !== access.revision_no) {
       return json({ error: 'This request has already been updated. Reload it using the latest link.' }, 409);
     }
-    if (!editableStatuses.includes(current.status)) {
+    const permissions = requesterPermissions(current.status);
+    if (action === 'update' && !permissions.canEdit) {
+      return json({ error: `This request can no longer be edited because its status is ${current.status}.` }, 409);
+    }
+    if (action === 'cancel' && !permissions.canCancel) {
       return json({ error: `This request can no longer be changed because its status is ${current.status}.` }, 409);
     }
 
     const nextRevision = current.revision_no + 1;
     if (action === 'cancel') {
-      const { data: cancelled, error: cancelError } = await db.from('bookings').update({
-        status: 'cancelled',
-        revision_no: nextRevision,
-        updated_at: new Date().toISOString(),
-      }).eq('id', current.id)
-        .eq('revision_no', current.revision_no)
-        .in('status', editableStatuses)
-        .select('id,booking_no,status,revision_no')
-        .maybeSingle();
-
-      if (cancelError) throw cancelError;
-      if (!cancelled) return json({ error: 'The request changed while it was being cancelled. Please reload.' }, 409);
-
-      const { error: historyError } = await db.from('booking_revision_history').insert({
-        booking_id: current.id,
-        revision_no: nextRevision,
-        status: 'cancelled',
-        snapshot: cancelled,
-        change_source: 'requester_edit',
-        changed_by_email: current.requester_email,
-        change_reason: 'Requester cancelled request.',
+      const { data: cancelled, error: cancelError } = await db.rpc('execute_requester_change', {
+        p_token_hash: tokenHash,
+        p_action: 'cancel',
+        p_request: null,
+        p_reason: null,
+        p_manage_token_hash: null,
+        p_manage_token_expires_at: null,
+        p_approval_token_hash: null,
+        p_approval_token_expires_at: null,
       });
-      if (historyError) throw historyError;
+      if (cancelError) throw new Error(cancelError.message);
+      const result = cancelled as {
+        requestId?: string;
+        requestNo?: string;
+        status?: string;
+        revisionNo?: number;
+      } | null;
 
-      return json({ ok: true, requestId: current.id, requestNo: current.booking_no, status: 'cancelled' });
+      return json({
+        ok: true,
+        requestId: result?.requestId ?? current.id,
+        requestNo: result?.requestNo ?? current.booking_no,
+        status: result?.status ?? 'cancelled',
+        revisionNo: result?.revisionNo ?? nextRevision,
+      });
     }
 
     const payload = body?.request ?? {};
@@ -111,14 +116,11 @@ Deno.serve(async (request) => {
     if (departmentError || !department) {
       throw new Error('Selected department is unavailable. Please contact Admin.');
     }
-    if (action === 'update' && current.status === 'approved') {
-      return json({ error: 'Cancel this Tiger Space transport request and submit a new one to change its details.' }, 409);
-    }
     let selectedApprover: { id: string; full_name: string; email: string } | undefined;
     let approverName = '';
     let approverEmail = '';
     if (payload.requestType === 'outside_company') {
-      approverEmail = email(payload.approver?.email, 'Approver email');
+      approverEmail = companyEmail(payload.approver?.email, 'Approver email');
       approverName = optionalText(payload.approver?.name, 200) || approverEmail;
       const { data: departmentApprovers } = await db.from('profiles')
         .select('id,full_name,email').eq('department_id', department.id)
@@ -128,6 +130,9 @@ Deno.serve(async (request) => {
       );
       if (selectedApprover?.full_name) {
         approverName = selectedApprover.full_name;
+      }
+      if (!selectedApprover) {
+        throw new Error('Select an active approver assigned to your department.');
       }
     }
     const usingDate = date(payload.usingDate);
@@ -172,7 +177,20 @@ Deno.serve(async (request) => {
       throw new Error('Passenger count must be between 1 and 20.');
     }
 
-    const { data: updated, error: updateError } = await db.from('bookings').update({
+    const newRawToken = randomToken();
+    const newTokenHash = await sha256Hex(newRawToken);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60_000).toISOString();
+    let approvalExpiresAt = '';
+    let approvalUrl = '';
+    let approvalTokenHash: string | null = null;
+    if (payload.requestType === 'outside_company') {
+      const approvalRawToken = randomToken();
+      approvalTokenHash = await sha256Hex(approvalRawToken);
+      approvalExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString();
+      approvalUrl = `${appBaseUrl()}/request/approve?token=${encodeURIComponent(approvalRawToken)}`;
+    }
+
+    const normalizedRequest = {
       requester_name: requesterName,
       requester_employee_id: typeof payload.requester?.employeeId === 'string'
         ? payload.requester.employeeId.trim().slice(0, 100) : null,
@@ -182,7 +200,6 @@ Deno.serve(async (request) => {
       approver_name: payload.requestType === 'outside_company' ? approverName : null,
       approver_email: payload.requestType === 'outside_company' ? approverEmail : null,
       request_type: payload.requestType,
-      category: payload.requestType === 'overtime' ? 'overtime_transport' : 'business_trip',
       using_date: usingDate,
       start_time: startTime,
       end_time: endTime,
@@ -192,98 +209,29 @@ Deno.serve(async (request) => {
       num_passengers: passengerCount,
       meeting_point: meetingPoint,
       with_staff: Boolean(payload.withStaff),
-      after_hours: payload.requestType === 'overtime',
-      overtime_transport: payload.requestType === 'overtime',
-      status: payload.requestType === 'overtime'
-        ? 'pending_ot_verification'
-        : 'pending_approval',
-      ot_verification_status: payload.requestType === 'overtime'
-        ? 'pending'
-        : 'not_required',
-      ot_verified_at: null,
-      ot_verified_by: null,
-      ot_verification_note: null,
-      reject_reason: null,
-      approval_email_status: payload.requestType === 'overtime' ? 'not_configured' : 'pending',
       urgent: isLateOt,
       urgent_reason: isLateOt ? 'Submitted after the 15:30 OT approval batch cutoff.' : null,
-      revision_no: nextRevision,
-      last_submitted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }).eq('id', current.id)
-      .eq('revision_no', current.revision_no)
-      .in('status', editableStatuses)
-      .select('id,booking_no,status,revision_no')
-      .maybeSingle();
-
-    if (updateError) throw updateError;
-    if (!updated) return json({ error: 'The request changed while it was being saved. Please reload.' }, 409);
-
-    const { error: passengerDeleteError } = await db.from('booking_passengers').delete().eq('booking_id', current.id);
-    if (passengerDeleteError) throw passengerDeleteError;
-    const { error: otDeleteError } = await db.from('overtime_employees').delete().eq('booking_id', current.id);
-    if (otDeleteError) throw otDeleteError;
-
-    if (payload.requestType === 'outside_company' && passengers.length) {
-      const { error } = await db.from('booking_passengers').insert(
-        passengers.map((name: string, seq: number) => ({ booking_id: current.id, name, seq })),
-      );
-      if (error) throw error;
-    }
-    if (payload.requestType === 'overtime') {
-      const { error } = await db.from('overtime_employees').insert(otRows);
-      if (error) throw error;
-    }
-
-    const newRawToken = randomToken();
-    const newTokenHash = await sha256Hex(newRawToken);
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60_000).toISOString();
-    const { error: tokenError } = await db.from('request_access_tokens').insert({
-      booking_id: current.id,
-      token_type: 'requester_manage',
-      token_hash: newTokenHash,
-      revision_no: nextRevision,
-      subject_email: access.subject_email,
-      expires_at: expiresAt,
+      passengers,
+      overtime_employees: otRows.map(({ booking_id: _bookingId, ...employee }) => employee),
+    };
+    const { data: commandData, error: commandError } = await db.rpc('execute_requester_change', {
+      p_token_hash: tokenHash,
+      p_action: 'update',
+      p_request: normalizedRequest,
+      p_reason: typeof body?.reason === 'string' ? body.reason.trim().slice(0, 1000) || null : null,
+      p_manage_token_hash: newTokenHash,
+      p_manage_token_expires_at: expiresAt,
+      p_approval_token_hash: approvalTokenHash,
+      p_approval_token_expires_at: approvalExpiresAt || null,
     });
-    if (tokenError) throw tokenError;
-
-    let approvalExpiresAt = '';
-    let approvalUrl = '';
-    if (payload.requestType === 'outside_company') {
-      const approvalRawToken = randomToken();
-      const approvalTokenHash = await sha256Hex(approvalRawToken);
-      approvalExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString();
-      approvalUrl = `${appBaseUrl()}/request/approve?token=${encodeURIComponent(approvalRawToken)}`;
-      const { error: approvalTokenError } = await db.from('request_access_tokens').insert({
-        booking_id: current.id,
-        token_type: 'approval',
-        token_hash: approvalTokenHash,
-        revision_no: nextRevision,
-        subject_email: approverEmail,
-        expires_at: approvalExpiresAt,
-      });
-      if (approvalTokenError) throw approvalTokenError;
-    }
-
-    const { data: snapshotBooking, error: snapshotError } = await db.from('bookings').select(`
-      *, booking_passengers(name,seq),
-      overtime_employees(employee_id,employee_name,work_description,work_start,work_end,total_weekly_hours,transport_required,bus_stop,seq)
-    `).eq('id', current.id).single();
-    if (snapshotError) throw snapshotError;
-
-    const { error: historyError } = await db.from('booking_revision_history').insert({
-      booking_id: current.id,
-      revision_no: nextRevision,
-      status: payload.requestType === 'overtime'
-        ? 'pending_ot_verification'
-        : 'pending_approval',
-      snapshot: snapshotBooking,
-      change_source: 'requester_edit',
-      changed_by_email: current.requester_email,
-      change_reason: typeof body?.reason === 'string' ? body.reason.trim().slice(0, 1000) || null : null,
-    });
-    if (historyError) throw historyError;
+    if (commandError) throw new Error(commandError.message);
+    const command = commandData as {
+      requestId?: string;
+      requestNo?: string;
+      status?: string;
+      revisionNo?: number;
+    } | null;
+    if (!command?.requestId) throw new Error('The request update did not return a result.');
 
     const manageUrl = `${appBaseUrl()}/request/manage?token=${encodeURIComponent(newRawToken)}`;
     const approvalFlowUrl = Deno.env.get('POWER_AUTOMATE_APPROVAL_FLOW_URL');
@@ -325,23 +273,39 @@ Deno.serve(async (request) => {
         approvalEmailStatus = 'failed';
       }
     }
-    await db.from('bookings').update({ approval_email_status: approvalEmailStatus }).eq('id', current.id);
+    const { error: deliveryStatusError } = await db.from('bookings')
+      .update({ approval_email_status: approvalEmailStatus })
+      .eq('id', current.id);
+    if (deliveryStatusError) {
+      console.error('Unable to record approval delivery status.', {
+        requestId: current.id,
+        message: deliveryStatusError.message,
+      });
+    }
 
     return json({
       ok: true,
-      requestId: current.id,
-      requestNo: current.booking_no,
-      status: payload.requestType === 'overtime'
+      requestId: command.requestId,
+      requestNo: command.requestNo ?? current.booking_no,
+      status: command.status ?? (payload.requestType === 'overtime'
         ? 'pending_ot_verification'
-        : 'pending_approval',
-      revisionNo: nextRevision,
+        : 'pending_approval'),
+      revisionNo: command.revisionNo ?? nextRevision,
       manageToken: newRawToken,
       manageTokenExpiresAt: expiresAt,
       approvalEmailStatus,
     });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : 'Unable to update request.';
-    const clientError = /invalid|must|required|between|at most|only from|only be/i.test(message);
-    return json({ error: message }, clientError ? 400 : 500);
+    const status = /expired/i.test(message)
+      ? 410
+      : /already been updated|no longer be changed|no longer be edited/i.test(message)
+        ? 409
+        : /request link is invalid/i.test(message)
+          ? 401
+          : /invalid|must|required|between|at most|only from|only be|select an active/i.test(message)
+            ? 400
+            : 500;
+    return json({ error: message }, status);
   }
 });

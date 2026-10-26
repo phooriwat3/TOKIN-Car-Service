@@ -1,10 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Download, FileText, Search } from "lucide-react";
+import {
+  Building2,
+  CalendarDays,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  PieChart,
+  Search,
+  ShieldAlert,
+} from "lucide-react";
 import { useApp } from "@/components/app-provider";
 import { Badge, Button, Card, Input } from "@/components/ui";
 import { PageHeader } from "@/components/page-header";
+import { ContractorBillingLedger } from "./contractor-billing-ledger";
+import { DepartmentCostAllocation } from "./department-cost-allocation";
+import { DrpFallbackModal } from "./drp-fallback-modal";
+import {
+  aggregateContractorBilling,
+  aggregateDepartmentCostCenters,
+  getContractorBillingLedger,
+} from "@/lib/contractor-billing";
 import type { Booking, Driver, Vehicle } from "@/lib/types";
 
 type Passenger = { id: string; name: string; dropOff: string };
@@ -20,6 +37,8 @@ type Report = { booking: Booking; groups: Group[] };
 
 export function AdminReportWorkspace() {
   const { data } = useApp();
+  const [activeTab, setActiveTab] = useState<"dispatch" | "contractor" | "department">("dispatch");
+  const [showDrpModal, setShowDrpModal] = useState(false);
   const [search, setSearch] = useState("");
   const [date, setDate] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -67,17 +86,193 @@ export function AdminReportWorkspace() {
   );
   const passengerTotal = reports.reduce((sum, item) => sum + count(item), 0);
 
+  // Financial Analytics & Contractor Ledger Calculations
+  const contractorSummaries = useMemo(
+    () => aggregateContractorBilling(data.bookings),
+    [data.bookings],
+  );
+  const departmentSummaries = useMemo(
+    () => aggregateDepartmentCostCenters(data.bookings),
+    [data.bookings],
+  );
+  const billingLedger = useMemo(
+    () => getContractorBillingLedger(data.bookings),
+    [data.bookings],
+  );
+
+  const exportAccountingExcel = async () => {
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+
+    // Sheet 1: Invoicing Ledger
+    const s1 = wb.addWorksheet("Invoicing Ledger");
+    s1.columns = [
+      { header: "Booking No", key: "bookingNo", width: 18 },
+      { header: "Date", key: "date", width: 14 },
+      { header: "Shift Time", key: "shiftTime", width: 16 },
+      { header: "Route", key: "route", width: 30 },
+      { header: "Contractor Name", key: "contractor", width: 28 },
+      { header: "Vehicle Plate", key: "plate", width: 16 },
+      { header: "Driver", key: "driver", width: 20 },
+      { header: "Driver Phone", key: "phone", width: 16 },
+      { header: "Passengers", key: "passengers", width: 14 },
+      { header: "Department", key: "department", width: 18 },
+      { header: "Agreed Rate (THB)", key: "rate", width: 18 },
+      { header: "Status", key: "status", width: 14 },
+    ];
+    billingLedger.forEach((item) => {
+      s1.addRow({
+        bookingNo: item.bookingNo,
+        date: item.usingDate,
+        shiftTime: item.shiftTime,
+        route: item.route,
+        contractor: item.contractorName,
+        plate: item.vehiclePlate,
+        driver: item.driverName,
+        phone: item.driverPhone,
+        passengers: item.passengerCount,
+        department: item.departments.join(", "),
+        rate: item.agreedRateThb,
+        status: item.status,
+      });
+    });
+
+    // Sheet 2: Contractor Summary
+    const s2 = wb.addWorksheet("Contractor Totals");
+    s2.columns = [
+      { header: "Contractor Service Provider", key: "name", width: 32 },
+      { header: "Total Trips Operated", key: "trips", width: 20 },
+      { header: "Total Passengers Transported", key: "passengers", width: 28 },
+      { header: "Average Occupancy", key: "occupancy", width: 18 },
+      { header: "Total Invoiced Amount (THB)", key: "amount", width: 28 },
+    ];
+    contractorSummaries.forEach((c) => {
+      s2.addRow({
+        name: c.contractorName,
+        trips: c.tripCount,
+        passengers: c.passengerCount,
+        occupancy: c.averageOccupancy,
+        amount: c.totalAmountThb,
+      });
+    });
+
+    // Sheet 3: Department Cost Centers
+    const s3 = wb.addWorksheet("Department Cost Centers");
+    s3.columns = [
+      { header: "Department Code", key: "dept", width: 20 },
+      { header: "Passenger Rides", key: "rides", width: 18 },
+      { header: "Allocated Expense (THB)", key: "cost", width: 24 },
+      { header: "Budget Share (%)", key: "share", width: 18 },
+    ];
+    departmentSummaries.forEach((d) => {
+      s3.addRow({
+        dept: d.departmentCode,
+        rides: d.passengerRides,
+        cost: d.allocatedAmountThb,
+        share: `${d.percentageShare}%`,
+      });
+    });
+
+    [s1, s2, s3].forEach((ws) => {
+      ws.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+      ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF173F73" } };
+      ws.views = [{ state: "frozen", ySplit: 1 }];
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    save(new Blob([buffer]), `tokin-finance-transport-billing-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   return (
     <>
       <PageHeader
-        title="Transport reports"
-        description="Select an assigned request, review its dispatch list, then export it for the transport provider."
+        title="Transport Reports & Financial Analytics"
+        description="Review driver dispatch manifests, audit third-party van contractor invoices, and cross-charge departmental cost centers."
+        action={
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
+            <Button
+              variant="secondary"
+              onClick={exportAccountingExcel}
+              className="gap-1.5 text-xs font-semibold"
+            >
+              <FileSpreadsheet size={15} className="text-emerald-600" />
+              <span>Export Finance Excel (.xlsx)</span>
+            </Button>
+
+            <Button
+              variant="secondary"
+              onClick={() => setShowDrpModal(true)}
+              className="gap-1.5 text-xs font-semibold border-red-200 text-red-700 hover:bg-red-50"
+              title="Disaster Recovery Plan: Emergency offline dispatch generator"
+            >
+              <ShieldAlert size={15} className="text-red-600" />
+              <span>DRP Offline Contingency</span>
+            </Button>
+          </div>
+        }
       />
-      <div className="grid gap-4 sm:grid-cols-3 print:hidden">
-        <Metric label="Dispatch reports" value={reports.length} />
-        <Metric label="Vehicles arranged" value={vehicleTotal} />
-        <Metric label="Passengers arranged" value={passengerTotal} />
+
+      {/* Tab Navigation */}
+      <div className="mb-6 flex border-b border-line print:hidden">
+        <button
+          type="button"
+          onClick={() => setActiveTab("dispatch")}
+          className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition ${
+            activeTab === "dispatch"
+              ? "border-brand text-brand"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <FileText size={16} />
+          <span>Dispatch Manifests</span>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-mono">
+            {reports.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("contractor")}
+          className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition ${
+            activeTab === "contractor"
+              ? "border-brand text-brand"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Building2 size={16} />
+          <span>Contractor Invoicing Ledger</span>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-mono">
+            {contractorSummaries.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("department")}
+          className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition ${
+            activeTab === "department"
+              ? "border-brand text-brand"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <PieChart size={16} />
+          <span>Department Cost Allocation</span>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-mono">
+            {departmentSummaries.length}
+          </span>
+        </button>
       </div>
+
+      {activeTab === "contractor" && <ContractorBillingLedger bookings={data.bookings} />}
+      {activeTab === "department" && <DepartmentCostAllocation bookings={data.bookings} />}
+
+      {activeTab === "dispatch" && (
+        <>
+          <div className="grid gap-4 sm:grid-cols-3 print:hidden">
+            <Metric label="Dispatch reports" value={reports.length} />
+            <Metric label="Vehicles arranged" value={vehicleTotal} />
+            <Metric label="Passengers arranged" value={passengerTotal} />
+          </div>
       <div className="mt-6 grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
         <aside className="space-y-3 print:hidden">
           <Card className="p-4">
@@ -173,6 +368,14 @@ export function AdminReportWorkspace() {
           )}
         </main>
       </div>
+      </>
+      )}
+
+      <DrpFallbackModal
+        isOpen={showDrpModal}
+        onClose={() => setShowDrpModal(false)}
+        currentBookings={data.bookings}
+      />
     </>
   );
 }

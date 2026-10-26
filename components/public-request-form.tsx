@@ -1,5 +1,6 @@
 "use client";
 import { formatUsDate, getBangkokDateString } from "@/lib/date-format";
+import { getOtCutoffCountdown } from "@/lib/request-window";
 
 const getTodayString = () => getBangkokDateString();
 
@@ -16,14 +17,11 @@ const needsImmediateOffsiteAttention = (usingDate: string, startTime: string) =>
 };
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ArrowRight,
-  Car,
   CheckCircle2,
-  Clock3,
   HelpCircle,
-  MailCheck,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -54,6 +52,10 @@ import {
 import { PublicCarServiceRequestForm } from "@/components/public-car-service-request-form";
 import { overtimeDuration } from "@/lib/overtime";
 import { BrandLogo, PublicFooter } from "@/components/brand";
+import { companyEmailHint, isCompanyEmail } from "@/lib/company-email";
+import { RequestStatusTimeline } from "@/components/request-status-timeline";
+import { PublicRequestLanding } from "@/components/public-request-landing";
+import { DigitalTransportTicket } from "@/components/transport-booking-ui";
 
 const emptyEmployee = (): OvertimeEmployee => ({
   employeeId: "",
@@ -105,15 +107,14 @@ export default function PublicRequestForm({
   const [website, setWebsite] = useState("");
   const [error, setError] = useState("");
   const [errorField, setErrorField] = useState<string>();
-  const [copiedLink, setCopiedLink] = useState(false);
   const submitLock = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [success, setSuccess] = useState<{
     requestNo: string;
-    emailStatus: string;
-    manageUrl?: string;
+    requestType: RequestType;
+    confirmationDeliveryStatus: string;
     submittedAt: string;
   } | null>(null);
 
@@ -209,6 +210,11 @@ export default function PublicRequestForm({
       );
     if (!requesterEmail.trim())
       return failValidation("Company email is required.", "company-email");
+    if (!isCompanyEmail(requesterEmail))
+      return failValidation(
+        `Use your company email (${companyEmailHint()}).`,
+        "company-email",
+      );
     if (!department.trim())
       return failValidation("Department is required.", "department");
 
@@ -242,10 +248,29 @@ export default function PublicRequestForm({
           "ot-end",
         );
 
+      if (employee.transportRequired && !employee.employeePhone?.trim())
+        return failValidation(
+          "Passenger mobile phone number is required for driver coordination.",
+          "passenger-phone",
+        );
+      if (
+        employee.transportRequired &&
+        employee.employeePhone?.trim() &&
+        !/^0[689]\d{8}$/.test(employee.employeePhone.replace(/[-\s]/g, ""))
+      )
+        return failValidation(
+          "Please enter a valid 10-digit Thai mobile number (e.g. 081-234-5678).",
+          "passenger-phone",
+        );
       if (employee.transportRequired && !employee.busStop.trim())
         return failValidation(
           "Drop-off location is required when transportation is requested.",
           "drop-off-location",
+        );
+      if (usingDate === getTodayString() && getOtCutoffCountdown().isPastFinalCutoff)
+        return failValidation(
+          "The transport booking window for today closed at 16:00. Please contact GA hotline directly.",
+          "using-date",
         );
       if (!tigerSpaceConfirmed)
         return failValidation(
@@ -261,6 +286,11 @@ export default function PublicRequestForm({
       if (!approverEmail.trim())
         return failValidation(
           "Approver company email is required.",
+          "approver-email",
+        );
+      if (!isCompanyEmail(approverEmail))
+        return failValidation(
+          `The approver must use a company email (${companyEmailHint()}).`,
           "approver-email",
         );
       if (!confirmedSelf)
@@ -320,6 +350,7 @@ export default function PublicRequestForm({
         employeeId: employeeId.trim(),
         employeeName: requesterName.trim(),
         employeeEmail: requesterEmail.trim(),
+        employeePhone: employee.employeePhone?.trim() || undefined,
         workDescription: employee.workDescription.trim() || "Transport Request",
       };
       const response = await fetch(
@@ -337,6 +368,7 @@ export default function PublicRequestForm({
               email: requesterEmail,
               employeeId,
               department,
+              phone: employee.employeePhone?.trim() || undefined,
             },
             approver: {
               name: approverName,
@@ -375,8 +407,8 @@ export default function PublicRequestForm({
         throw new Error(result.error || "Unable to submit request.");
       setSuccess({
         requestNo: result.requestNo,
-        emailStatus: result.approvalEmailStatus,
-        manageUrl: result.manageUrl,
+        requestType,
+        confirmationDeliveryStatus: result.confirmationDeliveryStatus,
         submittedAt: new Date().toISOString(),
       });
       setShowSubmitConfirmation(false);
@@ -396,153 +428,87 @@ export default function PublicRequestForm({
   if (success)
     return (
       <PublicFrame>
-        <section
-          className="mx-auto max-w-2xl overflow-hidden rounded-lg border border-line bg-white"
-          aria-labelledby="success-title"
-        >
-          <div className="border-b border-line bg-[#f7f8fa] px-5 py-5 sm:px-7">
-            <div className="flex items-start gap-3">
-              <CheckCircle2
-                className="mt-0.5 shrink-0 text-success"
-                size={24}
-              />
-              <div>
-                <h1
-                  id="success-title"
-                  className="text-xl font-semibold text-ink"
-                >
-                  Request submitted
-                </h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  Keep the request number and management link for future
-                  changes.
-                </p>
-              </div>
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-5 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3.5 text-emerald-950">
+            <CheckCircle2 className="mt-0.5 shrink-0 text-success" size={21} />
+            <div>
+              <h1 id="success-title" className="font-bold">Booking received</h1>
+              <p className="mt-0.5 text-sm leading-5 text-emerald-800">
+                One final step: confirm the secure message sent to your company account.
+              </p>
             </div>
           </div>
-          <dl className="grid gap-x-8 gap-y-4 px-5 py-5 text-sm sm:grid-cols-2 sm:px-7">
-            <Info label="Request number" value={success.requestNo} />
-            <Info label="Current status" value="Pending department approval" />
-            <Info
-              label="Submitted"
-              value={new Intl.DateTimeFormat("en-GB", {
-                dateStyle: "medium",
-                timeStyle: "short",
-                timeZone: "Asia/Bangkok",
-              }).format(new Date(success.submittedAt))}
+          <DigitalTransportTicket
+            requestNo={success.requestNo}
+            serviceLabel={success.requestType === "overtime" ? "Overtime transport" : "Off-site business transport"}
+            statusLabel="Awaiting your confirmation"
+            origin={success.requestType === "overtime" ? "TOKIN Thailand" : pickupLocation}
+            destination={success.requestType === "overtime" ? employees[0]?.busStop : destination}
+            date={usingDate ? formatUsDate(usingDate) : undefined}
+            time={
+              success.requestType === "overtime"
+                ? `${employees[0]?.workStart || ""} – ${employees[0]?.workEnd || ""}`
+                : `${startTime} – ${endTime}`
+            }
+            footer={
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <Button type="button" variant="ghost" onClick={reset}>
+                  Create another request
+                </Button>
+                <Link
+                  href="/request/track"
+                  className="text-center text-sm font-semibold text-brand-600 hover:text-brand-700"
+                >
+                  How to track this request
+                </Link>
+              </div>
+            }
+          >
+            <dl className="grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
+              <Info
+                label="Submitted"
+                value={new Intl.DateTimeFormat("en-GB", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                  timeZone: "Asia/Bangkok",
+                }).format(new Date(success.submittedAt))}
+              />
+              <Info label="Department" value={department} />
+              <Info
+                label="Approval route"
+                value={success.requestType === "overtime" ? "HR/GA OT verification" : `${department} approver, then GA planning`}
+              />
+              <Info
+                label="Next action"
+                value="Open your email or Teams message and confirm this booking."
+              />
+            </dl>
+            <div className="mt-5 border-t border-slate-100 pt-5">
+            <RequestStatusTimeline
+              status="pending_requester_confirmation"
+              requestType={success.requestType}
             />
-            <Info label="Department" value={department} />
-            <Info
-              label="Approver"
-              value={`${department} department approver`}
-            />
-            <Info
-              label="Expected next step"
-              value="After approval, Admin assigns the vehicle and driver and emails the employee."
-            />
-          </dl>
-          {success.emailStatus === "queued" && (
-            <p className="mx-5 mb-5 border-l-[3px] border-brand bg-brand-light px-3.5 py-3 text-sm text-gray-700 sm:mx-7">
-              This request is queued for the {department} department approval
-              summary.
+            </div>
+            {success.confirmationDeliveryStatus === "sent" && (
+            <p className="mt-5 border-l-[3px] border-brand bg-brand-light px-3.5 py-3 text-sm text-gray-700">
+              A secure confirmation link was sent to {requesterEmail}. The
+              request will not continue until you confirm it.
             </p>
-          )}
-          {success.emailStatus !== "sent" &&
-            success.emailStatus !== "queued" && (
-              <p className="mx-5 mb-5 border-l-[3px] border-amber-500 bg-amber-50 px-3.5 py-3 text-sm text-amber-900 sm:mx-7">
-                The request was saved, but the approval email service is not
-                ready. Admin and department approvers can still view it.
+            )}
+            {success.confirmationDeliveryStatus !== "sent" && (
+              <p className="mt-5 border-l-[3px] border-amber-500 bg-amber-50 px-3.5 py-3 text-sm text-amber-900">
+                The request was saved, but the confirmation message could not
+                be delivered. Contact GA and provide request number {success.requestNo}.
               </p>
             )}
-          {success.manageUrl && (
-            <div className="border-t border-line bg-[#fafbfc] px-5 py-5 sm:px-7">
-              <p className="text-sm font-semibold text-ink">
-                Manage this request
-              </p>
-              <p className="mt-1 text-xs leading-5 text-gray-500">
-                Use this secure link to view, edit, cancel, or resubmit while
-                permitted.
-              </p>
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                <a
-                  className="inline-flex h-10 items-center justify-center rounded-lg bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark"
-                  href={success.manageUrl}
-                >
-                  Manage request
-                </a>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(
-                      success.manageUrl ?? "",
-                    );
-                    setCopiedLink(true);
-                  }}
-                >
-                  {copiedLink ? "Tracking link copied" : "Copy tracking link"}
-                </Button>
-              </div>
-              <p className="mt-3 text-xs font-medium text-danger">
-                Do not share this management link. Anyone with the link may be
-                able to access your request.
-              </p>
-            </div>
-          )}
-          <div className="border-t border-line px-5 py-4 sm:px-7">
-            <Button type="button" variant="ghost" onClick={reset}>
-              Create another request
-            </Button>
-          </div>
-        </section>
+          </DigitalTransportTicket>
+        </div>
       </PublicFrame>
     );
   if (!requestType)
     return (
-      <PublicFrame showAdminLink>
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-8 border-b border-line pb-7 sm:mb-10 sm:flex sm:items-end sm:justify-between sm:gap-10">
-            <div className="max-w-2xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
-                Employee transport service
-              </p>
-              <h1 className="mt-3 text-3xl font-bold tracking-[-0.03em] text-ink sm:text-[42px] sm:leading-tight">
-                Where do you need to go?
-              </h1>
-              <p className="mt-3 text-sm leading-6 text-gray-500 sm:text-base">
-                Start with the type of transport you need. Your company details
-                route the request to the right approver automatically.
-              </p>
-            </div>
-            <div className="mt-5 shrink-0 text-sm sm:mt-0 sm:text-right">
-              <p className="inline-flex items-center gap-2 font-semibold text-success">
-                <ShieldCheck size={16} /> No sign-in required
-              </p>
-              <p className="mt-1 text-xs text-gray-500">
-                Use your company email to submit
-              </p>
-            </div>
-          </div>
-          <div className="grid min-w-0 gap-5 md:grid-cols-2">
-            <Choice
-              eyebrow="Daily employee transport"
-              title="OVERTIME TRANSPORT"
-              body="Request company transport for approved overtime or holiday work."
-              note="Submit by 16:00"
-              href="/request/overtime"
-              onClick={() => setRequestType("overtime")}
-            />
-            <Choice
-              eyebrow="Business travel"
-              title="OFF-SITE BUSINESS TRANSPORT"
-              body="Vehicle request for business travel outside the company premises."
-              note="For off-site company trips"
-              href="/request/car-service"
-              onClick={() => setRequestType("outside_company")}
-            />
-          </div>
-          <RequestProgress />
-        </div>
+      <PublicFrame showTrackLink fullBleed>
+        <PublicRequestLanding />
       </PublicFrame>
     );
 
@@ -808,47 +774,6 @@ function Info({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-function RequestProgress() {
-  const steps = [
-    {
-      step: "1",
-      title: "Submit request",
-      desc: "Fill in employee & trip details",
-    },
-    {
-      step: "2",
-      title: "Verification & Approval",
-      desc: "Manager approval or Tiger OpenSpace sync",
-    },
-    {
-      step: "3",
-      title: "Vehicle dispatch",
-      desc: "GA assigns fleet & sends confirmation",
-    },
-  ];
-
-  return (
-    <section className="mt-12 border-t border-slate-200/80 pt-6">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-        How it works
-      </p>
-      <div className="mt-4 grid gap-6 sm:grid-cols-3">
-        {steps.map((item) => (
-          <div key={item.step} className="flex items-start gap-3">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">
-              {item.step}
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-slate-800">{item.title}</p>
-              <p className="mt-0.5 text-xs text-slate-500">{item.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function SectionHeading({
   number,
   title,
@@ -918,17 +843,19 @@ function FormActions({
 }
 export function PublicFrame({
   children,
-  showAdminLink,
+  showTrackLink,
+  fullBleed = false,
 }: {
   children: React.ReactNode;
-  showAdminLink?: boolean;
+  showTrackLink?: boolean;
+  fullBleed?: boolean;
 }) {
   const pathname = usePathname();
   const helpHref = `/request/help?from=${encodeURIComponent(pathname || "/request")}`;
 
   return (
-    <main className="flex min-h-screen flex-col bg-canvas">
-      <header className="border-b border-line bg-white px-4 sm:px-6 shadow-sm">
+    <main className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top_right,rgba(218,234,249,0.65),transparent_34%),var(--canvas)]">
+      <header className="border-b border-line border-t-4 border-t-brand-900 bg-white px-4 shadow-sm sm:px-6">
         <div className="mx-auto flex h-16 min-w-0 max-w-[1080px] items-center justify-between gap-3">
           <a
             href="/request"
@@ -947,6 +874,14 @@ export function PublicFrame({
             </div>
           </a>
           <div className="flex shrink-0 items-center gap-2">
+            {showTrackLink && (
+              <Link
+                href="/request/track"
+                className="hidden min-h-9 items-center rounded-lg border border-brand-200 bg-brand-50 px-3 text-xs font-bold text-brand-700 transition hover:border-brand-300 hover:bg-brand-100 sm:inline-flex"
+              >
+                Track request
+              </Link>
+            )}
             <a
               href={helpHref}
               aria-label="Help & user guide"
@@ -958,64 +893,16 @@ export function PublicFrame({
           </div>
         </div>
       </header>
-      <div className="mx-auto flex-1 min-w-0 max-w-[1080px] px-4 py-6 sm:px-6 sm:py-8">
+      <div
+        className={
+          fullBleed
+            ? "min-w-0 flex-1"
+            : "mx-auto min-w-0 max-w-[1080px] flex-1 px-4 py-6 sm:px-6 sm:py-8"
+        }
+      >
         {children}
       </div>
       <PublicFooter />
     </main>
-  );
-}
-
-function Choice({
-  eyebrow,
-  title,
-  body,
-  note,
-  href,
-  onClick,
-}: {
-  eyebrow: string;
-  title: string;
-  body: string;
-  note: string;
-  href?: string;
-  onClick: () => void;
-}) {
-  const content = (
-    <>
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-          {eyebrow}
-        </span>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-600">
-          {note}
-        </span>
-      </div>
-      <h2 className="mt-4 break-words text-lg font-bold leading-snug text-slate-900">
-        {title}
-      </h2>
-      <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{body}</p>
-      <div className="mt-6 flex items-center justify-start border-t border-slate-100 pt-4">
-        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 transition-colors group-hover:text-brand-700">
-          Start request <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
-        </span>
-      </div>
-    </>
-  );
-
-  const containerClasses = "group flex min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md sm:p-7";
-
-  if (href) {
-    return (
-      <a href={href} className={containerClasses}>
-        {content}
-      </a>
-    );
-  }
-
-  return (
-    <button type="button" onClick={onClick} className={containerClasses}>
-      {content}
-    </button>
   );
 }

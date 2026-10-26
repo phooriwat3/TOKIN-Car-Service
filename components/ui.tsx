@@ -21,7 +21,7 @@ export const Button = React.forwardRef<
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-150 disabled:cursor-not-allowed disabled:opacity-50 select-none active:translate-y-px",
+        "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-150 disabled:cursor-not-allowed disabled:opacity-50 select-none active:translate-y-px",
         buttonFocusRing,
         size === "sm" && "h-9 px-3 text-xs",
         size === "md" && "h-10 px-4 text-sm",
@@ -52,7 +52,7 @@ export const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border border-slate-200 bg-white shadow-card transition-shadow duration-200",
+      "rounded-xl border border-slate-200/90 bg-white shadow-card transition-[border-color,box-shadow,transform] duration-200",
       className,
     )}
     {...p}
@@ -67,7 +67,7 @@ export const CardHover = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border border-slate-200 bg-white shadow-card transition-shadow duration-200 hover:shadow-card-hover",
+      "rounded-xl border border-slate-200/90 bg-white shadow-card transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-card-hover",
       className,
     )}
     {...p}
@@ -141,7 +141,6 @@ export function DualLabel({ en, th }: { en: string; th: string }) {
     </span>
   );
 }
-
 export function Field({
   label,
   error,
@@ -169,6 +168,7 @@ export function Field({
 
 /* ─── Badge ─── */
 const badgeVariants: Record<string, string> = {
+  pending_requester_confirmation: "bg-blue-50 text-blue-700 border-blue-200/70",
   completed: "bg-emerald-50 text-emerald-700 border-emerald-200/70",
   rejected: "bg-red-50 text-red-700 border-red-200/70",
   cancelled: "bg-slate-100 text-slate-600 border-slate-200/70",
@@ -181,6 +181,7 @@ const badgeVariants: Record<string, string> = {
 };
 
 const badgeDotColors: Record<string, string> = {
+  pending_requester_confirmation: "bg-blue-500",
   completed: "bg-emerald-500",
   rejected: "bg-red-500",
   cancelled: "bg-slate-400",
@@ -194,6 +195,7 @@ const badgeDotColors: Record<string, string> = {
 
 const pulseStatuses = new Set([
   "in_progress",
+  "pending_requester_confirmation",
   "pending_approval",
   "pending_ot_verification",
 ]);
@@ -271,7 +273,7 @@ export function Stat({
   const card = (
     <div
       className={cn(
-        "rounded-xl border border-slate-200 bg-white p-5 shadow-2xs transition-all duration-150",
+        "relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 pt-6 shadow-card transition-all duration-150 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-brand-600 before:via-brand-500 before:to-amber-400",
         href && "hover:border-slate-300 hover:shadow-sm cursor-pointer",
         className,
       )}
@@ -874,4 +876,73 @@ export function TimeMaskInput(props: {
   }
 
   return <DesktopTimeWheelPicker {...props} />;
+}
+
+/* ─── Skeleton Components ─── */
+export function Skeleton({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn("animate-pulse rounded-md bg-slate-200/80", className)}
+      {...props}
+    />
+  );
+}
+
+export function TableSkeleton({
+  rows = 5,
+  columns = 6,
+  className,
+}: {
+  rows?: number;
+  columns?: number;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "overflow-hidden rounded-lg border border-slate-200 bg-white shadow-card",
+        className,
+      )}
+    >
+      <div className="flex gap-4 border-b border-slate-200 bg-slate-50/80 px-4 py-3">
+        {Array.from({ length: columns }).map((_, i) => (
+          <Skeleton key={i} className="h-4 flex-1" />
+        ))}
+      </div>
+      <div className="divide-y divide-slate-100">
+        {Array.from({ length: rows }).map((_, r) => (
+          <div key={r} className="flex items-center gap-4 px-4 py-3.5">
+            {Array.from({ length: columns }).map((_, c) => (
+              <Skeleton
+                key={c}
+                className={cn(
+                  "h-4 flex-1",
+                  c === 0 && "w-20 flex-initial",
+                  c === columns - 1 && "w-16 flex-initial",
+                )}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function CardSkeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "space-y-3 rounded-lg border border-slate-200 bg-white p-5 shadow-card",
+        className,
+      )}
+    >
+      <Skeleton className="h-4 w-1/3" />
+      <Skeleton className="h-8 w-1/2" />
+      <Skeleton className="h-3 w-2/3" />
+    </div>
+  );
 }

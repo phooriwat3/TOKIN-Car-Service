@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/http.ts';
 import { sha256Hex, token } from '../_shared/request-access.ts';
+import { requesterPermissions } from '../_shared/requester-permissions.ts';
 
 type Sequenced = { seq: number };
 type PassengerRow = Sequenced & { name: string };
@@ -61,9 +62,7 @@ Deno.serve(async (request) => {
       .update({ last_accessed_at: new Date().toISOString() })
       .eq('id', access.id);
 
-    const editable = ['pending_approval', 'pending_ot_verification', 'changes_requested', 'approved', 'assigned'].includes(booking.status);
-    const canCancel = editable ||
-      (booking.request_type === 'overtime' && booking.status === 'approved');
+    const permissions = requesterPermissions(booking.status);
     return json({
       request: {
         id: booking.id,
@@ -103,7 +102,7 @@ Deno.serve(async (request) => {
         createdAt: booking.created_at,
         updatedAt: booking.updated_at,
       },
-      permissions: { canEdit: editable, canCancel },
+      permissions,
     });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : 'Unable to load request.';

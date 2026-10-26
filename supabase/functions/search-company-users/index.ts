@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { companyDomains } from '../_shared/company-email.ts';
 
 const appBaseUrl = () =>
   Deno.env.get('APP_BASE_URL')?.trim().replace(/\/+$/, '') ||
@@ -116,7 +117,8 @@ Deno.serve(async (request) => {
     const mappedUsers = source.flatMap((item) => {
       const displayName = typeof item.displayName === 'string' ? item.displayName.trim() : '';
       const mail = typeof item.mail === 'string' ? item.mail.trim().toLowerCase() : '';
-      if (!displayName || !mail || !mail.includes('@')) return [];
+      const domain = mail.slice(mail.lastIndexOf('@') + 1);
+      if (!displayName || !mail || !companyDomains().has(domain)) return [];
       return [{
         displayName,
         mail,

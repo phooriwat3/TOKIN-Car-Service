@@ -1,11 +1,16 @@
+project_id = "tokin-car-service"
+
 [functions.search-company-users]
 verify_jwt = false
 
 [functions.public-submit-request]
 verify_jwt = false
 
-[functions.public-search-employee-directory]
+[functions.public-confirm-request]
 verify_jwt = false
+
+[functions.public-search-employee-directory]
+verify_jwt = true
 
 [functions.admin-employee-directory]
 verify_jwt = true
@@ -35,4 +40,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-ot-approval-digests]
+verify_jwt = false
+
+[functions.process-workflow-outbox]
 verify_jwt = false

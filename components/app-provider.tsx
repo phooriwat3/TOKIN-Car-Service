@@ -33,7 +33,6 @@ type Ctx = {
   error: string | null;
   setRole: (role: Role) => void;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithMicrosoft: (nextPath: string) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAllBookings: () => Promise<number>;
   deleteAllFleetResources: () => Promise<{ vehicles: number; drivers: number }>;
@@ -155,24 +154,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
-    });
-    if (signInError) {
-      setError(signInError.message);
-      throw signInError;
-    }
-  };
-
-  const signInWithMicrosoft = async (nextPath: string) => {
-    if (!supabase) return;
-    setError(null);
-    const redirectUrl = new URL("/auth/callback", window.location.origin);
-    redirectUrl.searchParams.set("next", nextPath);
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
-      provider: "azure",
-      options: {
-        scopes: "openid profile email offline_access User.Read",
-        redirectTo: redirectUrl.toString(),
-      },
     });
     if (signInError) {
       setError(signInError.message);
@@ -320,7 +301,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       error,
       setRole,
       signIn,
-      signInWithMicrosoft,
       signOut,
       deleteAllBookings,
       deleteAllFleetResources,

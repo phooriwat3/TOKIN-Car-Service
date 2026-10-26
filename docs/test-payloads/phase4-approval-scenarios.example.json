@@ -1,0 +1,159 @@
+{
+  "callbackUrl": "https://STAGING_PROJECT.supabase.co/functions/v1/approval-callback",
+  "cases": [
+    {
+      "name": "01 approve assigned request",
+      "expectedHttpStatus": 200,
+      "expectedBody": { "ok": true, "status": "approved", "alreadyProcessed": false },
+      "body": {
+        "schemaVersion": 1,
+        "event": "approval.action_submitted",
+        "actionId": "REPLACE-APPROVE-ACTION-ID",
+        "requestId": "REPLACE-APPROVE-REQUEST-UUID",
+        "expectedVersion": 2,
+        "expiresAt": "2027-10-30T10:00:00.000Z",
+        "action": "approved",
+        "comments": "Approved for staging test.",
+        "responder": { "name": "Assigned Approver", "email": "approver@yageo.com", "teamsUserId": "REPLACE-TEAMS-ID" }
+      }
+    },
+    {
+      "name": "02 duplicate approve is idempotent",
+      "expectedHttpStatus": 200,
+      "expectedBody": { "ok": true, "status": "approved", "alreadyProcessed": true },
+      "body": {
+        "schemaVersion": 1,
+        "event": "approval.action_submitted",
+        "actionId": "REPLACE-APPROVE-ACTION-ID",
+        "requestId": "REPLACE-APPROVE-REQUEST-UUID",
+        "expectedVersion": 2,
+        "expiresAt": "2027-10-30T10:00:00.000Z",
+        "action": "approved",
+        "comments": "Approved for staging test.",
+        "responder": { "name": "Assigned Approver", "email": "approver@yageo.com", "teamsUserId": "REPLACE-TEAMS-ID" }
+      }
+    },
+    {
+      "name": "03 reject with comment",
+      "expectedHttpStatus": 200,
+      "expectedBody": { "ok": true, "status": "rejected", "alreadyProcessed": false },
+      "body": {
+        "schemaVersion": 1,
+        "event": "approval.action_submitted",
+        "actionId": "REPLACE-REJECT-ACTION-ID",
+        "requestId": "REPLACE-REJECT-REQUEST-UUID",
+        "expectedVersion": 2,
+        "expiresAt": "2027-10-30T10:00:00.000Z",
+        "action": "rejected",
+        "comments": "Rejected for a documented staging reason.",
+        "responder": { "name": "Assigned Approver", "email": "approver@yageo.com", "teamsUserId": "REPLACE-TEAMS-ID" }
+      }
+    },
+    {
+      "name": "04 request changes with comment",
+      "expectedHttpStatus": 200,
+      "expectedBody": { "ok": true, "status": "changes_requested", "alreadyProcessed": false },
+      "body": {
+        "schemaVersion": 1,
+        "event": "approval.action_submitted",
+        "actionId": "REPLACE-CHANGES-ACTION-ID",
+        "requestId": "REPLACE-CHANGES-REQUEST-UUID",
+        "expectedVersion": 2,
+        "expiresAt": "2027-10-30T10:00:00.000Z",
+        "action": "changes_requested",
+        "comments": "Please correct the destination.",
+        "responder": { "name": "Assigned Approver", "email": "approver@yageo.com", "teamsUserId": "REPLACE-TEAMS-ID" }
+      }
+    },
+    {
+      "name": "05 wrong responder",
+      "expectedHttpStatus": 409,
+      "body": {
+        "schemaVersion": 1,
+        "event": "approval.action_submitted",
+        "actionId": "REPLACE-WRONG-ACTOR-ACTION-ID",
+        "requestId": "REPLACE-WRONG-ACTOR-REQUEST-UUID",
+        "expectedVersion": 2,
+        "expiresAt": "2027-10-30T10:00:00.000Z",
+        "action": "approved",
+        "comments": "",
+        "responder": { "name": "Wrong User", "email": "wrong.user@yageo.com", "teamsUserId": "REPLACE-WRONG-TEAMS-ID" }
+      }
+    },
+    {
+      "name": "06 stale workflow version",
+      "expectedHttpStatus": 409,
+      "body": {
+        "schemaVersion": 1,
+        "event": "approval.action_submitted",
+        "actionId": "REPLACE-STALE-ACTION-ID",
+        "requestId": "REPLACE-STALE-REQUEST-UUID",
+        "expectedVersion": 1,
+        "expiresAt": "2027-10-30T10:00:00.000Z",
+        "action": "approved",
+        "comments": "",
+        "responder": { "name": "Assigned Approver", "email": "approver@yageo.com", "teamsUserId": "REPLACE-TEAMS-ID" }
+      }
+    },
+    {
+      "name": "07 expired card",
+      "expectedHttpStatus": 409,
+      "body": {
+        "schemaVersion": 1,
+        "event": "approval.action_submitted",
+        "actionId": "REPLACE-EXPIRED-ACTION-ID",
+        "requestId": "REPLACE-EXPIRED-REQUEST-UUID",
+        "expectedVersion": 2,
+        "expiresAt": "2020-01-01T00:00:00.000Z",
+        "action": "approved",
+        "comments": "",
+        "responder": { "name": "Assigned Approver", "email": "approver@yageo.com", "teamsUserId": "REPLACE-TEAMS-ID" }
+      }
+    },
+    {
+      "name": "08 missing rejection comment",
+      "expectedHttpStatus": 409,
+      "body": {
+        "schemaVersion": 1,
+        "event": "approval.action_submitted",
+        "actionId": "REPLACE-NO-COMMENT-ACTION-ID",
+        "requestId": "REPLACE-NO-COMMENT-REQUEST-UUID",
+        "expectedVersion": 2,
+        "expiresAt": "2027-10-30T10:00:00.000Z",
+        "action": "rejected",
+        "comments": "",
+        "responder": { "name": "Assigned Approver", "email": "approver@yageo.com", "teamsUserId": "REPLACE-TEAMS-ID" }
+      }
+    },
+    {
+      "name": "09 unsupported event",
+      "expectedHttpStatus": 409,
+      "body": {
+        "schemaVersion": 1,
+        "event": "approval.completed",
+        "actionId": "REPLACE-WRONG-EVENT-ACTION-ID",
+        "requestId": "REPLACE-WRONG-EVENT-REQUEST-UUID",
+        "expectedVersion": 2,
+        "expiresAt": "2027-10-30T10:00:00.000Z",
+        "action": "approved",
+        "comments": "",
+        "responder": { "name": "Assigned Approver", "email": "approver@yageo.com", "teamsUserId": "REPLACE-TEAMS-ID" }
+      }
+    },
+    {
+      "name": "10 action ID reused with changed content",
+      "expectedHttpStatus": 409,
+      "body": {
+        "schemaVersion": 1,
+        "event": "approval.action_submitted",
+        "actionId": "REPLACE-APPROVE-ACTION-ID",
+        "requestId": "REPLACE-APPROVE-REQUEST-UUID",
+        "expectedVersion": 2,
+        "expiresAt": "2027-10-30T10:00:00.000Z",
+        "action": "rejected",
+        "comments": "Changed content must not reuse the action ID.",
+        "responder": { "name": "Assigned Approver", "email": "approver@yageo.com", "teamsUserId": "REPLACE-TEAMS-ID" }
+      }
+    }
+  ]
+}

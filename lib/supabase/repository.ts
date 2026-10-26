@@ -49,7 +49,7 @@ export async function loadProfile(supabase: SupabaseClient): Promise<User> {
   };
 }
 
-function mapBooking(row: any): Booking {
+export function mapBooking(row: any): Booking {
   const approval = [...(row.approvals ?? [])].sort((a, b) =>
     String(b.acted_at).localeCompare(String(a.acted_at)),
   )[0];
@@ -447,6 +447,11 @@ export async function persistBookingUpdate(
       p_toll_fee: patch.tripLog.tollFee,
       p_parking_fee: patch.tripLog.parkingFee,
       p_remarks: patch.tripLog.remarks ?? null,
+    });
+  } else if (patch.status === "cancelled") {
+    result = await supabase.rpc("admin_cancel_booking", {
+      p_booking_id: id,
+      p_reason: patch.rejectReason ?? "",
     });
   } else {
     result = await supabase

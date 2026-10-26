@@ -95,13 +95,13 @@ const layout = (input: {
   title: string;
   intro: string;
   content: string;
-  action: string;
-  actionUrl: string;
+  action?: string;
+  actionUrl?: string;
   secondaryAction?: string;
   secondaryUrl?: string;
-  expiresAt: string;
+  expiresAt?: string;
 }) =>
-  `<!doctype html><html><body style="margin:0;padding:0;background:#f3f6fa;font-family:Arial,'Segoe UI',sans-serif;color:#172033"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(input.preheader)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f6fa;padding:24px 12px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:#fff;border:1px solid #dbe3ee;border-radius:10px;overflow:hidden"><tr><td style="background:#173f73;padding:20px 26px;color:#fff"><div style="font-size:20px;font-weight:700">TOKIN Transport</div><div style="font-size:12px;color:#d8e7fb;margin-top:3px">Transportation Request Management</div></td></tr><tr><td style="padding:26px"><span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#eef4fb;color:${input.color};font-size:12px;font-weight:700;text-transform:uppercase">${esc(input.status)}</span><h1 style="font-size:22px;line-height:1.3;margin:14px 0 8px">${esc(input.title)}</h1><p style="font-size:14px;line-height:1.65;margin:0;color:#475569">${esc(input.intro)}</p>${input.content}${actionButton(input.action, input.actionUrl, input.color)}${input.secondaryAction && input.secondaryUrl ? `<div style="text-align:center;margin-top:10px"><a href="${esc(input.secondaryUrl)}" style="color:#1f5fbf;font-size:14px;font-weight:600">${esc(input.secondaryAction)}</a></div>` : ""}<p style="margin:20px 0 0;font-size:11px;line-height:1.55;color:#64748b;word-break:break-all">If the button does not work, copy this address into your browser:<br><a href="${esc(input.actionUrl)}" style="color:#1f5fbf">${esc(input.actionUrl)}</a></p><p style="margin:14px 0 0;padding:10px 12px;background:#fff7ed;border-left:3px solid #f59e0b;font-size:12px;line-height:1.5;color:#9a3412">This secure link expires on ${esc(input.expiresAt)}. Do not forward this email.</p></td></tr><tr><td style="padding:16px 26px;background:#f8fafc;border-top:1px solid #e5e7eb;font-size:11px;color:#64748b">This is an automated message from TOKIN Transport. Please do not reply.</td></tr></table></td></tr></table></body></html>`;
+  `<!doctype html><html><body style="margin:0;padding:0;background:#f3f6fa;font-family:Arial,'Segoe UI',sans-serif;color:#172033"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(input.preheader)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f6fa;padding:24px 12px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:#fff;border:1px solid #dbe3ee;border-radius:10px;overflow:hidden"><tr><td style="background:#173f73;padding:20px 26px;color:#fff"><div style="font-size:20px;font-weight:700">TOKIN Transport</div><div style="font-size:12px;color:#d8e7fb;margin-top:3px">Transportation Request Management</div></td></tr><tr><td style="padding:26px"><span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#eef4fb;color:${input.color};font-size:12px;font-weight:700;text-transform:uppercase">${esc(input.status)}</span><h1 style="font-size:22px;line-height:1.3;margin:14px 0 8px">${esc(input.title)}</h1><p style="font-size:14px;line-height:1.65;margin:0;color:#475569">${esc(input.intro)}</p>${input.content}${input.action && input.actionUrl ? actionButton(input.action, input.actionUrl, input.color) : ""}${input.secondaryAction && input.secondaryUrl ? `<div style="text-align:center;margin-top:10px"><a href="${esc(input.secondaryUrl)}" style="color:#1f5fbf;font-size:14px;font-weight:600">${esc(input.secondaryAction)}</a></div>` : ""}${input.actionUrl ? `<p style="margin:20px 0 0;font-size:11px;line-height:1.55;color:#64748b;word-break:break-all">If the button does not work, copy this address into your browser:<br><a href="${esc(input.actionUrl)}" style="color:#1f5fbf">${esc(input.actionUrl)}</a></p>` : ""}${input.expiresAt ? `<p style="margin:14px 0 0;padding:10px 12px;background:#fff7ed;border-left:3px solid #f59e0b;font-size:12px;line-height:1.5;color:#9a3412">This secure link expires on ${esc(input.expiresAt)}. Do not forward this email.</p>` : ""}</td></tr><tr><td style="padding:16px 26px;background:#f8fafc;border-top:1px solid #e5e7eb;font-size:11px;color:#64748b">This is an automated message from TOKIN Transport. Please do not reply.</td></tr></table></td></tr></table></body></html>`;
 
 const approvalEmail = (
   data: RequestData & { approvalUrl: string; expiresAt: string },
@@ -116,6 +116,23 @@ const approvalEmail = (
     content: details(data),
     action: "Review and decide",
     actionUrl: data.approvalUrl,
+    expiresAt: data.expiresAt,
+  }),
+});
+
+const confirmationEmail = (
+  data: RequestData & { confirmationUrl: string; expiresAt: string },
+) => ({
+  emailSubject: `[Confirm request] ${data.requestNo}`,
+  emailBodyHtml: layout({
+    preheader: `Confirm ${data.requestNo} before it enters the transport workflow.`,
+    status: "Confirmation required",
+    color: "#1f5fbf",
+    title: "Confirm your transport request",
+    intro: `Dear ${data.requesterName}, confirm that you submitted this request. After confirmation, this secure link becomes your request management link.`,
+    content: details(data),
+    action: "Confirm request",
+    actionUrl: data.confirmationUrl,
     expiresAt: data.expiresAt,
   }),
 });
@@ -159,6 +176,78 @@ const manageEmail = (
       action: changes ? "Edit and resubmit request" : "View or manage request",
       actionUrl: data.manageUrl,
       expiresAt: data.expiresAt,
+    }),
+  };
+};
+
+const requesterDecisionEmail = (
+  data: RequestData & {
+    event: "request.approved" | "request.rejected";
+    comments?: string;
+  },
+) => {
+  const approved = data.event === "request.approved";
+  const comments = !approved && data.comments
+    ? `<div style="margin-top:18px;padding:14px 16px;background:#fff7ed;border-left:4px solid #f59e0b"><b style="font-size:12px;color:#9a3412">APPROVER COMMENTS</b><div style="margin-top:5px;font-size:14px;white-space:pre-wrap">${esc(data.comments)}</div></div>`
+    : "";
+  return {
+    emailSubject: approved
+      ? `[Approved] ${data.requestNo}`
+      : `[Rejected] ${data.requestNo}`,
+    emailBodyHtml: layout({
+      preheader: approved
+        ? `${data.requestNo} was approved.`
+        : `${data.requestNo} was rejected.`,
+      status: approved ? "Approved" : "Rejected",
+      color: approved ? "#16794b" : "#b42318",
+      title: approved
+        ? "Your transport request was approved"
+        : "Your transport request was rejected",
+      intro: approved
+        ? `Dear ${data.requesterName}, GA can now plan the vehicle and driver assignment.`
+        : `Dear ${data.requesterName}, the assigned approver rejected this request.`,
+      content: `${comments}${details(data)}`,
+    }),
+  };
+};
+
+const adminAlertEmail = (
+  data: RequestData & {
+    reviewUrl: string;
+    urgent?: boolean;
+    exception?: string | null;
+  },
+) => {
+  const exception = data.exception
+    ? `<div style="margin-top:18px;padding:14px 16px;background:#fff1f2;border-left:4px solid #dc2626"><b style="font-size:12px;color:#991b1b">WORKFLOW EXCEPTION</b><div style="margin-top:5px;font-size:14px;white-space:pre-wrap">${esc(data.exception)}</div></div>`
+    : "";
+  const adminDetails = [
+    row("Request No.", data.requestNo),
+    row("Form", typeLabel(data.requestType, data.requestOrigin)),
+    row("Requester", data.requesterName),
+    row("Department", data.requesterDepartment || "-"),
+    row("Using date", dateLabel(data.usingDate)),
+    row("Time", `${timeLabel(data.startTime)} - ${timeLabel(data.endTime)}`),
+    row("Route", `${data.pickupLocation} to ${data.destination}`),
+  ].join("");
+
+  return {
+    emailSubject: data.exception
+      ? `[Workflow exception] ${data.requestNo}`
+      : `[GA review] ${data.requestNo}`,
+    emailBodyHtml: layout({
+      preheader: data.exception
+        ? `${data.requestNo} needs operational attention.`
+        : `${data.requestNo} is ready for transport planning.`,
+      status: data.exception ? "Exception" : data.urgent ? "Urgent GA review" : "Ready for GA",
+      color: data.exception ? "#b42318" : data.urgent ? "#d97706" : "#1f5fbf",
+      title: data.exception
+        ? "Transport workflow needs attention"
+        : "Request ready for transport planning",
+      intro: "Open the secured GA workspace to review the request and arrange transportation.",
+      content: `${exception}<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:16px;border-collapse:separate;border-spacing:0;border:1px solid #dbe3ee;border-radius:8px;overflow:hidden">${adminDetails}</table>`,
+      action: "Open GA workspace",
+      actionUrl: data.reviewUrl,
     }),
   };
 };
@@ -235,4 +324,11 @@ const assignmentEmail = (
   }),
 });
 
-export { approvalEmail, assignmentEmail, manageEmail };
+export {
+  adminAlertEmail,
+  approvalEmail,
+  assignmentEmail,
+  confirmationEmail,
+  manageEmail,
+  requesterDecisionEmail,
+};

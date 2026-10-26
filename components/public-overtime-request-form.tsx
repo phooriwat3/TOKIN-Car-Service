@@ -1,7 +1,7 @@
 "use client";
 import { formatUsDate } from "@/lib/date-format";
 
-import { Check, Clock3, ShieldCheck } from "lucide-react";
+import { Clock3, ShieldCheck } from "lucide-react";
 import {
   Button,
   Field,
@@ -21,7 +21,12 @@ import {
   OT_REQUEST_END,
   OT_REQUEST_START,
   bangkokTime,
+  getOtCutoffCountdown,
 } from "@/lib/request-window";
+import {
+  BookingJourney,
+  TransportBookingHero,
+} from "@/components/transport-booking-ui";
 
 const DEPARTMENTS = [
   "MD",
@@ -91,17 +96,32 @@ export function PublicOvertimeRequestForm(
     props.usingDate &&
     duration &&
     props.tigerSpaceConfirmed &&
-    props.employee.busStop.trim(),
+    props.employee.busStop.trim() &&
+    (props.employee.employeePhone?.trim() ?? ""),
   );
   const activeStep = props.reviewing ? 3 : employeeComplete ? 2 : 1;
+  const countdown = getOtCutoffCountdown();
 
   if (props.reviewing) {
     return (
       <div className="space-y-5">
-        <Progress
+        <TransportBookingHero
+          eyebrow="Employee transport booking"
+          title="Review your overtime ride"
+          description="Check your OT schedule and drop-off point before sending the transport booking."
+          serviceLabel="Overtime transport"
+          origin="TOKIN Thailand"
+          destination={props.employee.busStop}
+          date={props.usingDate ? formatUsDate(props.usingDate) : undefined}
+          time={props.employee.workStart && props.employee.workEnd ? `${props.employee.workStart} – ${props.employee.workEnd}` : undefined}
+        />
+        <BookingJourney
           activeStep={activeStep}
-          employeeComplete={employeeComplete}
-          detailsComplete={detailsComplete}
+          steps={[
+            { label: "Passenger", complete: employeeComplete },
+            { label: "OT trip", complete: detailsComplete },
+            { label: "Review & submit" },
+          ]}
         />
         {props.error && (
           <ErrorSummary message={props.error} fieldId={props.errorField} />
@@ -156,6 +176,7 @@ export function PublicOvertimeRequestForm(
               value={duration ?? "Invalid time range"}
             />
             <Summary label="Transportation" value="Transportation required" />
+            <Summary label="Contact phone" value={props.employee.employeePhone || "-"} />
             <Summary label="Drop-off location" value={props.employee.busStop} />
           </dl>
           <div className="flex flex-col-reverse gap-3 border-t border-line bg-[#fafbfc] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
@@ -182,36 +203,49 @@ export function PublicOvertimeRequestForm(
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
-            Employee transportation request
-          </p>
-          <h1 className="mt-1.5 text-2xl font-bold tracking-[-0.02em] text-ink sm:text-[30px]">
-            OVERTIME TRANSPORT
-          </h1>
-          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-gray-500">
-            Request company transport for approved overtime or holiday work.
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={props.onBackToType}
-        >
-          Change request type
-        </Button>
-      </div>
+      <TransportBookingHero
+        eyebrow="Employee transport booking"
+        title="Book your overtime ride home"
+        description="Request a company ride after overtime or holiday work, using the same trip-first experience as a transport booking site."
+        serviceLabel="Overtime transport"
+        origin="TOKIN Thailand"
+        destination={props.employee.busStop}
+        date={props.usingDate ? formatUsDate(props.usingDate) : undefined}
+        time={props.employee.workStart && props.employee.workEnd ? `${props.employee.workStart} – ${props.employee.workEnd}` : undefined}
+        action={
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={props.onBackToType}
+            className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+          >
+            Change service
+          </Button>
+        }
+      />
 
       <div className="grid gap-3 border border-amber-200 bg-amber-50/80 px-4 py-3.5 text-sm text-amber-950 sm:grid-cols-[1fr_auto] sm:items-center">
         <div className="flex items-start gap-3">
           <Clock3 className="mt-0.5 shrink-0 text-amber-700" size={18} />
           <div>
-            <p className="font-semibold text-slate-900">
-              Booking Window: {OT_REQUEST_START} – {OT_REQUEST_END}
-            </p>
-            <p className="mt-0.5 text-xs text-amber-800">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-semibold text-slate-900">
+                Booking Window: {OT_REQUEST_START} – {OT_REQUEST_END}
+              </p>
+              <span
+                className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold ${
+                  countdown.isBeforeCutoff
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : !countdown.isPastFinalCutoff
+                      ? "bg-amber-100 text-amber-800 border border-amber-300"
+                      : "bg-rose-100 text-rose-800 border border-rose-300"
+                }`}
+              >
+                {countdown.formattedText}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-amber-800">
               Requests received by {OT_NORMAL_REQUEST_CUTOFF} enter the normal transport-planning batch. Submissions after {OT_NORMAL_REQUEST_CUTOFF} are subject to vehicle availability.
             </p>
           </div>
@@ -234,10 +268,13 @@ export function PublicOvertimeRequestForm(
         </p>
       </div>
 
-      <Progress
+      <BookingJourney
         activeStep={activeStep}
-        employeeComplete={employeeComplete}
-        detailsComplete={detailsComplete}
+        steps={[
+          { label: "Passenger", complete: employeeComplete },
+          { label: "OT trip", complete: detailsComplete },
+          { label: "Review & submit" },
+        ]}
       />
 
       <section
@@ -510,27 +547,52 @@ export function PublicOvertimeRequestForm(
             )}
           </div>
 
-          <Field label="Drop-off location / bus stop">
-            <Input
-              id="drop-off-location"
-              required
-              className={
-                props.errorField === "drop-off-location"
-                  ? "border-danger ring-2 ring-danger/20"
-                  : ""
-              }
-              placeholder="Enter your usual bus stop or drop-off point"
-              value={props.employee.busStop}
-              onChange={(event) =>
-                props.onEmployeeChange("busStop", event.target.value)
-              }
-            />
-            {props.errorField === "drop-off-location" && (
-              <p className="mt-1.5 text-xs font-semibold text-danger">
-                ⚠️ {props.error}
-              </p>
-            )}
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Passenger mobile phone * (เบอร์ติดต่อสำหรับคนขับ)">
+              <Input
+                id="passenger-phone"
+                required
+                type="tel"
+                className={
+                  props.errorField === "passenger-phone"
+                    ? "border-danger ring-2 ring-danger/20"
+                    : ""
+                }
+                placeholder="e.g. 081-234-5678"
+                value={props.employee.employeePhone ?? ""}
+                onChange={(event) =>
+                  props.onEmployeeChange("employeePhone", event.target.value)
+                }
+              />
+              {props.errorField === "passenger-phone" && (
+                <p className="mt-1.5 text-xs font-semibold text-danger">
+                  ⚠️ {props.error}
+                </p>
+              )}
+            </Field>
+
+            <Field label="Drop-off location / bus stop * (จุดลงรถ)">
+              <Input
+                id="drop-off-location"
+                required
+                className={
+                  props.errorField === "drop-off-location"
+                    ? "border-danger ring-2 ring-danger/20"
+                    : ""
+                }
+                placeholder="Enter your usual bus stop or drop-off point"
+                value={props.employee.busStop}
+                onChange={(event) =>
+                  props.onEmployeeChange("busStop", event.target.value)
+                }
+              />
+              {props.errorField === "drop-off-location" && (
+                <p className="mt-1.5 text-xs font-semibold text-danger">
+                  ⚠️ {props.error}
+                </p>
+              )}
+            </Field>
+          </div>
         </div>
       </section>
 
@@ -553,54 +615,6 @@ export function PublicOvertimeRequestForm(
         </div>
       </div>
     </div>
-  );
-}
-
-function Progress({
-  activeStep,
-  employeeComplete,
-  detailsComplete,
-}: {
-  activeStep: number;
-  employeeComplete: boolean;
-  detailsComplete: boolean;
-}) {
-  const steps = [
-    { label: "Employee information", complete: employeeComplete },
-    { label: "OT and transportation", complete: detailsComplete },
-    { label: "Review and submit", complete: false },
-  ];
-  return (
-    <nav
-      aria-label="Request progress"
-      className="border-y border-line bg-white px-2 py-3 sm:px-4"
-    >
-      <ol className="grid grid-cols-3 gap-1">
-        {steps.map((step, index) => {
-          const number = index + 1;
-          const active = number === activeStep;
-          const complete = number < activeStep || step.complete;
-          return (
-            <li
-              key={step.label}
-              aria-current={active ? "step" : undefined}
-              className="flex min-w-0 items-center gap-2 px-1 sm:px-3"
-            >
-              <span
-                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-semibold ${active ? "border-brand bg-brand text-white" : complete ? "border-brand bg-brand-light text-brand" : "border-gray-300 bg-white text-gray-500"}`}
-              >
-                {complete && !active ? <Check size={13} /> : number}
-              </span>
-              <span
-                className={`min-w-0 text-[11px] leading-4 sm:text-xs ${active ? "font-semibold text-ink" : "text-gray-500"}`}
-              >
-                {step.label}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
   );
 }
 

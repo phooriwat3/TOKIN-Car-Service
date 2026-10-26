@@ -3,11 +3,7 @@
 import { formatUsDate } from "@/lib/date-format";
 import {
   Car,
-  Check,
-  Clock3,
-  MapPin,
   ShieldCheck,
-  UserCheck,
 } from "lucide-react";
 import {
   Button,
@@ -23,6 +19,10 @@ import {
 } from "@/components/company-user-field";
 import { GoogleMapLinks } from "@/components/google-map-links";
 import { MultiStopDestinationField } from "@/components/multi-stop-destination-field";
+import {
+  BookingJourney,
+  TransportBookingHero,
+} from "@/components/transport-booking-ui";
 
 const DEPARTMENTS = [
   "MD",
@@ -121,10 +121,23 @@ export function PublicCarServiceRequestForm(
   if (props.reviewing) {
     return (
       <div className="space-y-5 animate-fade-in">
-        <Progress
+        <TransportBookingHero
+          eyebrow="Employee transport booking"
+          title="Review your business trip"
+          description="Check the passenger, route, schedule, and approver before sending this booking."
+          serviceLabel="Off-site business"
+          origin={props.pickupLocation}
+          destination={props.destination}
+          date={props.usingDate ? formatUsDate(props.usingDate) : undefined}
+          time={props.startTime && props.endTime ? `${props.startTime} – ${props.endTime}` : undefined}
+        />
+        <BookingJourney
           activeStep={activeStep}
-          employeeComplete={employeeComplete}
-          detailsComplete={detailsComplete}
+          steps={[
+            { label: "Passenger & approver", complete: employeeComplete },
+            { label: "Trip & schedule", complete: detailsComplete },
+            { label: "Review & submit" },
+          ]}
         />
         {props.error && (
           <ErrorSummary message={props.error} fieldId={props.errorField} />
@@ -213,29 +226,27 @@ export function PublicCarServiceRequestForm(
 
   return (
     <div className="space-y-5 animate-fade-in">
-      {/* Header section */}
-      <div className="flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
-            Off-site Business Transport
-          </p>
-          <h1 className="mt-1.5 text-2xl font-bold tracking-[-0.02em] text-ink sm:text-[30px]">
-            OFF-SITE BUSINESS TRANSPORT
-          </h1>
-          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-gray-500">
-            Request a company vehicle and driver for official off-site business
-            travel.
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={props.onBackToType}
-        >
-          Change request type
-        </Button>
-      </div>
+      <TransportBookingHero
+        eyebrow="Employee transport booking"
+        title="Book an off-site business trip"
+        description="Reserve a company vehicle and driver for approved business travel outside TOKIN."
+        serviceLabel="Off-site business"
+        origin={props.pickupLocation}
+        destination={props.destination}
+        date={props.usingDate ? formatUsDate(props.usingDate) : undefined}
+        time={props.startTime && props.endTime ? `${props.startTime} – ${props.endTime}` : undefined}
+        action={
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={props.onBackToType}
+            className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+          >
+            Change service
+          </Button>
+        }
+      />
 
       {/* Top Banner Notice */}
       <div className="grid gap-3 border border-brand-200 bg-brand-50/70 px-4 py-3.5 text-sm text-brand-950 sm:grid-cols-[1fr_auto] sm:items-center">
@@ -266,11 +277,13 @@ export function PublicCarServiceRequestForm(
         <ErrorSummary message={props.error} fieldId={props.errorField} />
       )}
 
-      {/* Stepper Progress Bar */}
-      <Progress
+      <BookingJourney
         activeStep={activeStep}
-        employeeComplete={employeeComplete}
-        detailsComplete={detailsComplete}
+        steps={[
+          { label: "Passenger & approver", complete: employeeComplete },
+          { label: "Trip & schedule", complete: detailsComplete },
+          { label: "Review & submit" },
+        ]}
       />
 
       {/* Step 1: Employee & Approver Information */}
@@ -668,62 +681,6 @@ export function PublicCarServiceRequestForm(
 }
 
 /* ── Helper Components ── */
-
-function Progress({
-  activeStep,
-  employeeComplete,
-  detailsComplete,
-}: {
-  activeStep: number;
-  employeeComplete: boolean;
-  detailsComplete: boolean;
-}) {
-  const steps = [
-    { label: "Employee & Approver", complete: employeeComplete },
-    { label: "Trip & schedule details", complete: detailsComplete },
-    { label: "Review and submit", complete: false },
-  ];
-  return (
-    <nav
-      aria-label="Request progress"
-      className="border-y border-line bg-white px-2 py-3 sm:px-4"
-    >
-      <ol className="grid grid-cols-3 gap-1">
-        {steps.map((step, index) => {
-          const number = index + 1;
-          const active = number === activeStep;
-          const complete = number < activeStep || step.complete;
-          return (
-            <li
-              key={step.label}
-              aria-current={active ? "step" : undefined}
-              className="flex min-w-0 items-center gap-2 px-1 sm:px-3"
-            >
-              <span
-                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-semibold ${
-                  active
-                    ? "border-brand bg-brand text-white"
-                    : complete
-                      ? "border-brand bg-brand-light text-brand"
-                      : "border-gray-300 bg-white text-gray-500"
-                }`}
-              >
-                {complete && !active ? <Check size={13} /> : number}
-              </span>
-              <span
-                className={`min-w-0 text-[11px] leading-4 sm:text-xs ${
-                  active ? "font-semibold text-ink" : "text-gray-500"
-                }`}
-              >
-                {step.label}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
-  );
-}
 
 function SectionHeader({
   title,

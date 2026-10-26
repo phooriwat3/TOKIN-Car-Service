@@ -1,0 +1,137 @@
+{
+  "events": [
+    {
+      "name": "requester confirmation",
+      "body": {
+        "schemaVersion": 1,
+        "event": "request.confirmation_required",
+        "audience": "requester",
+        "requestId": "51000000-0000-4000-8000-000000000001",
+        "requestNo": "CSR-STAGE-000001",
+        "recipient": {
+          "name": "Staging Requester",
+          "email": "requester@yageo.com"
+        },
+        "adaptiveCard": {
+          "type": "AdaptiveCard",
+          "version": "1.4",
+          "body": [
+            { "type": "TextBlock", "text": "CSR-STAGE-000001 - confirmation test", "wrap": true }
+          ],
+          "actions": [
+            { "type": "Action.OpenUrl", "title": "Confirm request", "url": "https://staging.example.invalid/request/confirm?token=REPLACE" }
+          ]
+        },
+        "emailSubject": "[STAGING] Confirm CSR-STAGE-000001",
+        "emailBodyHtml": "<p>Staging confirmation fallback.</p>"
+      }
+    },
+    {
+      "name": "requester decision",
+      "body": {
+        "schemaVersion": 1,
+        "event": "request.approved",
+        "audience": "requester",
+        "requestId": "51000000-0000-4000-8000-000000000002",
+        "requestNo": "CSR-STAGE-000002",
+        "recipient": {
+          "name": "Staging Requester",
+          "email": "requester@yageo.com"
+        },
+        "adaptiveCard": {
+          "type": "AdaptiveCard",
+          "version": "1.4",
+          "body": [
+            { "type": "TextBlock", "text": "CSR-STAGE-000002 approved", "wrap": true }
+          ],
+          "actions": []
+        },
+        "emailSubject": "[STAGING] CSR-STAGE-000002 approved",
+        "emailBodyHtml": "<p>Staging approval fallback.</p>",
+        "delivery": {
+          "messageId": "52000000-0000-4000-8000-000000000002",
+          "attempt": 1,
+          "correlationId": "53000000-0000-4000-8000-000000000002"
+        }
+      }
+    },
+    {
+      "name": "GA request ready",
+      "body": {
+        "schemaVersion": 1,
+        "event": "admin.request_ready",
+        "audience": "admin",
+        "requestId": "51000000-0000-4000-8000-000000000003",
+        "requestNo": "CSR-STAGE-000003",
+        "recipient": {
+          "name": "Staging GA",
+          "email": "ga.admin@yageo.com"
+        },
+        "adaptiveCard": {
+          "type": "AdaptiveCard",
+          "version": "1.4",
+          "body": [
+            { "type": "TextBlock", "text": "CSR-STAGE-000003 is ready for planning", "wrap": true }
+          ],
+          "actions": [
+            { "type": "Action.OpenUrl", "title": "Open GA workspace", "url": "https://staging.example.invalid/admin/bookings/51000000-0000-4000-8000-000000000003" }
+          ]
+        },
+        "emailSubject": "[STAGING] Request ready for GA",
+        "emailBodyHtml": "<p>Staging GA fallback.</p>"
+      }
+    },
+    {
+      "name": "assignment confirmed",
+      "body": {
+        "schemaVersion": 1,
+        "event": "assignment.confirmed",
+        "audience": "requester",
+        "requestId": "51000000-0000-4000-8000-000000000004",
+        "requestNo": "CSR-STAGE-000004",
+        "recipient": {
+          "name": "Staging Requester",
+          "email": "requester@yageo.com"
+        },
+        "adaptiveCard": {
+          "type": "AdaptiveCard",
+          "version": "1.4",
+          "body": [
+            { "type": "TextBlock", "text": "Vehicle and driver confirmed", "wrap": true }
+          ],
+          "actions": [
+            { "type": "Action.OpenUrl", "title": "View assignment", "url": "https://staging.example.invalid/request/assignment?token=REPLACE" }
+          ]
+        },
+        "emailSubject": "[STAGING] Assignment confirmed",
+        "emailBodyHtml": "<p>Staging assignment fallback.</p>"
+      }
+    },
+    {
+      "name": "driver offer",
+      "body": {
+        "schemaVersion": 1,
+        "event": "driver.assignment_offered",
+        "audience": "driver",
+        "requestId": "51000000-0000-4000-8000-000000000005",
+        "requestNo": "CSR-STAGE-000005",
+        "recipient": {
+          "name": "Staging Driver",
+          "email": "driver@yageo.com"
+        },
+        "adaptiveCard": {
+          "type": "AdaptiveCard",
+          "version": "1.4",
+          "body": [
+            { "type": "TextBlock", "text": "Transport assignment offered", "wrap": true }
+          ],
+          "actions": [
+            { "type": "Action.OpenUrl", "title": "Accept assignment", "url": "https://staging.example.invalid/request/driver/accept?token=REPLACE" }
+          ]
+        },
+        "emailSubject": "[STAGING] Driver assignment offered",
+        "emailBodyHtml": "<p>Staging driver fallback.</p>"
+      }
+    }
+  ]
+}

@@ -3,14 +3,16 @@ import { corsHeaders, json } from "../_shared/http.ts";
 import {
   bangkokMinutes,
   date,
-  email,
   optionalText,
   randomToken,
   requiredText,
   sha256Hex,
   time,
 } from "../_shared/request-access.ts";
-import { approvalEmail, manageEmail } from "../_shared/email-template.ts";
+import { companyEmail } from "../_shared/company-email.ts";
+import { confirmationEmail } from "../_shared/email-template.ts";
+import { consumeRateLimit } from "../_shared/rate-limit.ts";
+import { requesterConfirmationCard } from "../_shared/audience-adaptive-card.ts";
 
 type PublicRequest = {
   requestType: "outside_company" | "overtime";
@@ -60,33 +62,26 @@ Deno.serve(async (request: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !serviceRoleKey)
-      return json({ error: "Service configuration is missing." }, 500);
+    const requesterManageFlowUrl = Deno.env.get(
+      "POWER_AUTOMATE_REQUESTER_MANAGE_FLOW_URL",
+    );
+    if (!supabaseUrl || !serviceRoleKey || !requesterManageFlowUrl)
+      return json({ error: "Service configuration is missing." }, 503);
     const db = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
     const payload = (await request.json()) as PublicRequest;
     if (payload.website) return json({ error: "Request rejected." }, 400);
 
-    const forwarded =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      "unknown";
-    const bytes = new TextEncoder().encode(
-      `${forwarded}:${request.headers.get("user-agent") || ""}`,
+    const rateLimit = await consumeRateLimit(
+      db,
+      "public-submit-request",
+      request,
+      5,
+      10 * 60,
     );
-    const digest = await crypto.subtle.digest("SHA-256", bytes);
-    const fingerprint = Array.from(new Uint8Array(digest))
-      .map((x) => x.toString(16).padStart(2, "0"))
-      .join("");
-    const since = new Date(Date.now() - 10 * 60_000).toISOString();
-    const { count } = await db
-      .from("public_request_attempts")
-      .select("id", { count: "exact", head: true })
-      .eq("fingerprint", fingerprint)
-      .gte("created_at", since);
-    if ((count ?? 0) >= 5)
+    if (!rateLimit.allowed)
       return json({ error: "Too many requests. Please try again later." }, 429);
-    await db.from("public_request_attempts").insert({ fingerprint });
 
     if (!["outside_company", "overtime"].includes(payload.requestType))
       throw new Error("Request type is invalid.");
@@ -107,7 +102,17 @@ Deno.serve(async (request: Request) => {
       "Requester name",
       200,
     );
-    const requesterEmail = email(payload.requester?.email, "Requester email");
+    const requesterEmail = companyEmail(
+      payload.requester?.email,
+      "Requester email",
+    );
+    const requesterEmployeeId = requiredText(
+      payload.requester?.employeeId,
+      "Employee number",
+      7,
+    );
+    if (!/^\d{7}$/.test(requesterEmployeeId))
+      throw new Error("Employee number must contain exactly 7 digits.");
     const requesterDepartment = requiredText(
       payload.requester?.department,
       "Requester department",
@@ -127,7 +132,7 @@ Deno.serve(async (request: Request) => {
     let approverName = "Tiger Space";
     let approverEmail = requesterEmail;
     if (payload.requestType === "outside_company") {
-      approverEmail = email(payload.approver?.email, "Approver email");
+      approverEmail = companyEmail(payload.approver?.email, "Approver email");
       approverName = optionalText(payload.approver?.name, 200) || approverEmail;
       const { data: departmentApprovers } = await db
         .from("profiles")
@@ -140,6 +145,11 @@ Deno.serve(async (request: Request) => {
       );
       if (selectedApprover?.full_name) {
         approverName = selectedApprover.full_name;
+      }
+      if (!selectedApprover) {
+        throw new Error(
+          "Select an active approver assigned to your department.",
+        );
       }
     }
     const usingDate = date(payload.usingDate);
@@ -184,16 +194,10 @@ Deno.serve(async (request: Request) => {
         requester_id: null,
         requester_name: requesterName,
         requester_email: requesterEmail,
-        requester_employee_id:
-          typeof payload.requester.employeeId === "string"
-            ? payload.requester.employeeId.trim().slice(0, 100)
-            : null,
+        requester_employee_id: requesterEmployeeId,
         requester_department: department.name,
         department_id: department.id,
-        status:
-          payload.requestType === "overtime"
-            ? "pending_ot_verification"
-            : "pending_approval",
+        status: "pending_requester_confirmation",
         request_type: payload.requestType,
         approver_id:
           payload.requestType === "outside_company"
@@ -275,7 +279,7 @@ Deno.serve(async (request: Request) => {
         ),
         employee_email:
           employee.transportRequired || employee.employeeEmail
-            ? email(employee.employeeEmail, "Employee email")
+            ? companyEmail(employee.employeeEmail, "Employee email")
             : null,
         work_description: optionalText(employee.workDescription, 500),
         work_start: time(employee.workStart, "OT start"),
@@ -301,50 +305,24 @@ Deno.serve(async (request: Request) => {
       if (error) throw error;
     }
 
-    const manageToken = randomToken();
-    const manageTokenHash = await sha256Hex(manageToken);
-    const manageTokenExpiresAt = new Date(
-      Date.now() + 30 * 24 * 60 * 60_000,
+    const confirmationToken = randomToken();
+    const confirmationTokenHash = await sha256Hex(confirmationToken);
+    const confirmationTokenExpiresAt = new Date(
+      Date.now() + 7 * 24 * 60 * 60_000,
     ).toISOString();
-    const manageUrl = `${appBaseUrl()}/request/manage?token=${encodeURIComponent(manageToken)}`;
-    const { error: manageTokenError } = await db
+    const confirmationUrl = `${appBaseUrl()}/request/confirm?token=${encodeURIComponent(confirmationToken)}`;
+    const { error: confirmationTokenError } = await db
       .from("request_access_tokens")
       .insert({
         booking_id: booking.id,
-        token_type: "requester_manage",
-        token_hash: manageTokenHash,
+        token_type: "requester_confirmation",
+        token_hash: confirmationTokenHash,
         revision_no: 1,
         subject_email: requesterEmail,
-        expires_at: manageTokenExpiresAt,
+        expires_at: confirmationTokenExpiresAt,
       });
-    if (manageTokenError) throw manageTokenError;
+    if (confirmationTokenError) throw confirmationTokenError;
 
-    let approvalTokenExpiresAt = "";
-    let approvalUrl = "";
-    let approvalToken = "";
-    if (payload.requestType === "outside_company") {
-      approvalToken = randomToken();
-      const approvalTokenHash = await sha256Hex(approvalToken);
-      approvalTokenExpiresAt = new Date(
-        Date.now() + 7 * 24 * 60 * 60_000,
-      ).toISOString();
-      approvalUrl = `${appBaseUrl()}/request/approve?token=${encodeURIComponent(approvalToken)}`;
-      const { error: approvalTokenError } = await db
-        .from("request_access_tokens")
-        .insert({
-          booking_id: booking.id,
-          token_type: "approval",
-          token_hash: approvalTokenHash,
-          revision_no: 1,
-          subject_email: approverEmail,
-          expires_at: approvalTokenExpiresAt,
-        });
-      if (approvalTokenError) throw approvalTokenError;
-    }
-
-    const requesterManageFlowUrl = Deno.env.get(
-      "POWER_AUTOMATE_REQUESTER_MANAGE_FLOW_URL",
-    );
     const emailRequest = {
       requestNo: booking.booking_no,
       requestType: payload.requestType,
@@ -364,13 +342,23 @@ Deno.serve(async (request: Request) => {
       passengers,
       overtimeEmployees,
     };
-    const requesterEmailTemplate = manageEmail({
+    const requesterEmailTemplate = confirmationEmail({
       ...emailRequest,
-      event: "request.manage_link_created",
-      manageUrl,
-      expiresAt: manageTokenExpiresAt,
+      confirmationUrl,
+      expiresAt: confirmationTokenExpiresAt,
     });
-    let requesterManageEmailStatus: "sent" | "failed" | "not_configured" =
+    const adaptiveCard = requesterConfirmationCard({
+      requestNo: booking.booking_no,
+      requestType: payload.requestType,
+      usingDate,
+      startTime,
+      endTime,
+      pickupLocation: payload.pickupLocation,
+      destination: payload.destination,
+      confirmationUrl,
+      expiresAt: confirmationTokenExpiresAt,
+    });
+    let confirmationDeliveryStatus: "sent" | "failed" | "not_configured" =
       "not_configured";
     if (requesterManageFlowUrl) {
       try {
@@ -378,7 +366,9 @@ Deno.serve(async (request: Request) => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            event: "request.manage_link_created",
+            schemaVersion: 1,
+            event: "request.confirmation_required",
+            audience: "requester",
             requestId: booking.id,
             requestNo: booking.booking_no,
             requestType: payload.requestType,
@@ -387,57 +377,9 @@ Deno.serve(async (request: Request) => {
               email: requesterEmail,
               department: requesterDepartment,
             },
-            approver: { name: approverName, email: approverEmail },
-            usingDate,
-            startTime,
-            endTime,
-            pickupLocation: payload.pickupLocation,
-            destination: payload.destination,
-            purpose: payload.purpose,
-            immediateAction: isImmediateOutsideCompany,
-            immediateReason,
-            teamsNotification: payload.requestType === "overtime"
-              ? {
-                  event: "ot_transport_submitted",
-                  audience: "ga_management",
-                  priority: isLateOt ? "high" : "normal",
-                  title: "New Overtime Transport request",
-                  message: `${requesterName} · ${department.code} · ${usingDate} ${startTime}-${endTime}`,
-                  actionUrl: manageUrl,
-                }
-              : null,
-            manageUrl,
-            expiresAt: manageTokenExpiresAt,
-            ...requesterEmailTemplate,
-          }),
-        });
-        requesterManageEmailStatus = response.ok ? "sent" : "failed";
-      } catch {
-        requesterManageEmailStatus = "failed";
-      }
-    }
-
-    const approvalFlowUrl = Deno.env.get("POWER_AUTOMATE_APPROVAL_FLOW_URL");
-    let approvalEmailStatus: "queued" | "sent" | "failed" | "not_configured" =
-      "not_configured";
-    if (approvalFlowUrl && payload.requestType === "outside_company") {
-      const approverEmailTemplate = approvalEmail({
-        ...emailRequest,
-        approvalUrl,
-        expiresAt: approvalTokenExpiresAt,
-      });
-      try {
-        const response = await fetch(approvalFlowUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            requestId: booking.id,
-            requestNo: booking.booking_no,
-            requestType: payload.requestType,
-            requester: {
+            recipient: {
               name: requesterName,
               email: requesterEmail,
-              department: requesterDepartment,
             },
             approver: { name: approverName, email: approverEmail },
             usingDate,
@@ -449,69 +391,45 @@ Deno.serve(async (request: Request) => {
             immediateAction: isImmediateOutsideCompany,
             immediateReason,
             teamsNotification: {
-              event: "offsite_approval_requested",
-              audience: "approver",
-              priority: isImmediateOutsideCompany ? "high" : "normal",
-              title: isImmediateOutsideCompany
-                ? "Immediate transport approval needed"
-                : "Transport approval needed",
+              event: "request_confirmation_required",
+              audience: "requester",
+              priority: "normal",
+              title: "Confirm your transport request",
               message: `${requesterName} · ${department.code} · ${usingDate} ${startTime}-${endTime}`,
-              actionUrl: approvalUrl,
-              approvalToken,
+              actionUrl: confirmationUrl,
             },
-            manageUrl,
-            approvalUrl,
-            approvalToken,
-            approvalExpiresAt: approvalTokenExpiresAt,
-            callbackUrl: `${supabaseUrl}/functions/v1/approval-callback`,
-            passengers,
-            overtimeEmployees,
-            ...approverEmailTemplate,
+            confirmationUrl,
+            expiresAt: confirmationTokenExpiresAt,
+            adaptiveCard,
+            ...requesterEmailTemplate,
           }),
         });
-        approvalEmailStatus = response.ok ? "sent" : "failed";
+        confirmationDeliveryStatus = response.ok ? "sent" : "failed";
       } catch {
-        approvalEmailStatus = "failed";
+        confirmationDeliveryStatus = "failed";
       }
     }
+
     await db
       .from("bookings")
       .update({
-        approval_email_status: approvalEmailStatus,
-        requester_manage_email_status: requesterManageEmailStatus,
+        confirmation_delivery_status: confirmationDeliveryStatus,
       })
       .eq("id", booking.id);
-    await db.from("email_delivery_logs").insert([
-      {
-        booking_id: booking.id,
-        request_no: booking.booking_no,
-        request_type: payload.requestType,
-        recipient_email: requesterEmail,
-        event: "request.manage_link_created",
-        status: requesterManageEmailStatus,
-      },
-      ...(payload.requestType === "outside_company" ? [{
-        booking_id: booking.id,
-        request_no: booking.booking_no,
-        request_type: payload.requestType,
-        recipient_email: approverEmail,
-        event: "request.approval_requested",
-        status: approvalEmailStatus === "queued" ? "sent" : approvalEmailStatus,
-      }] : []),
-    ]);
+    await db.from("email_delivery_logs").insert({
+      booking_id: booking.id,
+      request_no: booking.booking_no,
+      request_type: payload.requestType,
+      recipient_email: requesterEmail,
+      event: "request.confirmation_required",
+      status: confirmationDeliveryStatus,
+    });
 
     return json(
       {
-        requestId: booking.id,
         requestNo: booking.booking_no,
-        approvalEmailStatus,
-        approvalMode:
-          payload.requestType === "overtime"
-            ? "tiger_space_transport_only"
-            : "department_approval",
-        requesterManageEmailStatus,
-        manageUrl,
-        manageTokenExpiresAt,
+        status: "pending_requester_confirmation",
+        confirmationDeliveryStatus,
       },
       201,
     );

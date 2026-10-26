@@ -50,7 +50,7 @@ const sha256Hex = async (value: string) => {
 
 const randomToken = () => {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes))
+  return btoa(String.fromCharCode(...Array.from(bytes)))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/g, "");

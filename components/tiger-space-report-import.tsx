@@ -156,6 +156,72 @@ export function TigerSpaceReportImport() {
     }
   };
 
+  const approveAsException = async (bookingId: string, name?: string) => {
+    setConfirming(true);
+    setMessage("");
+    try {
+      await updateBooking(bookingId, {
+        status: "approved",
+        otVerificationStatus: "verified",
+        otVerificationMode: "manager_exception",
+        otVerifiedAt: new Date().toISOString(),
+        otVerificationNote:
+          "อนุมัติข้อยกเว้นโดย GA (Executive / Internal authorization)",
+      });
+      setMessage(
+        `อนุมัติข้อยกเว้น (Executive / GA Exception) ให้กับ ${name || "คำขอ"} สำเร็จ`,
+      );
+    } catch (cause) {
+      setMessage(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to approve exception for this request.",
+      );
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  const approveAllUnmatchedAsException = async () => {
+    const unmatched = matches.filter((item) => item.status === "not_found");
+    if (!unmatched.length) return;
+    if (
+      !window.confirm(
+        `ยืนยันการอนุมัติข้อยกเว้นโดย GA สำหรับรายการที่ไม่พบใน Tiger Space ทั้งหมด ${unmatched.length} รายการ หรือไม่?`,
+      )
+    )
+      return;
+
+    setConfirming(true);
+    setMessage("");
+    try {
+      const nowIso = new Date().toISOString();
+      await Promise.all(
+        unmatched.map((item) =>
+          updateBooking(item.booking.id, {
+            status: "approved",
+            otVerificationStatus: "verified",
+            otVerificationMode: "manager_exception",
+            otVerifiedAt: nowIso,
+            otVerificationNote:
+              "อนุมัติข้อยกเว้นแบบกลุ่มโดย GA (Executive / Internal authorization)",
+          }),
+        ),
+      );
+      setMessage(
+        `อนุมัติข้อยกเว้นโดย GA (Executive Exception) ให้กับ ${unmatched.length} รายการสำเร็จ`,
+      );
+    } catch (cause) {
+      setMessage(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to approve exceptions in batch.",
+      );
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   return (
     <Card className="mb-6 overflow-hidden border-l-4 border-l-sky-500">
       <div className="flex flex-col gap-4 border-b border-line bg-sky-50/60 p-5 sm:flex-row sm:items-start sm:justify-between">
@@ -281,12 +347,29 @@ export function TigerSpaceReportImport() {
                         </Badge>
                       </td>
                       <td className="px-4 py-4">
-                        <Link
-                          href={`/admin/bookings/${item.booking.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
-                        >
-                          <SearchCheck size={14} /> Open request
-                        </Link>
+                        <div className="flex flex-col items-start gap-1.5">
+                          <Link
+                            href={`/admin/bookings/${item.booking.id}`}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
+                          >
+                            <SearchCheck size={14} /> Open request
+                          </Link>
+                          {item.status === "not_found" && (
+                            <button
+                              type="button"
+                              disabled={confirming}
+                              onClick={() =>
+                                approveAsException(
+                                  item.booking.id,
+                                  item.booking.requesterName,
+                                )
+                              }
+                              className="inline-flex items-center gap-1 whitespace-nowrap rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-900 transition hover:bg-amber-100"
+                            >
+                              ⚡ อนุมัติข้อยกเว้น / ผู้บริหาร
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -306,16 +389,29 @@ export function TigerSpaceReportImport() {
             <p className="text-sm text-gray-500">
               {selected.size} request(s) selected from {fileName}
             </p>
-            <Button
-              type="button"
-              disabled={
-                confirming || !approvedOnlyConfirmed || selected.size === 0
-              }
-              onClick={confirmSelected}
-            >
-              <CheckCircle2 size={16} />
-              {confirming ? "Confirming..." : "Confirm selected matches"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              {missingCount > 0 && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={confirming}
+                  onClick={approveAllUnmatchedAsException}
+                  className="border-amber-300 bg-amber-50 text-xs text-amber-900 hover:bg-amber-100"
+                >
+                  ⚡ อนุมัติข้อยกเว้นทั้งหมดที่ไม่พบ ({missingCount})
+                </Button>
+              )}
+              <Button
+                type="button"
+                disabled={
+                  confirming || !approvedOnlyConfirmed || selected.size === 0
+                }
+                onClick={confirmSelected}
+              >
+                <CheckCircle2 size={16} />
+                {confirming ? "Confirming..." : "Confirm selected matches"}
+              </Button>
+            </div>
           </div>
         </div>
       )}

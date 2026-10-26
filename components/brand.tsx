@@ -95,7 +95,7 @@ export function PublicHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="border-b border-slate-200/80 bg-white px-4 sm:px-6 shadow-sm">
+    <header className="border-b border-slate-200/80 border-t-4 border-t-brand-900 bg-white px-4 shadow-sm sm:px-6">
       <div className="mx-auto flex h-16 min-w-0 max-w-[1080px] items-center justify-between gap-3">
         <Link
           href="/request"
@@ -139,6 +139,10 @@ export function PublicFooter() {
           aria-label="Footer navigation"
           className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-slate-600"
         >
+          <Link href="/request/track" className="transition hover:text-brand">
+            Track Request
+          </Link>
+          <span className="h-3 w-px bg-slate-200" />
           <Link href="/request/help" className="transition hover:text-brand">
             User Guide & Help
           </Link>

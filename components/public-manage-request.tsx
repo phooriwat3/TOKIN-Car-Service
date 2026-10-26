@@ -26,6 +26,8 @@ import { isOtRequestWindowOpen } from "@/lib/request-window";
 import { overtimeDuration } from "@/lib/overtime";
 import { PublicHeader, PublicFooter } from "@/components/brand";
 import type { BookingStatus, OvertimeEmployee, RequestType } from "@/lib/types";
+import { RequestStatusTimeline } from "@/components/request-status-timeline";
+import { TransportBookingHero } from "@/components/transport-booking-ui";
 
 type ManagedRequest = {
   id: string;
@@ -86,6 +88,7 @@ const emptyEmployee = (): OvertimeEmployee => ({
 });
 
 const statusText: Record<string, string> = {
+  pending_requester_confirmation: "Waiting for requester confirmation",
   pending_approval: "Pending department approval",
   pending_ot_verification: "Waiting for OT verification",
   changes_requested: "Changes requested",
@@ -368,7 +371,7 @@ export default function PublicManageRequest({
   };
 
   return (
-    <main className="flex min-h-screen flex-col bg-canvas">
+    <main className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top_right,rgba(218,234,249,0.65),transparent_34%),var(--canvas)]">
       <PublicHeader context="Request management" />
 
       <div className="mx-auto flex-1 max-w-[1080px] p-4 py-6 sm:p-6 sm:py-8">
@@ -394,19 +397,17 @@ export default function PublicManageRequest({
 
         {request && state !== "loading" && state !== "error" && (
           <form onSubmit={save} className="space-y-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold uppercase text-brand">
-                  {request.requestNo}
-                </p>
-                <h1 className="mt-1 text-2xl font-bold">
-                  Manage transportation request
-                </h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  Revision {request.revisionNo}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2 shrink-0">
+            <TransportBookingHero
+              eyebrow={`${request.requestNo} · Revision ${request.revisionNo}`}
+              title="Manage your transport booking"
+              description="Review live status and update trip details while the workflow permits."
+              serviceLabel={request.requestType === "overtime" ? "Overtime transport" : "Off-site business"}
+              origin={request.requestType === "overtime" ? "TOKIN Thailand" : request.pickupLocation}
+              destination={request.requestType === "overtime" ? request.overtimeEmployees[0]?.busStop || request.destination : request.destination}
+              date={request.usingDate}
+              time={`${request.startTime} – ${request.endTime}`}
+              action={
+                <div className="flex flex-col items-end gap-2">
                 <Badge status={request.status}>
                   {statusText[request.status] ?? request.status}
                 </Badge>
@@ -417,7 +418,13 @@ export default function PublicManageRequest({
                   + New request
                 </a>
               </div>
-            </div>
+              }
+            />
+
+            <RequestStatusTimeline
+              status={request.status}
+              requestType={request.requestType}
+            />
 
             {request.rejectReason && (
               <Card className="border-l-4 border-l-amber-500 p-5">

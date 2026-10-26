@@ -1,22 +1,27 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Zap } from "lucide-react";
 import { Badge, Button, Card, Field, Textarea } from "@/components/ui";
 import { BrandLogo } from "@/components/brand";
+import { approverPositionLabel, getApproverBadgeClass } from "@/lib/business";
+import { destinationStops } from "@/lib/route-stops";
+import { DigitalTransportTicket } from "@/components/transport-booking-ui";
 
 type ApprovalRequest = {
   requestNo: string;
   status: string;
   revisionNo: number;
   requestType: string;
+  urgent?: boolean;
+  urgentReason?: string;
   requester: {
     name: string;
     email: string;
     employeeId?: string;
     department: string;
   };
-  approver: { name: string; email: string };
+  approver: { name: string; email: string; position?: string };
   usingDate: string;
   startTime: string;
   endTime: string;
@@ -219,20 +224,52 @@ export default function PublicApproveRequest({
           .sort((a, b) => a.seq - b.seq)
           .map((item) => item.name);
 
+  const stops = destinationStops(request.destination);
+
   return (
     <Page>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-brand">
-            TOKIN Transport approval
-          </p>
-          <h1 className="mt-1 text-2xl font-bold">{request.requestNo}</h1>
+      {/* Urgent Priority Banner */}
+      {request.urgent && (
+        <div className="mb-5 rounded-xl border border-red-300 bg-red-50 p-4 text-red-950 shadow-xs">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700">
+              <Zap className="h-5 w-5 fill-red-600 text-red-600" />
+            </div>
+            <div>
+              <p className="font-bold uppercase tracking-wider text-xs text-red-800">
+                Priority Review Required · Urgent Trip
+              </p>
+              <p className="mt-1 text-sm font-semibold text-red-950">
+                {request.urgentReason || "Requester flagged this trip as high urgency. Immediate decision requested."}
+              </p>
+            </div>
+          </div>
         </div>
-        <Badge status={request.status}>
-          Revision {request.revisionNo} - Pending approval
-        </Badge>
-      </div>
-      <Card className="p-6">
+      )}
+
+      <DigitalTransportTicket
+        requestNo={request.requestNo}
+        serviceLabel={request.requestType === "overtime" ? "Overtime transport approval" : "Off-site transport approval"}
+        statusLabel="Decision required"
+        origin={request.pickupLocation}
+        destination={request.destination}
+        date={request.usingDate}
+        time={`${request.startTime} – ${request.endTime}`}
+      >
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          {request.approver.position && (
+            <span
+              className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold ${getApproverBadgeClass(
+                request.approver.position,
+              )}`}
+            >
+              {approverPositionLabel(request.approver.position)}
+            </span>
+          )}
+          <Badge status={request.status}>
+            Revision {request.revisionNo} - Pending approval
+          </Badge>
+        </div>
         <h2 className="font-bold">Request details</h2>
         <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
           <Info label="Requester" value={request.requester.name} />
@@ -249,11 +286,48 @@ export default function PublicApproveRequest({
             label="Date and time"
             value={`${request.usingDate} - ${request.startTime} to ${request.endTime}`}
           />
-          <Info
-            label="Route"
-            value={`${request.pickupLocation} to ${request.destination}`}
-          />
+          <div className="sm:col-span-2">
+            <p className="text-xs font-semibold uppercase text-gray-500">Route & Itinerary</p>
+            {stops.length > 1 ? (
+              <div className="mt-2 space-y-2">
+                <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink font-medium">
+                  <span className="rounded bg-slate-100 px-2 py-0.5 border border-slate-200 text-slate-700">
+                    {request.pickupLocation} (Pickup)
+                  </span>
+                  {stops.map((stop, idx) => (
+                    <span key={idx} className="flex items-center gap-1.5">
+                      <span className="text-brand font-bold">➔</span>
+                      <span
+                        className={`rounded px-2 py-0.5 border ${
+                          idx === stops.length - 1
+                            ? "bg-brand text-white border-brand font-semibold shadow-xs"
+                            : "bg-white border-slate-200 text-slate-800"
+                        }`}
+                      >
+                        {stop}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs text-amber-700">
+                  ⚠️ Multi-stop trip ({stops.length} destinations scheduled)
+                </p>
+              </div>
+            ) : (
+              <p className="mt-1 text-sm font-medium text-ink">
+                {request.pickupLocation} to {request.destination}
+              </p>
+            )}
+          </div>
           <Info label="Passengers" value={String(request.numPassengers)} />
+          <Info
+            label="Meeting point"
+            value={
+              request.meetingPoint === "loading_area"
+                ? "Loading area"
+                : "Front area"
+            }
+          />
         </div>
         <div className="mt-5 border-t border-line pt-5">
           <Info label="Purpose" value={request.purpose} />
@@ -270,7 +344,7 @@ export default function PublicApproveRequest({
             </ul>
           </div>
         )}
-      </Card>
+      </DigitalTransportTicket>
       <Card className="mt-5 p-6">
         <Field label="Comments (required for Reject or Request changes)">
           <Textarea
@@ -314,7 +388,7 @@ export default function PublicApproveRequest({
 
 function Page({ children }: { children: ReactNode }) {
   return (
-    <main className="min-h-screen bg-canvas px-4 py-6 text-ink sm:py-10">
+    <main className="min-h-screen border-t-4 border-t-brand-900 bg-[radial-gradient(circle_at_top_right,rgba(218,234,249,0.72),transparent_34%),var(--canvas)] px-4 py-6 text-ink sm:py-10">
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-11 items-center rounded-lg border border-slate-200 bg-white px-2 shadow-xs">

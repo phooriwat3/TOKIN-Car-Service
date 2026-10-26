@@ -20,16 +20,29 @@ import {
 const translations = {
   th: {
     headerCategory: "ข้อกำหนดและนโยบายภายใน • TOKIN TRANSPORT",
-    title: "แนวทางการขอใช้รถยนต์ส่วนกลางไปปฏิบัติงาน (Off-site Business Transport)",
+    title:
+      "แนวทางการขอใช้รถยนต์ส่วนกลางไปปฏิบัติงาน (Off-site Business Transport)",
     description:
       "ระเบียบและแนวทางปฏิบัติสำหรับการขอใช้รถยนต์ของบริษัทฯ และพนักงานขับรถ เพื่อการเดินทางไปติดต่องานภายนอกสถานที่อย่างปลอดภัยและเป็นไปตามขั้นตอน",
     langTh: "ไทย",
     langEn: "English",
     summaryTitle: "ข้อมูลสรุปสำคัญ (Key Highlights)",
     summaryItems: [
-      { label: "กำหนดเวลาส่งคำขอล่วงหน้า", value: "24 ชั่วโมง", note: "ส่งล่วงหน้าก่อนวันเดินทางอย่างน้อย 1 วันทำการ" },
-      { label: "ขั้นตอนการอนุมัติ", value: "Department Approver", note: "ต้องได้รับการอนุมัติจากหัวหน้าแผนกก่อนจัดรถ" },
-      { label: "การมอบหมายรถและคนขับ", value: "GA Fleet Dispatch", note: "GA จะส่งข้อมูลทะเบียนรถและคนขับทางอีเมล" },
+      {
+        label: "กำหนดเวลาส่งคำขอล่วงหน้า",
+        value: "24 ชั่วโมง",
+        note: "ส่งล่วงหน้าก่อนวันเดินทางอย่างน้อย 1 วันทำการ",
+      },
+      {
+        label: "ขั้นตอนการอนุมัติ",
+        value: "Department Approver",
+        note: "ต้องได้รับการอนุมัติจากหัวหน้าแผนกก่อนจัดรถ",
+      },
+      {
+        label: "การมอบหมายรถและคนขับ",
+        value: "GA Fleet Dispatch",
+        note: "GA จะส่งข้อมูลทะเบียนรถและคนขับทางอีเมล",
+      },
     ],
     rulesTitle: "ข้อกำหนดและขั้นตอนการปฏิบัติ (Operating Procedures)",
     rules: [
@@ -50,7 +63,8 @@ const translations = {
       },
       {
         no: "4",
-        title: "การระบุจุดรับ-ส่งและผู้โดยสาร (Passenger Details & Meeting Point)",
+        title:
+          "การระบุจุดรับ-ส่งและผู้โดยสาร (Passenger Details & Meeting Point)",
         body: "โปรดระบุจุดนัดพบ (เช่น หน้าโรงงาน หรือ Loading Area) สถานที่ปลายทาง และจำนวนผู้โดยสารให้ชัดเจน เพื่อให้ฝ่ายธุรการสามารถจัดสรรขนาดของยานพาหนะ (รถเก๋ง / รถตู้) ได้อย่างเหมาะสม",
       },
       {
@@ -63,8 +77,8 @@ const translations = {
     urgentBody:
       "กรณีมีภารกิจด่วนที่ไม่สามารถส่งคำขอล่วงหน้า 24 ชม. ได้ หลังจากยื่นคำขอในระบบแล้ว โปรดติดต่อประสานงานกับผู้จัดการแผนกเพื่อกดอนุมัติ และโทรแจ้งฝ่ายธุรการ (GA) ทันที",
     contactTitle: "ติดต่อฝ่ายธุรการและยานพาหนะ",
-    contactBody: "General Affairs - Fleet & Car Service Operations",
-    contactAction: "ส่งอีเมลถึงฝ่ายธุรการ (GA)",
+    contactBody: "Treebuppha Saraphan (SR.SPECIALIST - GA • Capacitor)",
+    contactAction: "แชทติดต่อ GA ผ่าน MS Teams",
   },
   en: {
     headerCategory: "INTERNAL POLICY & GUIDELINES • TOKIN TRANSPORT",
@@ -75,9 +89,21 @@ const translations = {
     langEn: "English",
     summaryTitle: "Key Highlights",
     summaryItems: [
-      { label: "Standard Planning", value: "24 Hours", note: "Urgent and same-day requests are also allowed" },
-      { label: "Approval Requirement", value: "Department Approver", note: "Manager email approval required before dispatch" },
-      { label: "Vehicle & Driver", value: "GA Fleet Dispatch", note: "Confirmation sent to requester via email" },
+      {
+        label: "Standard Planning",
+        value: "24 Hours",
+        note: "Urgent and same-day requests are also allowed",
+      },
+      {
+        label: "Approval Requirement",
+        value: "Department Approver",
+        note: "Manager email approval required before dispatch",
+      },
+      {
+        label: "Vehicle & Driver",
+        value: "GA Fleet Dispatch",
+        note: "Confirmation sent to requester via email",
+      },
     ],
     rulesTitle: "Operating Procedures & Rules",
     rules: [
@@ -104,15 +130,15 @@ const translations = {
       {
         no: "5",
         title: "Cancellation & Schedule Changes",
-        body: "If your trip is postponed or cancelled, use your Manage Link to cancel or inform GA at least 2 hours in advance to release the driver schedule.",
+        body: "Before approval, use your Manage Link to cancel. After approval or driver assignment, contact GA at least 2 hours in advance so GA can release the schedule and withdraw the LINE dispatch.",
       },
     ],
     urgentTitle: "Urgent / Same-day Requests",
     urgentBody:
       "For urgent trips where 24-hour advance notice is not feasible, please follow up with your Department Approver for immediate email approval and notify GA Transport directly.",
     contactTitle: "Need Assistance?",
-    contactBody: "General Affairs & Fleet Management Operations",
-    contactAction: "Contact GA via Outlook",
+    contactBody: "Treebuppha Saraphan (SR.SPECIALIST - GA • Capacitor)",
+    contactAction: "Contact GA",
   },
 } as const;
 
@@ -180,9 +206,7 @@ export function CarServiceGuidelines() {
               <p className="mt-0.5 text-base font-bold text-white">
                 {item.value}
               </p>
-              <p className="mt-0.5 text-[11px] text-slate-400">
-                {item.note}
-              </p>
+              <p className="mt-0.5 text-[11px] text-slate-400">{item.note}</p>
             </div>
           ))}
         </div>
@@ -194,35 +218,88 @@ export function CarServiceGuidelines() {
           <div className="flex gap-3">
             <AlertCircle className="mt-0.5 shrink-0 text-blue-700" size={18} />
             <div>
-              <p className="font-bold text-blue-950">{lang === "th" ? "ก่อนส่งคำขอ Off-site Business Transport" : "Before you request Off-site Business Transport"}</p>
-              <p className="mt-1 text-sm leading-6 text-blue-900">{lang === "th" ? "วางแผนล่วงหน้า 24 ชั่วโมงเมื่อทำได้ หรือส่งคำขอเร่งด่วนพร้อมเหตุผลและเลือกผู้อนุมัติของแผนก" : "Plan 24 hours ahead when possible, or submit an urgent request with a reason and the correct Department Approver."}</p>
+              <p className="font-bold text-blue-950">
+                {lang === "th"
+                  ? "ก่อนส่งคำขอ Off-site Business Transport"
+                  : "Before you request Off-site Business Transport"}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-blue-900">
+                {lang === "th"
+                  ? "วางแผนล่วงหน้า 24 ชั่วโมงเมื่อทำได้ หรือส่งคำขอเร่งด่วนพร้อมเหตุผลและเลือกผู้อนุมัติของแผนก"
+                  : "Plan 24 hours ahead when possible, or submit an urgent request with a reason and the correct Department Approver."}
+              </p>
             </div>
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-bold text-slate-900">{lang === "th" ? "ตรวจสอบก่อนเริ่ม" : "Quick checklist"}</h3>
+          <h3 className="text-sm font-bold text-slate-900">
+            {lang === "th" ? "ตรวจสอบก่อนเริ่ม" : "Quick checklist"}
+          </h3>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            {[lang === "th" ? "ส่งคำขอล่วงหน้า 1 วันทำการ" : "Submit one working day ahead", lang === "th" ? "ระบุจุดรับและปลายทางให้ชัดเจน" : "Confirm pickup and destination", lang === "th" ? "เลือกผู้อนุมัติของแผนก" : "Choose your Department Approver"].map((item) => (
-              <div key={item} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-700">
-                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-600" />{item}
+            {[
+              lang === "th"
+                ? "ส่งคำขอล่วงหน้า 1 วันทำการ"
+                : "Submit one working day ahead",
+              lang === "th"
+                ? "ระบุจุดรับและปลายทางให้ชัดเจน"
+                : "Confirm pickup and destination",
+              lang === "th"
+                ? "เลือกผู้อนุมัติของแผนก"
+                : "Choose your Department Approver",
+            ].map((item) => (
+              <div
+                key={item}
+                className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-700"
+              >
+                <CheckCircle2
+                  size={14}
+                  className="mt-0.5 shrink-0 text-emerald-600"
+                />
+                {item}
               </div>
             ))}
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-bold text-slate-900">{lang === "th" ? "รายละเอียดนโยบาย" : "Full policy details"}</h3>
-          <p className="mt-1 text-xs text-slate-500">{lang === "th" ? "เปิดเฉพาะหัวข้อที่ต้องการอ่าน" : "Open a topic only when you need more detail."}</p>
+          <h3 className="text-sm font-bold text-slate-900">
+            {lang === "th" ? "รายละเอียดนโยบาย" : "Full policy details"}
+          </h3>
+          <p className="mt-1 text-xs text-slate-500">
+            {lang === "th"
+              ? "เปิดเฉพาะหัวข้อที่ต้องการอ่าน"
+              : "Open a topic only when you need more detail."}
+          </p>
           <div className="mt-3 divide-y overflow-hidden rounded-xl border border-slate-200">
             {t.rules.map((rule) => (
               <div key={rule.no}>
-                <button type="button" onClick={() => setExpandedRule((current) => current === rule.no ? null : rule.no)} aria-expanded={expandedRule === rule.no} className="flex w-full items-center gap-3 p-4 text-left hover:bg-slate-50">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">{rule.no}</span>
-                  <span className="flex-1 text-sm font-semibold text-slate-900">{rule.title}</span>
-                  <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${expandedRule === rule.no ? "rotate-180" : ""}`} />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedRule((current) =>
+                      current === rule.no ? null : rule.no,
+                    )
+                  }
+                  aria-expanded={expandedRule === rule.no}
+                  className="flex w-full items-center gap-3 p-4 text-left hover:bg-slate-50"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
+                    {rule.no}
+                  </span>
+                  <span className="flex-1 text-sm font-semibold text-slate-900">
+                    {rule.title}
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className={`shrink-0 text-slate-500 transition-transform ${expandedRule === rule.no ? "rotate-180" : ""}`}
+                  />
                 </button>
-                {expandedRule === rule.no && <p className="border-t bg-slate-50 px-4 py-3 pl-12 text-xs leading-6 text-slate-600 sm:text-sm">{rule.body}</p>}
+                {expandedRule === rule.no && (
+                  <p className="border-t bg-slate-50 px-4 py-3 pl-12 text-xs leading-6 text-slate-600 sm:text-sm">
+                    {rule.body}
+                  </p>
+                )}
               </div>
             ))}
           </div>

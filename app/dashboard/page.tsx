@@ -42,6 +42,21 @@ const actionByRole: Record<
     label: "View assigned trips",
     icon: CalendarCheck,
   },
+  finance: {
+    href: "/admin/reports",
+    label: "Contractor billing & reports",
+    icon: ListChecks,
+  },
+  executive: {
+    href: "/dashboard",
+    label: "Executive fleet dashboard",
+    icon: Gauge,
+  },
+  auditor: {
+    href: "/admin/advanced",
+    label: "System audit logs",
+    icon: ShieldAlert,
+  },
 };
 
 const listPathByRole: Record<Role, string> = {
@@ -49,6 +64,9 @@ const listPathByRole: Record<Role, string> = {
   approver: "/request",
   admin: "/admin/bookings",
   driver: "/driver/trips",
+  finance: "/admin/reports",
+  executive: "/bookings",
+  auditor: "/admin/advanced",
 };
 
 import { getBangkokDateString, getBangkokHour } from "@/lib/date-format";
@@ -75,6 +93,7 @@ export default function Dashboard() {
   );
   const pending = own.filter(
     (booking) =>
+      booking.status === "pending_requester_confirmation" ||
       booking.status === "pending_approval" ||
       booking.status === "pending_ot_verification",
   ).length;
@@ -148,15 +167,17 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-7">
-      <section className="flex flex-col justify-between gap-5 border-b border-slate-200 pb-7 sm:flex-row sm:items-end">
-        <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500">
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-950 via-brand-900 to-brand-700 p-6 text-white shadow-lg sm:flex sm:items-end sm:justify-between sm:gap-6 sm:p-7">
+        <div className="pointer-events-none absolute -right-12 -top-20 h-56 w-56 rounded-full border-[36px] border-white/[0.04]" aria-hidden="true" />
+        <div className="pointer-events-none absolute bottom-0 left-0 h-1 w-24 bg-amber-400" aria-hidden="true" />
+        <div className="relative">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-amber-300">
             {role === "admin" ? "Transport control" : `${role} workspace`}
           </p>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-[34px]">
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-[34px]">
             {getGreeting()}, {user.fullName.split(" ")[0]}.
           </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
+          <p className="mt-2 text-sm leading-6 text-brand-100">
             {role === "approver"
               ? `${pending} request${pending === 1 ? "" : "s"} waiting for a decision in ${user.department}.`
               : role === "driver"
@@ -168,7 +189,7 @@ export default function Dashboard() {
           type="button"
           size="lg"
           onClick={() => router.push(action.href)}
-          className="self-start sm:self-auto"
+          className="relative mt-5 self-start bg-amber-400 text-brand-950 shadow-md hover:bg-amber-300 sm:mt-0 sm:self-auto"
         >
           <ActionIcon size={17} />
           {action.label}

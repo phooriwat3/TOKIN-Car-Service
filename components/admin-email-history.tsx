@@ -5,7 +5,7 @@ import { CheckCircle2, Clock3, MailX, RefreshCw } from "lucide-react";
 import { Button, Card } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 
-type EmailLog = { id: string; request_no: string | null; request_type: "overtime" | "outside_company" | null; recipient_email: string; event: string; status: "sent" | "failed" | "not_configured"; created_at: string };
+type EmailLog = { id: string; request_no: string | null; request_type: "overtime" | "outside_company" | null; recipient_email: string; event: string; status: "queued" | "sent" | "failed" | "not_configured"; created_at: string };
 const typeLabel: Record<string, string> = { overtime: "OVERTIME TRANSPORT", outside_company: "OFF-SITE BUSINESS TRANSPORT" };
 
 export function AdminEmailHistory() {

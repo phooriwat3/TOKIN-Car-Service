@@ -124,6 +124,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "kern" 1, "tnum" 1;
   line-height: 1.5;
+  min-height: 100vh;
+}
+
+main {
+  isolation: isolate;
 }
 
 h1,

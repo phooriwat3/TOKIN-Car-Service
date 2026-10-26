@@ -24,6 +24,7 @@
 ### 1. God State Anti-pattern ใน `app-provider.tsx`
 
 **ปัญหา**: `AppProvider` เป็น single context ที่ถือ data ทุกอย่าง (bookings, vehicles, drivers, role, auth state) ทำให้:
+
 - ทุก component re-render เมื่อ state ใดๆ เปลี่ยน
 - `loadAppData()` ดึง **ทุก booking จาก DB ในครั้งเดียว** (`select *`) โดยไม่มี pagination
 - ไม่มี stale-time / cache invalidation strategy ที่ถูกต้อง
@@ -56,8 +57,8 @@ const refresh = async () => {
 // ⚠️ ใน app-provider.tsx
 function storeSessionBackup(session: SessionBackup | null) {
   if (session)
-    window.localStorage.setItem(SESSION_BACKUP_KEY, JSON.stringify(session)); 
-    // ← เก็บ access_token + refresh_token ใน localStorage = XSS risk
+    window.localStorage.setItem(SESSION_BACKUP_KEY, JSON.stringify(session));
+  // ← เก็บ access_token + refresh_token ใน localStorage = XSS risk
 }
 ```
 
@@ -72,7 +73,7 @@ function storeSessionBackup(session: SessionBackup | null) {
 ```typescript
 // ใน approval-callback/index.ts
 // ตรวจสอบแค่ status === 'pending_approval' แต่ไม่มี idempotency key
-if (booking.status !== 'pending_approval') 
+if (booking.status !== "pending_approval")
   return json({ ok: true, alreadyProcessed: true });
 ```
 
@@ -86,7 +87,7 @@ if (booking.status !== 'pending_approval')
 
 ```sql
 -- ❌ ทุก authenticated user มองเห็น profile ทุกคน
-create policy profiles_read on public.profiles 
+create policy profiles_read on public.profiles
   for select to authenticated using (true);
 ```
 
@@ -144,16 +145,16 @@ Component ขนาดใหญ่ (`public-request-form.tsx` = 39,987 bytes, `p
 
 ## 🟢 สิ่งที่ทำได้ดี (Strengths)
 
-| จุดแข็ง | รายละเอียด |
-|--------|-----------|
-| ✅ **RLS ครบ** | ทุก table มี Row Level Security enable พร้อม helper functions `app_role()`, `can_view_booking()` |
-| ✅ **DB-layer Business Logic** | Critical operations เป็น PostgreSQL functions (assign_booking, decide_booking, start_trip, complete_trip) มี FOR UPDATE lock ป้องกัน race condition |
-| ✅ **Double-booking Prevention** | ตรวจสอบ overlap ทั้งที่ API layer (business.ts) และ DB layer (assign_booking function) |
-| ✅ **Progressive Migration** | 27 migrations ที่ atomic และ backward-compatible ออกแบบได้ดีมาก |
-| ✅ **Type Safety** | TypeScript types ครอบคลุมทุก entity, ใช้ Zod validate ทั้ง client และ server |
-| ✅ **Demo Mode** | Fallback mock data เมื่อ Supabase ไม่ได้ configure — ช่วย developer experience |
-| ✅ **Edge Function Security** | ใช้ `POWER_AUTOMATE_CALLBACK_SECRET` header ป้องกัน unauthorized callback |
-| ✅ **Driver License Expiry** | ตรวจสอบ `license_expiry >= using_date` ใน assign_booking function |
+| จุดแข็ง                          | รายละเอียด                                                                                                                                          |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅ **RLS ครบ**                   | ทุก table มี Row Level Security enable พร้อม helper functions `app_role()`, `can_view_booking()`                                                    |
+| ✅ **DB-layer Business Logic**   | Critical operations เป็น PostgreSQL functions (assign_booking, decide_booking, start_trip, complete_trip) มี FOR UPDATE lock ป้องกัน race condition |
+| ✅ **Double-booking Prevention** | ตรวจสอบ overlap ทั้งที่ API layer (business.ts) และ DB layer (assign_booking function)                                                              |
+| ✅ **Progressive Migration**     | 27 migrations ที่ atomic และ backward-compatible ออกแบบได้ดีมาก                                                                                     |
+| ✅ **Type Safety**               | TypeScript types ครอบคลุมทุก entity, ใช้ Zod validate ทั้ง client และ server                                                                        |
+| ✅ **Demo Mode**                 | Fallback mock data เมื่อ Supabase ไม่ได้ configure — ช่วย developer experience                                                                      |
+| ✅ **Edge Function Security**    | ใช้ `POWER_AUTOMATE_CALLBACK_SECRET` header ป้องกัน unauthorized callback                                                                           |
+| ✅ **Driver License Expiry**     | ตรวจสอบ `license_expiry >= using_date` ใน assign_booking function                                                                                   |
 
 ---
 
@@ -204,45 +205,45 @@ Component ขนาดใหญ่ (`public-request-form.tsx` = 39,987 bytes, `p
 
 ### Phase 1 — Security & Stability (Sprint 1-2, ~2 สัปดาห์)
 
-| # | งาน | Impact | Effort |
-|---|-----|--------|--------|
-| 1.1 | **ลบ localStorage session backup** — ใช้ Supabase SSR cookie ล้วนๆ | 🔴 Critical | S |
-| 1.2 | **เพิ่ม `audit_logs` table + trigger** บน bookings, approvals, vehicle_assignments | 🔴 Critical | M |
-| 1.3 | **Fix RLS `profiles_read`** — จำกัด column visibility ตาม role | 🔴 Critical | S |
-| 1.4 | **Idempotency key** บน approval-callback (unique constraint + ON CONFLICT) | 🔴 Critical | S |
-| 1.5 | **Rate limiting** บน public Edge Functions | 🔴 Critical | M |
+| #   | งาน                                                                                | Impact      | Effort |
+| --- | ---------------------------------------------------------------------------------- | ----------- | ------ |
+| 1.1 | **ลบ localStorage session backup** — ใช้ Supabase SSR cookie ล้วนๆ                 | 🔴 Critical | S      |
+| 1.2 | **เพิ่ม `audit_logs` table + trigger** บน bookings, approvals, vehicle_assignments | 🔴 Critical | M      |
+| 1.3 | **Fix RLS `profiles_read`** — จำกัด column visibility ตาม role                     | 🔴 Critical | S      |
+| 1.4 | **Idempotency key** บน approval-callback (unique constraint + ON CONFLICT)         | 🔴 Critical | S      |
+| 1.5 | **Rate limiting** บน public Edge Functions                                         | 🔴 Critical | M      |
 
 ### Phase 2 — Performance & Scalability (Sprint 3-4, ~2 สัปดาห์)
 
-| # | งาน | Impact | Effort |
-|---|-----|--------|--------|
-| 2.1 | **แทน AppProvider ด้วย TanStack Query** — pagination, stale time, optimistic updates | 🟠 High | L |
-| 2.2 | **Server-side pagination** สำหรับ `/admin/bookings` (cursor-based) | 🟠 High | M |
-| 2.3 | **Realtime subscription** แทน full `refresh()` — subscribe เฉพาะ booking ID ที่เปลี่ยน | 🟠 High | M |
-| 2.4 | **Database indexes เพิ่มเติม** — `(using_date, status)`, `(approver_id, status)` | 🟠 High | S |
-| 2.5 | **Error Boundaries + Suspense** ครอบ critical page components | 🟡 Medium | M |
+| #   | งาน                                                                                    | Impact    | Effort |
+| --- | -------------------------------------------------------------------------------------- | --------- | ------ |
+| 2.1 | **แทน AppProvider ด้วย TanStack Query** — pagination, stale time, optimistic updates   | 🟠 High   | L      |
+| 2.2 | **Server-side pagination** สำหรับ `/admin/bookings` (cursor-based)                     | 🟠 High   | M      |
+| 2.3 | **Realtime subscription** แทน full `refresh()` — subscribe เฉพาะ booking ID ที่เปลี่ยน | 🟠 High   | M      |
+| 2.4 | **Database indexes เพิ่มเติม** — `(using_date, status)`, `(approver_id, status)`       | 🟠 High   | S      |
+| 2.5 | **Error Boundaries + Suspense** ครอบ critical page components                          | 🟡 Medium | M      |
 
 ### Phase 3 — Observability & Operations (Sprint 5-6, ~2 สัปดาห์)
 
-| # | งาน | Impact | Effort |
-|---|-----|--------|--------|
-| 3.1 | **Sentry integration** — error tracking + performance monitoring | 🟠 High | M |
-| 3.2 | **Structured logging** ใน Edge Functions (JSON log format) | 🟡 Medium | S |
-| 3.3 | **Health check endpoint** `/api/health` — DB ping, external service status | 🟡 Medium | S |
-| 3.4 | **Dashboard KPIs แบบ real-time** — pending queue count, driver availability | 🟡 Medium | M |
-| 3.5 | **Cron: License expiry alerts** — แจ้งเตือน admin 30/7 วันก่อน expire | 🟡 Medium | M |
+| #   | งาน                                                                         | Impact    | Effort |
+| --- | --------------------------------------------------------------------------- | --------- | ------ |
+| 3.1 | **Sentry integration** — error tracking + performance monitoring            | 🟠 High   | M      |
+| 3.2 | **Structured logging** ใน Edge Functions (JSON log format)                  | 🟡 Medium | S      |
+| 3.3 | **Health check endpoint** `/api/health` — DB ping, external service status  | 🟡 Medium | S      |
+| 3.4 | **Dashboard KPIs แบบ real-time** — pending queue count, driver availability | 🟡 Medium | M      |
+| 3.5 | **Cron: License expiry alerts** — แจ้งเตือน admin 30/7 วันก่อน expire       | 🟡 Medium | M      |
 
 ### Phase 4 — Enterprise Features (Sprint 7-10, ~4 สัปดาห์)
 
-| # | งาน | Impact | Effort |
-|---|-----|--------|--------|
-| 4.1 | **Approval Delegation** — approver มอบหมายให้คนอื่นเมื่อลา | 🟠 High | L |
-| 4.2 | **Multi-level approval** — ตาม cost threshold หรือ trip category | 🟠 High | L |
-| 4.3 | **Vehicle Maintenance Tracker** — บันทึก service, แจ้ง km ถัดไป | 🟡 Medium | L |
-| 4.4 | **Cost Centre Allocation** — split ค่าใช้จ่ายหลาย department | 🟡 Medium | L |
-| 4.5 | **Recurring Booking Templates** — daily/weekly trip templates | 🟡 Medium | M |
-| 4.6 | **Driver Mobile PWA** — offline-first สำหรับ trip logging | 🟡 Medium | XL |
-| 4.7 | **Calendar View (Admin)** — drag-and-drop assignment | 🟡 Medium | L |
+| #   | งาน                                                              | Impact    | Effort |
+| --- | ---------------------------------------------------------------- | --------- | ------ |
+| 4.1 | **Approval Delegation** — approver มอบหมายให้คนอื่นเมื่อลา       | 🟠 High   | L      |
+| 4.2 | **Multi-level approval** — ตาม cost threshold หรือ trip category | 🟠 High   | L      |
+| 4.3 | **Vehicle Maintenance Tracker** — บันทึก service, แจ้ง km ถัดไป  | 🟡 Medium | L      |
+| 4.4 | **Cost Centre Allocation** — split ค่าใช้จ่ายหลาย department     | 🟡 Medium | L      |
+| 4.5 | **Recurring Booking Templates** — daily/weekly trip templates    | 🟡 Medium | M      |
+| 4.6 | **Driver Mobile PWA** — offline-first สำหรับ trip logging        | 🟡 Medium | XL     |
+| 4.7 | **Calendar View (Admin)** — drag-and-drop assignment             | 🟡 Medium | L      |
 
 ---
 
@@ -258,26 +259,29 @@ const refresh = async () => setData(await loadAppData(supabase));
 // ✅ Enterprise: TanStack Query
 export const useBookings = (filters?: BookingFilters) =>
   useQuery({
-    queryKey: ['bookings', filters],
+    queryKey: ["bookings", filters],
     queryFn: () => fetchBookings(supabase, filters),
-    staleTime: 30_000,        // 30 วิก่อน refetch
-    gcTime: 5 * 60_000,       // cache 5 นาที
+    staleTime: 30_000, // 30 วิก่อน refetch
+    gcTime: 5 * 60_000, // cache 5 นาที
     placeholderData: keepPreviousData, // no flickering during pagination
   });
 
 export const useUpdateBooking = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: UpdateBookingArgs) => persistBookingUpdate(supabase, args),
+    mutationFn: (args: UpdateBookingArgs) =>
+      persistBookingUpdate(supabase, args),
     onMutate: async (args) => {
       // Optimistic update
-      await qc.cancelQueries({ queryKey: ['bookings'] });
-      const prev = qc.getQueryData(['bookings', args.filters]);
-      qc.setQueryData(['bookings', args.filters], (old) => applyPatch(old, args));
+      await qc.cancelQueries({ queryKey: ["bookings"] });
+      const prev = qc.getQueryData(["bookings", args.filters]);
+      qc.setQueryData(["bookings", args.filters], (old) =>
+        applyPatch(old, args),
+      );
       return { prev };
     },
-    onError: (_err, _args, ctx) => qc.setQueryData(['bookings'], ctx?.prev),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['bookings'] }),
+    onError: (_err, _args, ctx) => qc.setQueryData(["bookings"], ctx?.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
   });
 };
 ```
@@ -352,16 +356,16 @@ const windows = new Map<string, { count: number; reset: number }>();
 export function checkRateLimit(
   key: string,
   limit = 20,
-  windowMs = 60_000
+  windowMs = 60_000,
 ): { allowed: boolean; remaining: number; resetAt: number } {
   const now = Date.now();
   const w = windows.get(key);
-  
+
   if (!w || now > w.reset) {
     windows.set(key, { count: 1, reset: now + windowMs });
     return { allowed: true, remaining: limit - 1, resetAt: now + windowMs };
   }
-  
+
   w.count++;
   if (w.count > limit) {
     return { allowed: false, remaining: 0, resetAt: w.reset };
@@ -381,32 +385,50 @@ export class AppError extends Error {
     public readonly code: string,
     message: string,
     public readonly statusCode: number = 400,
-    public readonly details?: unknown
+    public readonly details?: unknown,
   ) {
     super(message);
-    this.name = 'AppError';
+    this.name = "AppError";
   }
 }
 
 export const Errors = {
-  UNAUTHORIZED: () => new AppError('UNAUTHORIZED', 'Authentication required', 401),
-  FORBIDDEN: (action: string) => new AppError('FORBIDDEN', `Not authorized to ${action}`, 403),
-  NOT_FOUND: (entity: string) => new AppError('NOT_FOUND', `${entity} not found`, 404),
-  CONFLICT: (msg: string) => new AppError('CONFLICT', msg, 409),
-  VALIDATION: (details: unknown) => new AppError('VALIDATION_ERROR', 'Validation failed', 422, details),
+  UNAUTHORIZED: () =>
+    new AppError("UNAUTHORIZED", "Authentication required", 401),
+  FORBIDDEN: (action: string) =>
+    new AppError("FORBIDDEN", `Not authorized to ${action}`, 403),
+  NOT_FOUND: (entity: string) =>
+    new AppError("NOT_FOUND", `${entity} not found`, 404),
+  CONFLICT: (msg: string) => new AppError("CONFLICT", msg, 409),
+  VALIDATION: (details: unknown) =>
+    new AppError("VALIDATION_ERROR", "Validation failed", 422, details),
 } as const;
 
 // lib/api/response.ts
 export function apiError(error: unknown) {
   if (error instanceof AppError) {
     return Response.json(
-      { error: { code: error.code, message: error.message, details: error.details } },
-      { status: error.statusCode }
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+        },
+      },
+      { status: error.statusCode },
     );
   }
   // Log unexpected errors to Sentry
-  console.error('[Unhandled]', error);
-  return Response.json({ error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' } }, { status: 500 });
+  console.error("[Unhandled]", error);
+  return Response.json(
+    {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "An unexpected error occurred",
+      },
+    },
+    { status: 500 },
+  );
 }
 ```
 
@@ -429,7 +451,7 @@ CREATE TABLE public.user_roles (
 CREATE OR REPLACE FUNCTION public.user_has_role(p_role TEXT)
 RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.user_roles 
+    SELECT 1 FROM public.user_roles
     WHERE user_id = auth.uid() AND role = p_role
   )
 $$;
@@ -453,7 +475,7 @@ BEGIN
   ON CONFLICT (year) DO UPDATE
     SET last_seq = public.booking_year_counters.last_seq + 1
   RETURNING last_seq INTO next_seq;
-  
+
   RETURN 'CSR-' || current_year || '-' || LPAD(next_seq::TEXT, 6, '0');
 END;
 $$;
@@ -537,13 +559,13 @@ E2E Tests (Playwright):
 
 ## 📊 Performance Benchmarks ที่ควรตั้ง
 
-| Metric | Target | Alert Threshold |
-|--------|--------|-----------------|
-| Page Load (LCP) | < 2.5s | > 4s |
-| API Response (P95) | < 500ms | > 2s |
-| DB Query (P99) | < 100ms | > 500ms |
-| Booking Creation | < 1s | > 3s |
-| `loadAppData()` | ยกเลิก — ใช้ pagination | - |
+| Metric             | Target                  | Alert Threshold |
+| ------------------ | ----------------------- | --------------- |
+| Page Load (LCP)    | < 2.5s                  | > 4s            |
+| API Response (P95) | < 500ms                 | > 2s            |
+| DB Query (P99)     | < 100ms                 | > 500ms         |
+| Booking Creation   | < 1s                    | > 3s            |
+| `loadAppData()`    | ยกเลิก — ใช้ pagination | -               |
 
 ---
 
@@ -551,7 +573,7 @@ E2E Tests (Playwright):
 
 - [ ] **CSP Headers** — Content Security Policy บน Next.js
 - [ ] **CORS Configuration** — ล็อค origin บน Edge Functions
-- [ ] **Input Sanitization** — HTML encoding ก่อน render ทุก user-generated content  
+- [ ] **Input Sanitization** — HTML encoding ก่อน render ทุก user-generated content
 - [ ] **File Upload Validation** — ตรวจ MIME type จริงๆ ไม่ใช่แค่ extension
 - [ ] **Dependency Audit** — `npm audit` ใน CI/CD pipeline
 - [ ] **Secret Rotation** — มีกระบวนการ rotate `POWER_AUTOMATE_CALLBACK_SECRET`
@@ -563,12 +585,14 @@ E2E Tests (Playwright):
 ## 🎯 สรุป — สิ่งที่ทำทันที vs ระยะยาว
 
 ### ✅ ทำทันที (Quick Wins, < 1 วัน)
+
 1. ลบ `storeSessionBackup` / `readSessionBackup` ออกทั้งหมด
 2. เพิ่ม `X-Content-Type-Options`, `X-Frame-Options` headers ใน `next.config.mjs`
 3. Fix RLS `profiles_read` — จำกัดเฉพาะ columns ที่จำเป็น
 4. เพิ่ม `.env.example` ให้ครบ (ปัจจุบันมีแล้ว — ตรวจสอบว่าครบ)
 
 ### 📅 ระยะกลาง (2-4 สัปดาห์)
+
 1. Implement `audit_logs` + triggers
 2. แทน AppProvider ด้วย TanStack Query
 3. เพิ่ม server-side pagination
@@ -576,6 +600,7 @@ E2E Tests (Playwright):
 5. เพิ่ม E2E tests ด้วย Playwright
 
 ### 🏢 Enterprise (1-3 เดือน)
+
 1. Approval Delegation system
 2. Multi-level approval routing
 3. Driver Mobile PWA (offline-first)

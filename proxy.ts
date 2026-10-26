@@ -1,13 +1,26 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
+import {
+  isDemoModeEnabled,
+  isSupabaseConfigured,
+} from '@/lib/supabase/client';
 
 export function proxy(request: NextRequest) {
-  const configured = Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  if (isSupabaseConfigured) return updateSession(request);
+  if (request.nextUrl.pathname === '/api/health' || isDemoModeEnabled)
+    return NextResponse.next();
+
+  return NextResponse.json(
+    { status: 'unavailable' },
+    {
+      status: 503,
+      headers: {
+        'Cache-Control': 'no-store',
+        'Retry-After': '60',
+      },
+    },
   );
-  return configured ? updateSession(request) : NextResponse.next();
 }
 
 export const config = {

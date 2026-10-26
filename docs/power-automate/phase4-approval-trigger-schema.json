@@ -1,0 +1,51 @@
+{
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "event",
+    "actionId",
+    "requestId",
+    "requestNo",
+    "expectedVersion",
+    "expiresAt",
+    "approver",
+    "approvalUrl",
+    "callbackUrl",
+    "adaptiveCard",
+    "emailSubject",
+    "emailBodyHtml"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "enum": [1] },
+    "event": { "type": "string", "enum": ["request.approval_requested"] },
+    "actionId": { "type": "string", "minLength": 8, "maxLength": 200 },
+    "requestId": { "type": "string", "format": "uuid" },
+    "requestNo": { "type": "string" },
+    "requestType": { "type": "string", "enum": ["outside_company"] },
+    "expectedVersion": { "type": "integer", "minimum": 1 },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "requester": {
+      "type": "object",
+      "required": ["name", "email", "department"],
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "department": { "type": "string" }
+      }
+    },
+    "approver": {
+      "type": "object",
+      "required": ["name", "email"],
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "email": { "type": "string" }
+      }
+    },
+    "approvalUrl": { "type": "string", "format": "uri" },
+    "approvalExpiresAt": { "type": "string", "format": "date-time" },
+    "callbackUrl": { "type": "string", "format": "uri" },
+    "adaptiveCard": { "type": "object" },
+    "emailSubject": { "type": "string" },
+    "emailBodyHtml": { "type": "string" }
+  }
+}

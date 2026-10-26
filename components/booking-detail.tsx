@@ -11,6 +11,8 @@ import {
   Car,
   Printer,
   FileText,
+  Phone,
+  ShieldCheck,
 } from "lucide-react";
 import { useApp } from "./app-provider";
 import { Badge, Button, Card, Empty } from "./ui";
@@ -18,6 +20,7 @@ import { statusLabel, totalCost } from "@/lib/business";
 import { formatThaiDateTime } from "@/lib/date-format";
 import { BookingActivityLog } from "./booking-activity-log";
 import { DriverDispatchSlipModal } from "./driver-dispatch-slip-modal";
+import { maskEmployeeId, maskPhoneNumber } from "@/lib/privacy";
 import type { Booking } from "@/lib/types";
 
 export function BookingDetail({
@@ -53,6 +56,10 @@ export function BookingDetail({
   const nextActions: Partial<
     Record<Booking["status"], { title: string; description: string }>
   > = {
+    pending_requester_confirmation: {
+      title: "Awaiting requester confirmation",
+      description: "The requester must open the secure company email or Teams message and confirm before processing begins.",
+    },
     pending_approval: {
       title: "Awaiting manager review",
       description: `The request is waiting for ${b.approverName || "the department approver"} to approve or return it for changes.`,
@@ -70,10 +77,10 @@ export function BookingDetail({
       description: "GA can now assign the vehicle and driver.",
     },
     assigned: {
-      title: b.assignment?.accepted ? "Trip is scheduled" : "Awaiting driver acknowledgement",
-      description: b.assignment?.accepted
-        ? "The driver has acknowledged the assignment. The trip can start at the scheduled pickup time."
-        : "The assigned driver needs to acknowledge this trip.",
+      title: "Vehicle and driver assigned",
+      description: admin
+        ? "Review the saved dispatch details and send the prepared message to the driver through LINE."
+        : "GA has assigned the transport resources. Check the pickup details before travelling.",
     },
     in_progress: {
       title: "Trip in progress",
@@ -92,6 +99,21 @@ export function BookingDetail({
           <h1 className="text-2xl font-bold text-ink">{b.destination}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
+              admin
+                ? "bg-blue-50 text-blue-700 border border-blue-200"
+                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+            }`}
+            title={
+              admin
+                ? "GA Administrator: Full access to operational contact details"
+                : "Thailand PDPA Protected: Contact numbers and employee IDs are masked"
+            }
+          >
+            <ShieldCheck size={13} />
+            <span>{admin ? "Admin Dispatch View" : "PDPA Masked"}</span>
+          </span>
           {admin && (
             <Button
               variant="secondary"
@@ -159,6 +181,16 @@ export function BookingDetail({
               <p className="text-sm font-medium text-ink">{b.requesterName}</p>
               {b.requesterEmail && (
                 <p className="text-xs text-gray-400">{b.requesterEmail}</p>
+              )}
+              {b.requesterPhone && (
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
+                  <Phone size={11} className="text-slate-400" />
+                  <span>
+                    {admin
+                      ? b.requesterPhone
+                      : maskPhoneNumber(b.requesterPhone, "requester")}
+                  </span>
+                </p>
               )}
             </div>
             <div>
@@ -238,7 +270,9 @@ export function BookingDetail({
                       <td className="px-3 py-3 font-medium text-ink">
                         {emp.employeeName}
                         <span className="block text-xs text-gray-400">
-                          {emp.employeeId}
+                          {admin
+                            ? emp.employeeId
+                            : maskEmployeeId(emp.employeeId, "requester")}
                         </span>
                       </td>
                       <td className="px-3 py-3 text-xs text-gray-600">
@@ -275,7 +309,10 @@ export function BookingDetail({
                               {empVehicle.licensePlate} ({empVehicle.model})
                             </p>
                             <p className="text-gray-500">
-                              {empDriver.fullName} ({empDriver.phone})
+                              {empDriver.fullName} (
+                              {admin
+                                ? empDriver.phone
+                                : maskPhoneNumber(empDriver.phone)})
                             </p>
                           </div>
                         ) : (

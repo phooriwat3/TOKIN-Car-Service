@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AlertTriangle, Car, CheckCircle2, ClipboardList, Trash2, UserRound } from "lucide-react";
 import { useApp } from "@/components/app-provider";
 import { Button, Card, Input } from "@/components/ui";
+import { PageHeader } from "@/components/page-header";
 
 const CONFIRMATION = "DELETE ALL FLEET RESOURCES";
 
@@ -35,23 +36,19 @@ export function AdminDailyTransportSetup() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500">
-            GA operations
-          </p>
-          <h1 className="mt-1 text-2xl font-bold text-ink">Daily transport setup</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            Enter the actual vehicle and driver together for each approved transport request. A separate vehicle or driver directory is not required.
-          </p>
-        </div>
-        <Link href="/admin/bookings">
-          <Button>
-            <ClipboardList size={16} />
-            Open approved bookings
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        eyebrow="GA operations"
+        title="Daily transport setup"
+        description="Enter the actual vehicle and driver together for each approved transport request. A separate vehicle or driver directory is not required."
+        action={(
+          <Link href="/admin/bookings" className="w-full sm:w-auto">
+            <Button className="w-full bg-amber-400 text-brand-950 hover:bg-amber-300 sm:w-auto">
+              <ClipboardList size={16} />
+              Open approved bookings
+            </Button>
+          </Link>
+        )}
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <SetupStep icon={<ClipboardList size={18} />} number="1" title="Open an approved request" body="Use the All bookings queue to find a trip ready for GA assignment." />

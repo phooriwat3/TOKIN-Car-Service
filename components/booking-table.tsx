@@ -2,34 +2,31 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import {
   ArrowDownUp,
-  Calendar,
   Car,
   CheckSquare,
+  ChevronRight,
   Clock,
   Download,
   Filter,
-  Layers,
   RotateCcw,
   Search,
-  Sparkles,
   Square,
   User,
-  Users,
   X,
 } from "lucide-react";
 import {
+  addDays,
   format,
   isToday,
   isTomorrow,
@@ -41,21 +38,26 @@ import {
   endOfWeek,
 } from "date-fns";
 import type { Booking } from "@/lib/types";
-import { Badge, Button, Empty, Input } from "./ui";
+import { Badge, Button, Empty, Input, TableSkeleton } from "./ui";
 import { statusLabel } from "@/lib/business";
+import { maskEmployeeId } from "@/lib/privacy";
 import {
   AdminBatchAssignModal,
   AdminSmartGroupingSection,
 } from "./admin-batch-assignment-modal";
 import type { SmartGroup } from "@/lib/smart-grouping";
-
-type StatusTab =
-  | "all"
-  | "action_needed"
-  | "today"
-  | "assigned"
-  | "in_progress_completed"
-  | "overtime";
+import { useBookingsQuery } from "@/lib/hooks/use-bookings-query";
+import {
+  bookingMatchesOperationalStage,
+  countBookingsByOperationalStage,
+  getOperationalStage,
+  isBookingReadyForAssignment,
+  isOperationalStage,
+  operationalStageDescriptions,
+  operationalStageLabels,
+  operationalStageOrder,
+  type OperationalStage,
+} from "@/lib/operations-queue";
 
 type DatePreset =
   | "all"
@@ -85,12 +87,52 @@ const queueDetails = {
 
 type OperationsQueue = keyof typeof queueDetails;
 
+const stageTabStyles: Record<
+  OperationalStage,
+  { active: string; idle: string; count: string }
+> = {
+  all: {
+    active: "border-brand-900 bg-brand-900 text-white",
+    idle: "border-slate-200 bg-white text-slate-600 hover:border-brand-200 hover:text-brand-800",
+    count: "bg-white/15 text-current",
+  },
+  needs_review: {
+    active: "border-amber-500 bg-amber-500 text-brand-950",
+    idle: "border-amber-200 bg-amber-50 text-amber-900 hover:border-amber-400",
+    count: "bg-white/45 text-current",
+  },
+  ready_to_plan: {
+    active: "border-blue-600 bg-blue-600 text-white",
+    idle: "border-blue-200 bg-blue-50 text-blue-800 hover:border-blue-400",
+    count: "bg-white/20 text-current",
+  },
+  assigned: {
+    active: "border-emerald-600 bg-emerald-600 text-white",
+    idle: "border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-400",
+    count: "bg-white/20 text-current",
+  },
+  in_progress: {
+    active: "border-violet-600 bg-violet-600 text-white",
+    idle: "border-violet-200 bg-violet-50 text-violet-800 hover:border-violet-400",
+    count: "bg-white/20 text-current",
+  },
+  completed: {
+    active: "border-slate-700 bg-slate-700 text-white",
+    idle: "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-400",
+    count: "bg-white/20 text-current",
+  },
+};
+
 export function BookingTable({
   bookings,
   basePath = "/bookings",
+  isLoading = false,
+  serverMode = false,
 }: {
   bookings: Booking[];
   basePath?: string;
+  isLoading?: boolean;
+  serverMode?: boolean;
 }) {
   const isAdmin = basePath.includes("/admin");
   const searchParams = useSearchParams();
@@ -99,9 +141,17 @@ export function BookingTable({
     queueParam && queueParam in queueDetails
       ? (queueParam as OperationsQueue)
       : null;
+  const stageParam = searchParams.get("stage");
+  const requestedStage: OperationalStage = isOperationalStage(stageParam)
+    ? stageParam
+    : operationsQueue === "unassigned"
+      ? "ready_to_plan"
+      : operationsQueue === "ot_verification"
+        ? "needs_review"
+        : "all";
 
   // Filter States
-  const [activeTab, setActiveTab] = useState<StatusTab>("all");
+  const [activeTab, setActiveTab] = useState<OperationalStage>(requestedStage);
   const [searchQuery, setSearchQuery] = useState("");
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
   const [customStartDate, setCustomStartDate] = useState("");
@@ -114,11 +164,85 @@ export function BookingTable({
     "all" | "unassigned" | "assigned"
   >("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [serverPage, setServerPage] = useState(1);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   // Selection & Modal States
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchModalOpen, setBatchModalOpen] = useState(false);
   const [groupForModal, setGroupForModal] = useState<Booking[] | null>(null);
+
+  useEffect(() => {
+    setActiveTab(requestedStage);
+  }, [requestedStage]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setServerPage(1);
+  }, [
+    activeTab,
+    debouncedSearch,
+    datePreset,
+    customStartDate,
+    customEndDate,
+    selectedDepartment,
+    selectedServiceType,
+    selectedAssignmentStatus,
+    operationsQueue,
+  ]);
+
+  const serverDateFilters = useMemo(() => {
+    const now = new Date();
+    if (datePreset === "today") return { usingDate: format(now, "yyyy-MM-dd") };
+    if (datePreset === "tomorrow")
+      return { usingDate: format(addDays(now, 1), "yyyy-MM-dd") };
+    if (datePreset === "this_week")
+      return {
+        dateFrom: format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+        dateTo: format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+      };
+    if (datePreset === "this_month")
+      return {
+        dateFrom: format(startOfMonth(now), "yyyy-MM-dd"),
+        dateTo: format(endOfMonth(now), "yyyy-MM-dd"),
+      };
+    if (datePreset === "custom")
+      return {
+        dateFrom: customStartDate || undefined,
+        dateTo: customEndDate || undefined,
+      };
+    return {};
+  }, [datePreset, customStartDate, customEndDate]);
+
+  const serverQuery = useBookingsQuery(
+    {
+      page: serverPage,
+      limit: 25,
+      stage: activeTab === "all" ? undefined : activeTab,
+      department: selectedDepartment === "all" ? undefined : selectedDepartment,
+      search: debouncedSearch || undefined,
+      requestType:
+        selectedServiceType === "all"
+          ? undefined
+          : selectedServiceType === "car_service"
+            ? "outside_company"
+            : "overtime",
+      assignmentStatus:
+        selectedAssignmentStatus === "all"
+          ? undefined
+          : selectedAssignmentStatus,
+      urgent: operationsQueue === "urgent" || undefined,
+      otVerification: operationsQueue === "ot_verification" || undefined,
+      ...serverDateFilters,
+    },
+    { enabled: isAdmin && serverMode },
+  );
+  const sourceBookings =
+    isAdmin && serverMode && serverQuery.data ? serverQuery.data.data : bookings;
 
   // Department List from dataset
   const departments = useMemo(() => {
@@ -130,39 +254,18 @@ export function BookingTable({
   }, [bookings]);
 
   // Tab counts
-  const tabCounts = useMemo(() => {
-    const now = new Date();
-    const todayStr = format(now, "yyyy-MM-dd");
-
-    return {
-      all: bookings.length,
-      action_needed: bookings.filter((b) =>
-        ["pending_approval", "pending_ot_verification", "approved"].includes(
-          b.status,
-        ),
-      ).length,
-      today: bookings.filter((b) => b.usingDate === todayStr).length,
-      assigned: bookings.filter((b) =>
-        ["assigned", "scheduled"].includes(b.status),
-      ).length,
-      in_progress_completed: bookings.filter((b) =>
-        ["in_progress", "completed"].includes(b.status),
-      ).length,
-      overtime: bookings.filter(
-        (b) =>
-          b.requestType === "overtime" ||
-          (b.overtimeEmployees && b.overtimeEmployees.length > 0) ||
-          b.category === "overtime_transport",
-      ).length,
-    };
-  }, [bookings]);
+  const tabCounts = useMemo(
+    () =>
+      isAdmin && serverMode && serverQuery.data?.facets?.stages
+        ? serverQuery.data.facets.stages
+        : countBookingsByOperationalStage(bookings),
+    [bookings, isAdmin, serverMode, serverQuery.data],
+  );
 
   // Filtered dataset based on tab and advanced criteria
   const processedBookings = useMemo(() => {
     const now = new Date();
-    const todayStr = format(now, "yyyy-MM-dd");
-
-    return bookings.filter((b) => {
+    return sourceBookings.filter((b) => {
       const hasAssignment = Boolean(
         b.assignment?.vehicleId || b.assignment?.manualTransportUnits?.length,
       );
@@ -179,27 +282,8 @@ export function BookingTable({
       )
         return false;
 
-      // 1. Status Tab filter
-      if (activeTab === "action_needed") {
-        if (
-          !["pending_approval", "pending_ot_verification", "approved"].includes(
-            b.status,
-          )
-        )
-          return false;
-      } else if (activeTab === "today") {
-        if (b.usingDate !== todayStr) return false;
-      } else if (activeTab === "assigned") {
-        if (!["assigned", "scheduled"].includes(b.status)) return false;
-      } else if (activeTab === "in_progress_completed") {
-        if (!["in_progress", "completed"].includes(b.status)) return false;
-      } else if (activeTab === "overtime") {
-        const isOt =
-          b.requestType === "overtime" ||
-          (b.overtimeEmployees && b.overtimeEmployees.length > 0) ||
-          b.category === "overtime_transport";
-        if (!isOt) return false;
-      }
+      // 1. GA operational stage filter
+      if (!bookingMatchesOperationalStage(b, activeTab)) return false;
 
       // 2. Department filter
       if (
@@ -265,7 +349,7 @@ export function BookingTable({
       return true;
     });
   }, [
-    bookings,
+    sourceBookings,
     activeTab,
     selectedDepartment,
     selectedServiceType,
@@ -302,17 +386,22 @@ export function BookingTable({
   };
 
   const toggleSelectAll = (rows: Booking[]) => {
-    if (selectedIds.size === rows.length && rows.length > 0) {
+    const assignableRows = rows.filter(isBookingReadyForAssignment);
+    const allAssignableSelected =
+      assignableRows.length > 0 &&
+      assignableRows.every((row) => selectedIds.has(row.id));
+
+    if (allAssignableSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(rows.map((r) => r.id)));
+      setSelectedIds(new Set(assignableRows.map((row) => row.id)));
     }
   };
 
   const selectedBookings = useMemo(() => {
     if (groupForModal) return groupForModal;
-    return bookings.filter((b) => selectedIds.has(b.id));
-  }, [bookings, selectedIds, groupForModal]);
+    return sourceBookings.filter((b) => selectedIds.has(b.id));
+  }, [sourceBookings, selectedIds, groupForModal]);
 
   // Export to CSV Function
   const exportToCSV = (items: Booking[]) => {
@@ -386,7 +475,19 @@ export function BookingTable({
           id: "select",
           header: () => null,
           cell: (info) => {
+            const canAssign = isBookingReadyForAssignment(info.row.original);
             const isSelected = selectedIds.has(info.row.original.id);
+
+            if (!canAssign) {
+              return (
+                <span
+                  className="block h-[18px] w-[18px] rounded border border-slate-200 bg-slate-50"
+                  title="Only requests in Ready to plan can be batch assigned"
+                  aria-label="Not available for batch assignment"
+                />
+              );
+            }
+
             return (
               <button
                 type="button"
@@ -485,7 +586,13 @@ export function BookingTable({
                 {info.row.original.requesterName}
               </p>
               <p className="mt-0.5 text-xs text-gray-500">
-                {info.row.original.requesterEmployeeId || "No ID"} ·{" "}
+                {isAdmin
+                  ? info.row.original.requesterEmployeeId || "No ID"
+                  : maskEmployeeId(
+                      info.row.original.requesterEmployeeId,
+                      "requester",
+                    ) || "No ID"}{" "}
+                ·{" "}
                 <span className="font-medium text-gray-700">
                   {info.row.original.department}
                 </span>
@@ -543,6 +650,33 @@ export function BookingTable({
             return <span className="text-xs text-gray-400">—</span>;
           },
         }),
+        column.display({
+          id: "actions",
+          header: "Action",
+          cell: (info) => {
+            const stage = getOperationalStage(info.row.original);
+            const label =
+              stage === "ready_to_plan"
+                ? "Assign"
+                : stage === "needs_review"
+                  ? "Review"
+                  : "Open";
+
+            return (
+              <Link
+                href={`${basePath}/${info.row.original.id}`}
+                className={`inline-flex min-h-9 items-center gap-1 rounded-lg border px-3 text-xs font-bold transition ${
+                  stage === "ready_to_plan"
+                    ? "border-brand-600 bg-brand-600 text-white hover:bg-brand-700"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:text-brand-700"
+                }`}
+              >
+                {label}
+                <ChevronRight size={13} />
+              </Link>
+            );
+          },
+        }),
       );
     }
 
@@ -563,6 +697,10 @@ export function BookingTable({
   const filteredBookings = useMemo(
     () => rows.map((r) => r.original),
     [rows],
+  );
+  const filteredAssignableBookings = useMemo(
+    () => filteredBookings.filter(isBookingReadyForAssignment),
+    [filteredBookings],
   );
 
   return (
@@ -592,135 +730,48 @@ export function BookingTable({
         </div>
       )}
 
-      {/* Enterprise Quick Status Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-line pb-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab("all")}
-          className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
-            activeTab === "all"
-              ? "bg-slate-900 text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-          }`}
-        >
-          <span>All Requests</span>
-          <span
-            className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-              activeTab === "all"
-                ? "bg-slate-800 text-slate-200"
-                : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            {tabCounts.all}
-          </span>
-        </button>
+      {isAdmin && serverMode && serverQuery.error && (
+        <div role="alert" className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:flex-row sm:items-center sm:justify-between">
+          <span>{serverQuery.error.message || "Unable to refresh the booking queue."}</span>
+          <Button type="button" size="sm" variant="secondary" onClick={() => void serverQuery.refetch()}>
+            <RotateCcw size={14} /> Try again
+          </Button>
+        </div>
+      )}
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("action_needed")}
-          className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
-            activeTab === "action_needed"
-              ? "bg-amber-500 text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-amber-50 hover:text-amber-700"
-          }`}
-        >
-          <span className="flex h-2 w-2 rounded-full bg-amber-400" />
-          <span>Action Needed</span>
-          <span
-            className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-              activeTab === "action_needed"
-                ? "bg-amber-600 text-amber-100"
-                : "bg-amber-100 text-amber-800"
-            }`}
-          >
-            {tabCounts.action_needed}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("today")}
-          className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
-            activeTab === "today"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-blue-50 hover:text-blue-700"
-          }`}
-        >
-          <span>Today's Trips</span>
-          <span
-            className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-              activeTab === "today"
-                ? "bg-blue-700 text-blue-100"
-                : "bg-blue-100 text-blue-800"
-            }`}
-          >
-            {tabCounts.today}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("assigned")}
-          className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
-            activeTab === "assigned"
-              ? "bg-emerald-600 text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
-          }`}
-        >
-          <span>Assigned / Ready</span>
-          <span
-            className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-              activeTab === "assigned"
-                ? "bg-emerald-700 text-emerald-100"
-                : "bg-emerald-100 text-emerald-800"
-            }`}
-          >
-            {tabCounts.assigned}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("in_progress_completed")}
-          className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
-            activeTab === "in_progress_completed"
-              ? "bg-slate-700 text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-          }`}
-        >
-          <span>Completed</span>
-          <span
-            className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-              activeTab === "in_progress_completed"
-                ? "bg-slate-600 text-slate-200"
-                : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            {tabCounts.in_progress_completed}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("overtime")}
-          className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
-            activeTab === "overtime"
-              ? "bg-purple-600 text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-purple-50 hover:text-purple-700"
-          }`}
-        >
-          <span>Overtime (OT)</span>
-          <span
-            className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-              activeTab === "overtime"
-                ? "bg-purple-700 text-purple-100"
-                : "bg-purple-100 text-purple-800"
-            }`}
-          >
-            {tabCounts.overtime}
-          </span>
-        </button>
-      </div>
+      {/* GA workflow stages stay separate from date and service filters. */}
+      <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-card" aria-labelledby="operations-stage-title">
+        <div className="mb-3 flex flex-col gap-1 px-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p id="operations-stage-title" className="text-sm font-bold text-slate-900">Operational queue</p>
+            <p className="text-xs text-slate-500">Move from review to planning, dispatch, and completion.</p>
+          </div>
+          <p className="text-xs font-medium text-slate-500" aria-live="polite">
+            {operationalStageDescriptions[activeTab]}
+          </p>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Booking workflow stage">
+          {operationalStageOrder.map((stage) => {
+            const active = activeTab === stage;
+            const styles = stageTabStyles[stage];
+            return (
+              <button
+                key={stage}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setActiveTab(stage)}
+                className={`flex min-h-11 shrink-0 items-center gap-2 rounded-lg border px-3.5 py-2 text-xs font-bold transition ${active ? `${styles.active} shadow-sm` : styles.idle}`}
+              >
+                <span>{operationalStageLabels[stage]}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] ${styles.count}`}>
+                  {tabCounts[stage]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Main Table Card */}
       <div className="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
@@ -911,16 +962,27 @@ export function BookingTable({
               <span>
                 Showing <strong className="text-ink">{rows.length}</strong>{" "}
                 {rows.length === 1 ? "request" : "requests"}
+                {isAdmin && serverMode && serverQuery.data
+                  ? ` of ${serverQuery.data.pagination.total}`
+                  : ""}
               </span>
-              {isAdmin && rows.length > 0 && (
+              {isAdmin && serverMode && serverQuery.isFetching && !serverQuery.isLoading && (
+                <span className="inline-flex items-center gap-1 font-medium text-brand-700">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-brand-500" />
+                  Updating
+                </span>
+              )}
+              {isAdmin && filteredAssignableBookings.length > 0 && (
                 <button
                   type="button"
                   onClick={() => toggleSelectAll(filteredBookings)}
                   className="font-semibold text-brand hover:underline"
                 >
-                  {selectedIds.size === filteredBookings.length
-                    ? "Deselect all"
-                    : "Select all on this view"}
+                  {filteredAssignableBookings.every((booking) =>
+                    selectedIds.has(booking.id),
+                  )
+                    ? "Deselect ready requests"
+                    : "Select ready requests on this page"}
                 </button>
               )}
             </div>
@@ -933,18 +995,24 @@ export function BookingTable({
           </div>
         </div>
 
-        {rows.length === 0 ? (
+        {isLoading || (isAdmin && serverMode && serverQuery.isLoading) ? (
+          <div className="p-4">
+            <TableSkeleton rows={8} columns={6} />
+          </div>
+        ) : rows.length === 0 ? (
           <Empty
             title="No matching requests"
             body={
               searchQuery || hasActiveAdvancedFilters
                 ? "Clear or adjust your filters to view more records."
-                : "New requests will appear here."
+                : activeTab === "all"
+                  ? "New requests will appear here."
+                  : `No requests are currently in ${operationalStageLabels[activeTab].toLowerCase()}.`
             }
           />
         ) : (
           <div className="overflow-x-auto overscroll-x-contain">
-            <table className="w-full min-w-[850px] text-left text-sm">
+            <table className="w-full min-w-[980px] text-left text-sm">
               <thead className="border-b border-line bg-slate-50 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 {table.getHeaderGroups().map((group) => (
                   <tr key={group.id}>
@@ -999,6 +1067,36 @@ export function BookingTable({
             </table>
           </div>
         )}
+
+        {isAdmin && serverMode && serverQuery.data && serverQuery.data.pagination.totalPages > 1 && (
+          <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50/70 px-4 py-3 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              Page <strong className="text-slate-900">{serverQuery.data.pagination.page}</strong> of{" "}
+              <strong className="text-slate-900">{serverQuery.data.pagination.totalPages}</strong>
+              {" · "}{serverQuery.data.pagination.total} matching requests
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={serverPage <= 1 || serverQuery.isFetching}
+                onClick={() => setServerPage((page) => Math.max(1, page - 1))}
+              >
+                Previous
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={!serverQuery.data.pagination.hasMore || serverQuery.isFetching}
+                onClick={() => setServerPage((page) => page + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sticky Batch Action Bar when rows are selected */}
@@ -1050,10 +1148,6 @@ export function BookingTable({
         <AdminBatchAssignModal
           selectedBookings={selectedBookings}
           onClose={() => {
-            setBatchModalOpen(false);
-            setGroupForModal(null);
-          }}
-          onSuccess={() => {
             setBatchModalOpen(false);
             setGroupForModal(null);
             setSelectedIds(new Set());

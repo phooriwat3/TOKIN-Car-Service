@@ -9,6 +9,7 @@ import { landingPathForRole } from "@/lib/role-routes";
 import { useApp } from "@/components/app-provider";
 import { Button, Field, Input } from "@/components/ui";
 import { BrandLogo } from "@/components/brand";
+import { privilegedRoles } from "@/lib/route-access";
 
 const loginNotes = [
   "Track each request from submission to completion",
@@ -26,7 +27,6 @@ export function LoginPortal() {
     role,
     setRole,
     signIn,
-    signInWithMicrosoft,
     signOut,
   } = useApp();
   const router = useRouter();
@@ -34,7 +34,6 @@ export function LoginPortal() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [microsoftSubmitting, setMicrosoftSubmitting] = useState(false);
 
   const enterDemo = (nextRole: Role) => {
     setRole(nextRole);
@@ -53,26 +52,20 @@ export function LoginPortal() {
     }
   };
 
-  const submitMicrosoft = async () => {
-    setMicrosoftSubmitting(true);
-    try {
-      await signInWithMicrosoft("/admin/bookings");
-    } catch {
-      setMicrosoftSubmitting(false);
-    }
-  };
-
   useEffect(() => {
     if (!configured || !authenticated || loading) return;
-    if (role === expectedRole) {
+    if (privilegedRoles.includes(role)) {
       router.replace(landingPathForRole[role]);
     }
-  }, [authenticated, configured, expectedRole, loading, role, router]);
+  }, [authenticated, configured, loading, role, router]);
 
-  if (configured && authenticated && !loading && role !== expectedRole) {
+  if (configured && authenticated && !loading && !privilegedRoles.includes(role)) {
     return (
-      <main className="grid min-h-screen place-items-center bg-[#edf1f4] p-6">
-        <section className="w-full max-w-md border border-slate-300 bg-white p-8 shadow-lg">
+      <main className="relative grid min-h-screen place-items-center overflow-hidden bg-brand-950 p-6">
+        <div className="absolute inset-0 bg-[url('/images/tokin-thailand.jpg')] bg-cover bg-center" aria-hidden="true" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-950/95 via-brand-900/82 to-brand-700/60" aria-hidden="true" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-amber-400" aria-hidden="true" />
+        <section className="relative w-full max-w-md rounded-2xl border border-white/70 bg-white/95 p-8 shadow-2xl backdrop-blur">
           <BrandLogo />
           <p className="mt-8 text-xs font-semibold uppercase tracking-[0.16em] text-brand">
             Administration access
@@ -109,8 +102,21 @@ export function LoginPortal() {
   if (configured && authenticated && !loading) return null;
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[#edf1f4] p-4 sm:p-6">
-      <section className="w-full max-w-md border border-slate-300 bg-white px-6 py-9 shadow-lg sm:rounded-lg sm:px-10">
+    <main className="relative min-h-screen overflow-hidden bg-brand-950">
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/images/tokin-thailand.jpg')" }}
+        aria-hidden="true"
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-brand-950/95 via-brand-900/80 to-brand-800/55" aria-hidden="true" />
+      <div className="absolute inset-x-0 top-0 h-1 bg-amber-400" aria-hidden="true" />
+      <div className="relative grid min-h-screen place-items-center p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_520px] lg:gap-12 lg:px-12">
+        <section className="hidden max-w-2xl self-end pb-16 text-white lg:block">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-200">TOKIN Electronics Thailand</p>
+          <h1 className="mt-4 text-5xl font-bold leading-tight">Transport operations, kept simple and secure.</h1>
+          <p className="mt-5 max-w-xl text-base leading-7 text-blue-100">Employees submit without an account. Authorized operations staff sign in here to review, plan, and manage transport.</p>
+        </section>
+        <section className="w-full max-w-md rounded-2xl border border-white/20 bg-white/95 px-6 py-9 shadow-2xl backdrop-blur-sm sm:px-10 lg:justify-self-end">
         <div className="mb-9 flex items-center justify-between gap-4">
           <BrandLogo />
           <span className="text-xs font-semibold text-gray-500">
@@ -186,7 +192,7 @@ export function LoginPortal() {
             <Button
               size="lg"
               className="w-full"
-              disabled={submitting || microsoftSubmitting || loading}
+              disabled={submitting || loading}
             >
               {submitting ? (
                 <>
@@ -197,6 +203,12 @@ export function LoginPortal() {
                 "Sign in"
               )}
             </Button>
+            <Link
+              href="/admin/recover"
+              className="block text-center text-sm font-semibold text-brand hover:text-brand-dark"
+            >
+              Forgot your password?
+            </Link>
             </form>
           </div>
         ) : (
@@ -229,7 +241,8 @@ export function LoginPortal() {
         <p className="mt-10 text-xs text-gray-400">
           TOKIN Industrial - Internal transport service
         </p>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

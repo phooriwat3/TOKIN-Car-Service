@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, Mail, Send } from "lucide-react";
 import { Button, Card, Field, Select } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { CompanyUserField } from "@/components/company-user-field";
 
-export function AdminEmailTestPanel() {
-  const [open, setOpen] = useState(false);
+export function AdminEmailTestPanel({ initialOpen = false }: { initialOpen?: boolean }) {
+  const [open, setOpen] = useState(initialOpen);
+
+  useEffect(() => {
+    if (initialOpen) {
+      setOpen(true);
+    }
+  }, [initialOpen]);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [requestType, setRequestType] = useState<"overtime" | "outside_company">("overtime");
   const [sending, setSending] = useState(false);

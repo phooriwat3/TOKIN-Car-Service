@@ -17,7 +17,7 @@ Configure **Send an email (V2)** as follows:
 | Flow                                  | To              | Subject                          | Body                              |
 | ------------------------------------- | --------------- | -------------------------------- | --------------------------------- |
 | TOKIN - Request Approval              | Approver email  | `triggerBody()?['emailSubject']` | `triggerBody()?['emailBodyHtml']` |
-| TOKIN - Requester Manage Notification | Requester email | `triggerBody()?['emailSubject']` | `triggerBody()?['emailBodyHtml']` |
+| TOKIN - Requester Confirmation / Manage | Requester email | `triggerBody()?['emailSubject']` | `triggerBody()?['emailBodyHtml']` |
 | TOKIN - Assignment Notification       | Requester email | `triggerBody()?['emailSubject']` | `triggerBody()?['emailBodyHtml']` |
 
 For each Subject and Body field, select **Expression**, paste the expression shown above, and select **Add**. The Outlook connector treats the Body value as HTML. Keep **From (Send as)** set to `th-info@yageo.com`.
@@ -25,8 +25,9 @@ For each Subject and Body field, select **Expression**, paste the expression sho
 The templates intentionally use one clear primary action per message:
 
 - Approval: **Review and decide**
+- New public submission: **Confirm request**
 - Submitted: **View or manage request**
 - Changes requested: **Edit and resubmit request**
 - Assignment: **View assignment**, plus a secondary **Download PDF** link
 
-Save each flow, then create a new test request. Old flow runs and previously generated emails will keep their old content.
+Route both `request.confirmation_required` and `request.confirmed` events through the requester flow. Save each flow, then create a new test request. Verify that no approval message is delivered before the requester confirms. Old flow runs and previously generated emails will keep their old content.

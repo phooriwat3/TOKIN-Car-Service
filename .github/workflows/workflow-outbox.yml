@@ -1,0 +1,31 @@
+name: Workflow Outbox Delivery
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workflow-outbox-delivery
+  cancel-in-progress: false
+
+jobs:
+  deliver:
+    name: Deliver queued workflow notifications
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Invoke the protected outbox worker
+        env:
+          WORKFLOW_OUTBOX_SECRET: ${{ secrets.WORKFLOW_OUTBOX_SECRET }}
+        run: |
+          test -n "$WORKFLOW_OUTBOX_SECRET"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "content-type: application/json" \
+            --header "x-workflow-secret: $WORKFLOW_OUTBOX_SECRET" \
+            --data '{"source":"github-actions-schedule"}' \
+            "https://ikglbytkkzkxeowuggke.supabase.co/functions/v1/process-workflow-outbox"

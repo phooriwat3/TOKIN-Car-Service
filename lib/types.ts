@@ -1,6 +1,8 @@
-export type Role = "requester" | "approver" | "admin" | "driver";
+export type Role = "requester" | "approver" | "admin" | "driver" | "finance" | "executive" | "auditor";
+export type DataLifecycleStatus = "hot" | "cold" | "anonymized";
 export type BookingStatus =
   | "draft"
+  | "pending_requester_confirmation"
   | "pending_approval"
   | "pending_ot_verification"
   | "changes_requested"
@@ -65,6 +67,8 @@ export interface ManualTransportUnit {
   vehicleType: string;
   driverName: string;
   driverPhone: string;
+  contractorName?: string;
+  tripRateThb?: number;
   employeeIds: string[];
 }
 export interface TransportUnitMemory {
@@ -80,6 +84,8 @@ export interface TransportUnitMemory {
 export interface Assignment {
   vehicleId?: string;
   driverId?: string;
+  contractorName?: string;
+  tripRateThb?: number;
   manualTransportUnits?: ManualTransportUnit[];
   assignedAt: string;
   notes?: string;
@@ -101,6 +107,7 @@ export interface OvertimeEmployee {
   employeeId: string;
   employeeName: string;
   employeeEmail?: string;
+  employeePhone?: string;
   workDescription: string;
   workStart: string;
   workEnd: string;
@@ -140,6 +147,7 @@ export interface Booking {
   requesterId: string;
   requesterName: string;
   requesterEmail?: string;
+  requesterPhone?: string;
   requesterEmployeeId?: string;
   department: string;
   status: BookingStatus;

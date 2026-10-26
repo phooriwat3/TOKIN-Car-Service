@@ -8,15 +8,15 @@
 
 ## Index of Architecture Decision Records
 
-| ADR ID | Title | Status | Date |
-|--------|-------|--------|------|
-| [ADR-001](#adr-001-nextjs-16-app-router--supabase-baas-architecture) | Next.js 16 App Router + Supabase BaaS Architecture | Accepted | 2026-07-14 |
-| [ADR-002](#adr-002-database-level-security-via-row-level-security-rls) | Database-Level Security via Row-Level Security (RLS) | Accepted | 2026-07-14 |
-| [ADR-003](#adr-003-session-storage--httponly-cookie-authentication) | Session Storage & HttpOnly Cookie Authentication | Accepted | 2026-08-18 |
-| [ADR-004](#adr-004-double-booking--overlap-prevention-at-database-layer) | Double-Booking & Overlap Prevention at Database Layer | Accepted | 2026-07-15 |
+| ADR ID                                                                          | Title                                                        | Status   | Date       |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------ | -------- | ---------- |
+| [ADR-001](#adr-001-nextjs-16-app-router--supabase-baas-architecture)            | Next.js 16 App Router + Supabase BaaS Architecture           | Accepted | 2026-07-14 |
+| [ADR-002](#adr-002-database-level-security-via-row-level-security-rls)          | Database-Level Security via Row-Level Security (RLS)         | Accepted | 2026-07-14 |
+| [ADR-003](#adr-003-session-storage--httponly-cookie-authentication)             | Session Storage & HttpOnly Cookie Authentication             | Accepted | 2026-08-18 |
+| [ADR-004](#adr-004-double-booking--overlap-prevention-at-database-layer)        | Double-Booking & Overlap Prevention at Database Layer        | Accepted | 2026-07-15 |
 | [ADR-005](#adr-005-decoupled-email-approval-via-power-automate--edge-functions) | Decoupled Email Approval via Power Automate & Edge Functions | Accepted | 2026-07-16 |
-| [ADR-006](#adr-006-tiger-space-ot-verification-and-hr-confirmation-workflow) | Tiger Space OT Verification and HR Confirmation Workflow | Accepted | 2026-08-05 |
-| [ADR-007](#adr-007-tanstack-query-for-server-state--pagination) | TanStack Query for Server State & Pagination | Accepted | 2026-08-18 |
+| [ADR-006](#adr-006-tiger-space-ot-verification-and-hr-confirmation-workflow)    | Tiger Space OT Verification and HR Confirmation Workflow     | Accepted | 2026-08-05 |
+| [ADR-007](#adr-007-tanstack-query-for-server-state--pagination)                 | TanStack Query for Server State & Pagination                 | Accepted | 2026-08-18 |
 
 ---
 

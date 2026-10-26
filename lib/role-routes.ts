@@ -5,4 +5,7 @@ export const landingPathForRole: Record<Role, string> = {
   approver: "/request",
   admin: "/admin/bookings",
   driver: "/driver/trips",
+  finance: "/admin/reports",
+  executive: "/dashboard",
+  auditor: "/admin/advanced",
 };

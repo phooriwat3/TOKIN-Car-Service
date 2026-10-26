@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, json } from "../_shared/http.ts";
 import { randomToken, sha256Hex } from "../_shared/request-access.ts";
 import { assignmentEmail } from "../_shared/email-template.ts";
+import { assignmentCard } from "../_shared/audience-adaptive-card.ts";
 
 const appBaseUrl = () => {
   const configured = Deno.env.get("APP_BASE_URL")?.trim().replace(/\/+$/, "");
@@ -243,11 +244,33 @@ Deno.serve(async (request: Request) => {
       pdfUrl,
       expiresAt: documentExpiresAt,
     });
+    const adaptiveCard = assignmentCard({
+      requestNo: booking.booking_no,
+      requestType: booking.request_type,
+      usingDate: booking.using_date,
+      startTime: String(booking.start_time).slice(0, 5),
+      endTime: String(booking.end_time).slice(0, 5),
+      pickupLocation: booking.pickup_location,
+      destination: emailDestination,
+      viewUrl,
+      pdfUrl,
+      expiresAt: documentExpiresAt,
+      vehicleLabel: [
+        emailVehicle.licensePlate,
+        emailVehicle.brand,
+        emailVehicle.model,
+      ].filter(Boolean).join(" - "),
+      driverName: emailDriver.name,
+      transportUnitCount: transportUnits.length || 1,
+    });
 
     const response = await fetch(flowUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        schemaVersion: 1,
+        event: "assignment.confirmed",
+        audience: "requester",
         requestId: booking.id,
         requestNo: booking.booking_no,
         requestType: booking.request_type,
@@ -259,6 +282,10 @@ Deno.serve(async (request: Request) => {
           name: booking.requester_name,
           email: booking.requester_email,
           department: booking.requester_department ?? "",
+        },
+        recipient: {
+          name: booking.requester_name,
+          email: booking.requester_email,
         },
         department: booking.requester_department ?? "",
         usingDate: booking.using_date,
@@ -283,6 +310,7 @@ Deno.serve(async (request: Request) => {
         viewUrl,
         pdfUrl,
         expiresAt: documentExpiresAt,
+        adaptiveCard,
         ...assignmentEmailTemplate,
       }),
     });

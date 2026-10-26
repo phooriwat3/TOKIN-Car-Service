@@ -2,18 +2,23 @@
 
 import { useMemo, useState } from "react";
 import {
+  AlertTriangle,
   Car,
   CheckCircle2,
   ChevronRight,
   Clock,
   Layers,
-  MapPin,
   Sparkles,
   Users,
   X,
 } from "lucide-react";
 import { useApp } from "./app-provider";
 import { Button, Card, Field, Input, Select, Textarea } from "./ui";
+import { LineDispatchActions } from "./line-dispatch-actions";
+import {
+  createLineDispatchMessage,
+  DEFAULT_LINE_VAN_CAPACITY,
+} from "@/lib/line-dispatch";
 import { detectSmartGroups, type SmartGroup } from "@/lib/smart-grouping";
 import type { Booking } from "@/lib/types";
 
@@ -53,19 +58,44 @@ export function AdminSmartGroupingSection({
                       <Layers size={14} />
                     </span>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wider text-brand">
-                        {group.bookings.length} Requests Combined
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-bold uppercase tracking-wider text-brand">
+                          {group.bookings.length} Requests Combined
+                        </p>
+                        {group.shiftEndTime && (
+                          <span className="inline-flex items-center rounded bg-brand/10 px-1.5 py-0.5 text-[10px] font-bold text-brand">
+                            เลิกกะ {group.shiftEndTime} น.
+                          </span>
+                        )}
+                      </div>
                       <h3 className="font-bold text-ink">
                         {group.destination}
                       </h3>
                     </div>
                   </div>
-                  {unassignedCount > 0 && (
-                    <span className="rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                      {unassignedCount} Needs Vehicle
-                    </span>
-                  )}
+
+                  <div className="flex flex-col items-end gap-1">
+                    {group.occupancyStatus === "available" && (
+                      <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                        🟢 {group.totalPassengers} / {group.capacity} Seats
+                      </span>
+                    )}
+                    {group.occupancyStatus === "full" && (
+                      <span className="rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                        🟡 10 / 10 Full
+                      </span>
+                    )}
+                    {group.occupancyStatus === "overflow" && (
+                      <span className="rounded-full bg-rose-100 border border-rose-300 px-2 py-0.5 text-[10px] font-bold text-rose-800 animate-pulse">
+                        🔴 {group.totalPassengers} / 10 Overflow!
+                      </span>
+                    )}
+                    {unassignedCount > 0 && (
+                      <span className="rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                        {unassignedCount} Needs Vehicle
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600 border-t border-brand/10 pt-2.5">
@@ -111,11 +141,9 @@ export function AdminSmartGroupingSection({
 export function AdminBatchAssignModal({
   selectedBookings,
   onClose,
-  onSuccess,
 }: {
   selectedBookings: Booking[];
   onClose: () => void;
-  onSuccess: () => void;
 }) {
   const { data, updateBooking } = useApp();
 
@@ -135,12 +163,23 @@ export function AdminBatchAssignModal({
   const [vehicleType, setVehicleType] = useState("Van");
   const [driverName, setDriverName] = useState("");
   const [driverPhone, setDriverPhone] = useState("");
+  const [contractorName, setContractorName] = useState("");
+  const [tripRateThb, setTripRateThb] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [assignmentConfirmed, setAssignmentConfirmed] = useState(false);
+  const [dispatchUnitId] = useState(() =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? `batch-${crypto.randomUUID()}`
+      : `batch-${Date.now()}`,
+  );
+
+  const markAssignmentChanged = () => setAssignmentConfirmed(false);
 
   // Auto-fill when active vehicle is selected
   const handleVehicleSelect = (id: string) => {
+    markAssignmentChanged();
     setSelectedVehicleId(id);
     const vehicle = activeVehicles.find((v) => v.id === id);
     if (vehicle) {
@@ -152,6 +191,7 @@ export function AdminBatchAssignModal({
 
   // Auto-fill when active driver is selected
   const handleDriverSelect = (id: string) => {
+    markAssignmentChanged();
     setSelectedDriverId(id);
     const driver = activeDrivers.find((d) => d.id === id);
     if (driver) {
@@ -163,8 +203,10 @@ export function AdminBatchAssignModal({
   const totalPassengers = useMemo(() => {
     let count = 0;
     for (const b of selectedBookings) {
-      if (b.requestType === "overtime") {
-        count += (b.overtimeEmployees ?? []).filter((e) => e.transportRequired).length || 1;
+      if (b.requestType === "overtime" || b.overtimeTransport) {
+        count +=
+          (b.overtimeEmployees ?? []).filter((e) => e.transportRequired).length ||
+          1;
       } else {
         count += b.passengerList?.length || b.numPassengers || 1;
       }
@@ -177,6 +219,21 @@ export function AdminBatchAssignModal({
       new Set(selectedBookings.map((b) => b.department).filter(Boolean)),
     ).join(", ");
   }, [selectedBookings]);
+
+  const lineMessage = createLineDispatchMessage({
+    bookings: selectedBookings,
+    unit: {
+      licensePlate,
+      brand,
+      vehicleType,
+      driverName,
+      driverPhone,
+      contractorName,
+      employeeIds: [],
+    },
+    notes,
+    capacity: DEFAULT_LINE_VAN_CAPACITY,
+  });
 
   const handleConfirmBatch = async () => {
     if (!licensePlate.trim()) {
@@ -193,6 +250,7 @@ export function AdminBatchAssignModal({
 
     try {
       const nowIso = new Date().toISOString();
+      const rateNumber = tripRateThb ? Number(tripRateThb) : undefined;
 
       // Batch update every selected booking with the SAME vehicle & driver dispatch
       await Promise.all(
@@ -202,18 +260,32 @@ export function AdminBatchAssignModal({
             assignment: {
               vehicleId: selectedVehicleId || undefined,
               driverId: selectedDriverId || undefined,
+              contractorName: contractorName.trim() || undefined,
+              tripRateThb: rateNumber,
               assignedAt: nowIso,
-              accepted: true,
-              notes: notes || `Batch consolidated dispatch for ${selectedBookings.length} requests`,
+              accepted: false,
+              notes:
+                notes ||
+                `Batch consolidated dispatch for ${selectedBookings.length} requests`,
               manualTransportUnits: [
                 {
-                  unitId: `unit-${Date.now()}-${b.id}`,
+                  unitId: `${dispatchUnitId}:${b.id}`,
                   licensePlate: licensePlate.trim(),
                   brand: brand.trim(),
                   vehicleType: vehicleType.trim(),
                   driverName: driverName.trim(),
                   driverPhone: driverPhone.trim(),
-                  employeeIds: [b.requesterEmployeeId || b.id],
+                  contractorName: contractorName.trim() || undefined,
+                  tripRateThb: rateNumber,
+                  employeeIds:
+                    b.overtimeEmployees?.filter((employee) => employee.transportRequired)
+                      .map((employee) => employee.employeeId) ??
+                    (b.passengerList.length
+                      ? b.passengerList.map((_, index) => `passenger:${index}`)
+                      : Array.from(
+                          { length: Math.max(1, b.numPassengers) },
+                          (_, index) => `passenger:${index}`,
+                        )),
                 },
               ],
             },
@@ -221,15 +293,19 @@ export function AdminBatchAssignModal({
         ),
       );
 
-      onSuccess();
+      setAssignmentConfirmed(true);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to assign vehicle in batch.",
+        err instanceof Error
+          ? err.message
+          : "Failed to assign vehicle in batch.",
       );
     } finally {
       setSubmitting(false);
     }
   };
+
+  const occupancyPercent = Math.min(100, Math.round((totalPassengers / 10) * 100));
 
   return (
     <div
@@ -246,10 +322,10 @@ export function AdminBatchAssignModal({
             </span>
             <div>
               <h2 className="font-bold leading-tight">
-                Batch Vehicle Assignment
+                Batch Vehicle Assignment &amp; LINE Dispatch
               </h2>
               <p className="text-xs text-slate-400">
-                Consolidate {selectedBookings.length} requests to a single vehicle &amp; driver
+                Consolidate {selectedBookings.length} requests to a single contractor van &amp; driver
               </p>
             </div>
           </div>
@@ -263,12 +339,46 @@ export function AdminBatchAssignModal({
         </div>
 
         <div className="max-h-[75vh] overflow-y-auto p-6 space-y-5">
-          {/* Selected Bookings Summary Card */}
-          <div className="rounded-lg border border-brand/20 bg-brand-50/50 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-brand">
-              Selected Requests ({selectedBookings.length})
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
+          {/* Selected Bookings Summary Card & 10-Seat Meter */}
+          <div className="rounded-lg border border-brand/20 bg-brand-50/50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wider text-brand">
+                Selected Requests ({selectedBookings.length})
+              </p>
+              <div className="flex items-center gap-1.5 text-xs font-bold">
+                {totalPassengers < 10 && (
+                  <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-emerald-800">
+                    🟢 {totalPassengers} / 10 ที่นั่ง (ว่าง {10 - totalPassengers} ที่นั่ง)
+                  </span>
+                )}
+                {totalPassengers === 10 && (
+                  <span className="rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-amber-800">
+                    🟡 เต็มพอดี (10 / 10 ที่นั่ง)
+                  </span>
+                )}
+                {totalPassengers > 10 && (
+                  <span className="rounded-full bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-rose-800 flex items-center gap-1">
+                    <AlertTriangle size={12} /> เกินความจุ ({totalPassengers} / 10 ที่นั่ง)
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Visual Seat Capacity Progress Bar */}
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  totalPassengers < 10
+                    ? "bg-emerald-500"
+                    : totalPassengers === 10
+                      ? "bg-amber-500"
+                      : "bg-rose-500"
+                }`}
+                style={{ width: `${occupancyPercent}%` }}
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
               {selectedBookings.map((b) => (
                 <div
                   key={b.id}
@@ -282,7 +392,8 @@ export function AdminBatchAssignModal({
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex items-center gap-4 text-xs font-medium text-slate-700 border-t border-brand/10 pt-2">
+
+            <div className="flex items-center gap-4 text-xs font-medium text-slate-700 border-t border-brand/10 pt-2">
               <span>Total Passengers: <strong className="text-brand">{totalPassengers}</strong></span>
               <span>Departments: <strong>{departments}</strong></span>
             </div>
@@ -327,58 +438,109 @@ export function AdminBatchAssignModal({
 
           <div className="border-t border-line pt-4">
             <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500">
-              Vehicle &amp; Driver Details
+              Contractor &amp; Van Details
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="License Plate *">
+              <Field label="Contractor / Service Provider (ผู้ให้บริการรถตู้)">
+                <Input
+                  placeholder="e.g. หจก. นครหลวงยานยนต์ หรือ พี่สมควร รถตู้"
+                  value={contractorName}
+                  onChange={(e) => {
+                    markAssignmentChanged();
+                    setContractorName(e.target.value);
+                  }}
+                />
+              </Field>
+
+              <Field label="Trip Rate (THB) (ค่าบริการต่อเที่ยว)">
+                <Input
+                  type="number"
+                  placeholder="e.g. 800"
+                  value={tripRateThb}
+                  onChange={(e) => {
+                    markAssignmentChanged();
+                    setTripRateThb(e.target.value);
+                  }}
+                />
+              </Field>
+
+              <Field label="License Plate * (ทะเบียนรถ)">
                 <Input
                   required
-                  placeholder="e.g. 1กข-1234 BKK"
+                  placeholder="e.g. 1กข-1234 อยุธยา"
                   value={licensePlate}
-                  onChange={(e) => setLicensePlate(e.target.value)}
+                  onChange={(e) => {
+                    markAssignmentChanged();
+                    setLicensePlate(e.target.value);
+                  }}
                 />
               </Field>
 
               <Field label="Vehicle Type">
                 <Select
                   value={vehicleType}
-                  onChange={(e) => setVehicleType(e.target.value)}
+                  onChange={(e) => {
+                    markAssignmentChanged();
+                    setVehicleType(e.target.value);
+                  }}
                 >
-                  <option value="Van">Van (รถตู้)</option>
+                  <option value="Van">Van (รถตู้ 10-12 ที่นั่ง)</option>
                   <option value="Car">Sedan / SUV (รถเก๋ง)</option>
                   <option value="Pickup">Pickup (รถกระบะ)</option>
                   <option value="Bus">Bus (รถบัส)</option>
                 </Select>
               </Field>
 
-              <Field label="Driver Name *">
+              <Field label="Driver Name * (ชื่อคนขับ)">
                 <Input
                   required
                   placeholder="Driver full name"
                   value={driverName}
-                  onChange={(e) => setDriverName(e.target.value)}
+                  onChange={(e) => {
+                    markAssignmentChanged();
+                    setDriverName(e.target.value);
+                  }}
                 />
               </Field>
 
-              <Field label="Driver Phone Number">
+              <Field label="Driver Phone Number (เบอร์โทรคนขับ)">
                 <Input
                   placeholder="e.g. 081-234-5678"
                   value={driverPhone}
-                  onChange={(e) => setDriverPhone(e.target.value)}
+                  onChange={(e) => {
+                    markAssignmentChanged();
+                    setDriverPhone(e.target.value);
+                  }}
                 />
               </Field>
             </div>
 
             <div className="mt-4">
-              <Field label="Batch Dispatch Notes (sent to all passengers)">
+              <Field label="Batch Dispatch Notes (บันทึกแจ้งผู้โดยสาร)">
                 <Textarea
-                  placeholder="e.g. Shared van trip for joint training. Meeting point: Front Building A at 08:00 AM."
+                  placeholder="e.g. รถตู้ออกหน้าบริษัทตรงเวลา 20:00 น. กรุณารอที่ Front Area"
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={(e) => {
+                    markAssignmentChanged();
+                    setNotes(e.target.value);
+                  }}
                 />
               </Field>
             </div>
           </div>
+
+          {assignmentConfirmed && (
+            <div className="rounded-lg border border-success/30 bg-success-light p-3 text-sm font-semibold text-success">
+              Assignment saved. Review the dispatch message, choose the correct driver chat, and press Send in LINE.
+            </div>
+          )}
+          <LineDispatchActions
+            message={lineMessage}
+            bookingIds={selectedBookings.map((booking) => booking.id)}
+            transportUnitId={dispatchUnitId}
+            disabled={!assignmentConfirmed}
+            title="LINE dispatch coordination (ส่งงานคนขับรถ)"
+          />
         </div>
 
         {/* Footer Actions */}
@@ -389,19 +551,21 @@ export function AdminBatchAssignModal({
             disabled={submitting}
             onClick={onClose}
           >
-            Cancel
+            {assignmentConfirmed ? "Done" : "Cancel"}
           </Button>
 
           <Button
             type="button"
-            disabled={submitting}
+            disabled={submitting || assignmentConfirmed}
             onClick={handleConfirmBatch}
             className="gap-2 bg-brand hover:bg-brand-dark"
           >
             <CheckCircle2 size={16} />
             {submitting
               ? "Assigning Batch..."
-              : `Assign Vehicle to ${selectedBookings.length} Requests`}
+              : assignmentConfirmed
+                ? "Assignment saved"
+                : `Save Assignment for ${selectedBookings.length} Requests`}
           </Button>
         </div>
       </div>

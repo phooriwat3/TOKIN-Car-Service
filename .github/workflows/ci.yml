@@ -1,0 +1,80 @@
+name: Enterprise CI Pipeline
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Code Integrity, Types & Automated Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck validation
+        run: npm run typecheck
+
+      - name: Run automated unit test suite
+        run: npm run test
+
+      - name: Setup Deno for Edge Function checks
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Typecheck security-sensitive Edge Functions
+        run: find supabase/functions -mindepth 2 -name index.ts -print0 | xargs -0 deno check
+
+      - name: Run Edge Function unit tests
+        run: deno test supabase/functions/_shared/*.test.ts
+
+      - name: Production build verification
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: "https://mock.supabase.co"
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "mock-publishable-key"
+
+  database:
+    name: Clean Migration Chain & RLS Boundaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+
+      - name: Start clean local database and apply every migration
+        run: supabase start
+
+      - name: Replay migrations from zero
+        run: supabase db reset --local --no-seed
+
+      - name: Run RLS and database security tests
+        run: supabase test db
+
+      - name: Lint database schema
+        run: supabase db lint --local --level warning
+
+      - name: Stop local database
+        if: always()
+        run: supabase stop --no-backup

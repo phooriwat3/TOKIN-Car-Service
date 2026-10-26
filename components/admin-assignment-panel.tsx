@@ -4,7 +4,9 @@ import { use, useMemo, useState } from "react";
 import { ArrowRight, Car, CheckCircle2, Clock3, Plus, SearchX, Trash2, Users, XCircle } from "lucide-react";
 import { BookingDetail } from "./booking-detail";
 import { useApp } from "./app-provider";
+import { LineDispatchActions } from "./line-dispatch-actions";
 import { Button, Card, Field, Input, Select, Textarea } from "./ui";
+import { createLineDispatchMessage } from "@/lib/line-dispatch";
 import { createClient } from "@/lib/supabase/client";
 import type { ManualTransportUnit, OtVerificationStatus } from "@/lib/types";
 
@@ -75,6 +77,10 @@ export function AdminAssignmentPanel({
   );
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [assignmentConfirmed, setAssignmentConfirmed] = useState(
+    booking?.status === "assigned" &&
+      Boolean(booking.assignment?.manualTransportUnits?.length),
+  );
 
   if (!booking) return <BookingDetail id={id} admin />;
 
@@ -107,6 +113,7 @@ export function AdminAssignmentPanel({
     field: "licensePlate" | "brand" | "vehicleType" | "driverName" | "driverPhone",
     value: string,
   ) => {
+    setAssignmentConfirmed(false);
     const remembered = field === "licensePlate" && normalizeVehicleId(value)
       ? transportMemories.find(
           (memory) => normalizeVehicleId(memory.licensePlate) === normalizeVehicleId(value),
@@ -133,6 +140,7 @@ export function AdminAssignmentPanel({
   const applyRememberedUnit = (index: number, memoryId: string) => {
     const memory = transportMemories.find((item) => item.id === memoryId);
     if (!memory) return;
+    setAssignmentConfirmed(false);
     setUnits((current) =>
       current.map((unit, unitIndex) =>
         unitIndex === index
@@ -149,7 +157,8 @@ export function AdminAssignmentPanel({
     );
   };
 
-  const assignPassenger = (passengerId: string, unitId: string) =>
+  const assignPassenger = (passengerId: string, unitId: string) => {
+    setAssignmentConfirmed(false);
     setUnits((current) =>
       current.map((unit) => {
         const remaining = unit.employeeIds.filter((id) => id !== passengerId);
@@ -158,6 +167,7 @@ export function AdminAssignmentPanel({
           : { ...unit, employeeIds: remaining };
       }),
     );
+  };
 
   const updateOtVerification = async (
     result: Exclude<OtVerificationStatus, "not_required">,
@@ -235,6 +245,7 @@ export function AdminAssignmentPanel({
           assignedAt: new Date().toISOString(),
         },
       });
+      setAssignmentConfirmed(true);
 
       if (!configured) {
         setMessage("Daily transport assignment confirmed in demo mode.");
@@ -359,11 +370,12 @@ export function AdminAssignmentPanel({
                     size="sm"
                     variant="outline"
                     disabled={units.length === 1 || saving}
-                    onClick={() =>
+                    onClick={() => {
+                      setAssignmentConfirmed(false);
                       setUnits((current) =>
                         current.filter((_, unitIndex) => unitIndex !== index),
-                      )
-                    }
+                      );
+                    }}
                   >
                     <Trash2 size={15} /> Remove
                   </Button>
@@ -461,7 +473,10 @@ export function AdminAssignmentPanel({
               type="button"
               variant="outline"
               disabled={saving}
-              onClick={() => setUnits((current) => [...current, emptyUnit()])}
+              onClick={() => {
+                setAssignmentConfirmed(false);
+                setUnits((current) => [...current, emptyUnit()]);
+              }}
             >
               <Plus size={16} /> Add another daily vehicle
             </Button>
@@ -511,10 +526,30 @@ export function AdminAssignmentPanel({
             <Field label="GA notes / meeting instructions">
               <Textarea
                 value={notes}
-                onChange={(event) => setNotes(event.target.value)}
+                onChange={(event) => {
+                  setAssignmentConfirmed(false);
+                  setNotes(event.target.value);
+                }}
                 placeholder="Meeting time, pickup point, route, or instructions..."
               />
             </Field>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {units.map((unit, index) => (
+              <LineDispatchActions
+                key={unit.unitId}
+                message={createLineDispatchMessage({
+                  bookings: [booking],
+                  unit,
+                  notes,
+                })}
+                bookingIds={[booking.id]}
+                transportUnitId={unit.unitId}
+                disabled={!assignmentConfirmed}
+                title={`Driver ${index + 1}: ${unit.driverName || "not entered"}`}
+              />
+            ))}
           </div>
 
           {message && (
@@ -528,7 +563,7 @@ export function AdminAssignmentPanel({
               disabled={saving || !canConfirm || !unitsComplete || !assignmentsComplete}
               onClick={confirm}
             >
-              {saving ? "Confirming..." : "Confirm assignment & send notification"}
+              {saving ? "Confirming..." : "Confirm assignment & notify requester"}
               {!saving && <ArrowRight size={16} />}
             </Button>
           </div>

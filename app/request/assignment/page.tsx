@@ -12,6 +12,7 @@ import {
 import { Card } from "@/components/ui";
 import { BrandLogo } from "@/components/brand";
 import { loadPublicAssignment } from "@/lib/public-assignment";
+import { DigitalTransportTicket } from "@/components/transport-booking-ui";
 
 export default async function AssignmentPage({
   searchParams,
@@ -41,22 +42,16 @@ export default async function AssignmentPage({
 
   return (
     <Page>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-brand">
-            Assignment confirmation
-          </p>
-          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">
-            {assignment.requestNo}
-          </h1>
-        </div>
-        <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-800">
-          Assigned
-        </span>
-      </div>
-
-      <Card className="overflow-hidden">
-        <div className="grid gap-px bg-line sm:grid-cols-3">
+      <DigitalTransportTicket
+        requestNo={assignment.requestNo}
+        serviceLabel="TOKIN transport assignment"
+        statusLabel="Vehicle assigned"
+        origin={assignment.pickupLocation}
+        destination={assignment.destination}
+        date={assignment.usingDate}
+        time={`${assignment.startTime} – ${assignment.endTime}`}
+      >
+        <div className="grid overflow-hidden rounded-lg border border-line sm:grid-cols-3">
           <Summary
             icon={<CalendarDays size={18} />}
             label="Using date"
@@ -73,19 +68,10 @@ export default async function AssignmentPage({
             value={String(assignment.numPassengers)}
           />
         </div>
-      </Card>
-
-      <Card className="mt-5 p-6">
-        <h2 className="font-bold">Route</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-          <Location label="Pickup location" value={assignment.pickupLocation} />
-          <div className="hidden h-px w-10 bg-line sm:block" />
-          <Location label="Destination" value={assignment.destination} />
-        </div>
         <div className="mt-5 border-t border-line pt-5">
           <Info label="Purpose" value={assignment.purpose} />
         </div>
-      </Card>
+      </DigitalTransportTicket>
 
       {assignment.transportUnits?.length ? (
         <div className="mt-5 space-y-4">
@@ -233,7 +219,7 @@ export default async function AssignmentPage({
 
 function Page({ children }: { children: ReactNode }) {
   return (
-    <main className="min-h-screen bg-canvas px-4 py-6 text-ink sm:py-10">
+    <main className="min-h-screen border-t-4 border-t-brand-900 bg-[radial-gradient(circle_at_top_right,rgba(218,234,249,0.72),transparent_34%),var(--canvas)] px-4 py-6 text-ink sm:py-10">
       <div className="mx-auto max-w-4xl">
         <div className="mb-7 flex items-center gap-3">
           <div className="flex h-11 items-center rounded-lg border border-slate-200 bg-white px-2 shadow-xs">
@@ -266,18 +252,6 @@ function Summary({
         <p className="text-xs font-semibold uppercase">{label}</p>
       </div>
       <p className="mt-2 font-bold text-ink">{value || "-"}</p>
-    </div>
-  );
-}
-
-function Location({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="flex items-center gap-2 text-xs font-semibold uppercase text-gray-500">
-        <MapPin size={14} />
-        {label}
-      </p>
-      <p className="mt-2 font-semibold">{value || "-"}</p>
     </div>
   );
 }

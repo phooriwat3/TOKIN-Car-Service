@@ -27,9 +27,21 @@ const translations = {
     langEn: "English",
     summaryTitle: "ข้อมูลสรุปสำคัญ (Key Highlights)",
     summaryItems: [
-      { label: "เวลาส่งคำขอปกติ", value: "15:30 น.", note: "ระบบปิดรับคำขอเวลา 16:00 น." },
-      { label: "ระบบอนุมัติเวลาทำงาน", value: "Tiger OpenSpace", note: "บันทึกคำขอในระบบควบคู่กับการจองรถ" },
-      { label: "การยกเลิก / แก้ไข", value: "Manage Link", note: "กดยกเลิกผ่านลิงก์ของตนเองก่อน 16:00 น." },
+      {
+        label: "เวลาส่งคำขอปกติ",
+        value: "15:30 น.",
+        note: "ระบบปิดรับคำขอเวลา 16:00 น.",
+      },
+      {
+        label: "ระบบอนุมัติเวลาทำงาน",
+        value: "Tiger OpenSpace",
+        note: "บันทึกคำขอในระบบควบคู่กับการจองรถ",
+      },
+      {
+        label: "การยกเลิก / แก้ไข",
+        value: "Manage Link",
+        note: "กดยกเลิกผ่านลิงก์ของตนเองก่อน 16:00 น.",
+      },
     ],
     rulesTitle: "ข้อกำหนดและขั้นตอนการปฏิบัติ (Operating Procedures)",
     rules: [
@@ -63,8 +75,8 @@ const translations = {
     urgentBody:
       "คำขอที่ส่งหลังเวลา 16:00 น. จะถือเป็นคำขอเร่งด่วน (Emergency/Late Request) ซึ่งขึ้นอยู่กับจำนวนที่นั่งและเส้นทางรถที่ว่าง โปรดแจ้งหัวหน้างานและประสานงานกับฝ่ายธุรการ (GA) โดยตรง",
     contactTitle: "ติดต่อสอบถามหรือแจ้งปัญหา",
-    contactBody: "ฝ่ายธุรการและยานพาหนะ (General Affairs - Transport)",
-    contactAction: "ส่งอีเมลถึงฝ่ายธุรการ (GA)",
+    contactBody: "Treebuppha Saraphan (SR.SPECIALIST - GA • Capacitor)",
+    contactAction: "แชทติดต่อ GA ผ่าน MS Teams",
   },
   en: {
     headerCategory: "INTERNAL POLICY & GUIDELINES • TOKIN TRANSPORT",
@@ -75,9 +87,21 @@ const translations = {
     langEn: "English",
     summaryTitle: "Key Highlights",
     summaryItems: [
-      { label: "Standard Submission", value: "15:30", note: "Requests close at 16:00" },
-      { label: "Work Authorization", value: "Tiger OpenSpace", note: "Submit OT requisition in Tiger OpenSpace system" },
-      { label: "Cancellation / Edit", value: "Manage Link", note: "Cancel via your link before 16:00" },
+      {
+        label: "Standard Submission",
+        value: "15:30",
+        note: "Requests close at 16:00",
+      },
+      {
+        label: "Work Authorization",
+        value: "Tiger OpenSpace",
+        note: "Submit OT requisition in Tiger OpenSpace system",
+      },
+      {
+        label: "Cancellation / Edit",
+        value: "Manage Link",
+        note: "Cancel via your link before 16:00",
+      },
     ],
     rulesTitle: "Operating Procedures & Rules",
     rules: [
@@ -99,7 +123,7 @@ const translations = {
       {
         no: "4",
         title: "Cancellation & Schedule Changes",
-        body: "If your overtime is cancelled or postponed, please use your Manage Link to cancel the vehicle request before 16:00 so seats can be reallocated.",
+        body: "Before GA verifies the request, use your Manage Link to cancel before 16:00. After verification or vehicle assignment, contact GA so the seat and driver schedule can be released safely.",
       },
       {
         no: "5",
@@ -111,8 +135,8 @@ const translations = {
     urgentBody:
       "Submissions after 16:00 are treated as urgent requests subject to vehicle capacity. Please notify your supervisor and contact General Affairs (GA) directly.",
     contactTitle: "Need Assistance?",
-    contactBody: "General Affairs & Fleet Management Team",
-    contactAction: "Contact GA via Outlook",
+    contactBody: "Treebuppha Saraphan (SR.SPECIALIST - GA • Capacitor)",
+    contactAction: "Contact GA",
   },
 } as const;
 
@@ -180,9 +204,7 @@ export function OtGuidelines() {
               <p className="mt-0.5 text-base font-bold text-white">
                 {item.value}
               </p>
-              <p className="mt-0.5 text-[11px] text-slate-400">
-                {item.note}
-              </p>
+              <p className="mt-0.5 text-[11px] text-slate-400">{item.note}</p>
             </div>
           ))}
         </div>
@@ -194,35 +216,88 @@ export function OtGuidelines() {
           <div className="flex gap-3">
             <AlertCircle className="mt-0.5 shrink-0 text-amber-700" size={18} />
             <div>
-              <p className="font-bold text-amber-950">{lang === "th" ? "ก่อนส่งคำขอ OT Transport" : "Before you request Overtime Transport"}</p>
-              <p className="mt-1 text-sm leading-6 text-amber-900">{lang === "th" ? "ส่งคำขอภายใน 15:30 น. ระบบปิด 16:00 น. และต้องยื่น OT ใน Tiger OpenSpace ก่อน" : "Submit by 15:30; requests close at 16:00. Submit your OT in Tiger OpenSpace first."}</p>
+              <p className="font-bold text-amber-950">
+                {lang === "th"
+                  ? "ก่อนส่งคำขอ OT Transport"
+                  : "Before you request Overtime Transport"}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-amber-900">
+                {lang === "th"
+                  ? "ส่งคำขอภายใน 15:30 น. ระบบปิด 16:00 น. และต้องยื่น OT ใน Tiger OpenSpace ก่อน"
+                  : "Submit by 15:30; requests close at 16:00. Submit your OT in Tiger OpenSpace first."}
+              </p>
             </div>
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-bold text-slate-900">{lang === "th" ? "ตรวจสอบก่อนเริ่ม" : "Quick checklist"}</h3>
+          <h3 className="text-sm font-bold text-slate-900">
+            {lang === "th" ? "ตรวจสอบก่อนเริ่ม" : "Quick checklist"}
+          </h3>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            {[lang === "th" ? "ยื่น OT ใน Tiger OpenSpace" : "Submit OT in Tiger OpenSpace", lang === "th" ? "เลือกเวลาเลิกงานและจุดลงรถ" : "Confirm shift end time and drop-off", lang === "th" ? "บันทึก Manage Link หลังส่งคำขอ" : "Save your Manage Link after submitting"].map((item) => (
-              <div key={item} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-700">
-                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-600" />{item}
+            {[
+              lang === "th"
+                ? "ยื่น OT ใน Tiger OpenSpace"
+                : "Submit OT in Tiger OpenSpace",
+              lang === "th"
+                ? "เลือกเวลาเลิกงานและจุดลงรถ"
+                : "Confirm shift end time and drop-off",
+              lang === "th"
+                ? "บันทึก Manage Link หลังส่งคำขอ"
+                : "Save your Manage Link after submitting",
+            ].map((item) => (
+              <div
+                key={item}
+                className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-700"
+              >
+                <CheckCircle2
+                  size={14}
+                  className="mt-0.5 shrink-0 text-emerald-600"
+                />
+                {item}
               </div>
             ))}
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-bold text-slate-900">{lang === "th" ? "รายละเอียดนโยบาย" : "Full policy details"}</h3>
-          <p className="mt-1 text-xs text-slate-500">{lang === "th" ? "เปิดเฉพาะหัวข้อที่ต้องการอ่าน" : "Open a topic only when you need more detail."}</p>
+          <h3 className="text-sm font-bold text-slate-900">
+            {lang === "th" ? "รายละเอียดนโยบาย" : "Full policy details"}
+          </h3>
+          <p className="mt-1 text-xs text-slate-500">
+            {lang === "th"
+              ? "เปิดเฉพาะหัวข้อที่ต้องการอ่าน"
+              : "Open a topic only when you need more detail."}
+          </p>
           <div className="mt-3 divide-y overflow-hidden rounded-xl border border-slate-200">
             {t.rules.map((rule) => (
               <div key={rule.no}>
-                <button type="button" onClick={() => setExpandedRule((current) => current === rule.no ? null : rule.no)} aria-expanded={expandedRule === rule.no} className="flex w-full items-center gap-3 p-4 text-left hover:bg-slate-50">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">{rule.no}</span>
-                  <span className="flex-1 text-sm font-semibold text-slate-900">{rule.title}</span>
-                  <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${expandedRule === rule.no ? "rotate-180" : ""}`} />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedRule((current) =>
+                      current === rule.no ? null : rule.no,
+                    )
+                  }
+                  aria-expanded={expandedRule === rule.no}
+                  className="flex w-full items-center gap-3 p-4 text-left hover:bg-slate-50"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
+                    {rule.no}
+                  </span>
+                  <span className="flex-1 text-sm font-semibold text-slate-900">
+                    {rule.title}
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className={`shrink-0 text-slate-500 transition-transform ${expandedRule === rule.no ? "rotate-180" : ""}`}
+                  />
                 </button>
-                {expandedRule === rule.no && <p className="border-t bg-slate-50 px-4 py-3 pl-12 text-xs leading-6 text-slate-600 sm:text-sm">{rule.body}</p>}
+                {expandedRule === rule.no && (
+                  <p className="border-t bg-slate-50 px-4 py-3 pl-12 text-xs leading-6 text-slate-600 sm:text-sm">
+                    {rule.body}
+                  </p>
+                )}
               </div>
             ))}
           </div>

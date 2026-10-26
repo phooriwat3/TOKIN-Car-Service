@@ -12,9 +12,27 @@ export interface BookingFilters {
   page?: number;
   limit?: number;
   status?: string;
+  stage?: string;
   department?: string;
   search?: string;
   usingDate?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  requestType?: "overtime" | "outside_company";
+  assignmentStatus?: "assigned" | "unassigned";
+  urgent?: boolean;
+  otVerification?: boolean;
+}
+
+export interface BookingQueueFacets {
+  stages: {
+    all: number;
+    needs_review: number;
+    ready_to_plan: number;
+    assigned: number;
+    in_progress: number;
+    completed: number;
+  };
 }
 
 export interface PaginatedBookingsResponse {
@@ -26,6 +44,7 @@ export interface PaginatedBookingsResponse {
     totalPages: number;
     hasMore: boolean;
   };
+  facets?: BookingQueueFacets;
 }
 
 async function fetchBookings(
@@ -35,9 +54,17 @@ async function fetchBookings(
   if (filters.page) params.set("page", filters.page.toString());
   if (filters.limit) params.set("limit", filters.limit.toString());
   if (filters.status) params.set("status", filters.status);
+  if (filters.stage) params.set("stage", filters.stage);
   if (filters.department) params.set("department", filters.department);
   if (filters.search) params.set("search", filters.search);
   if (filters.usingDate) params.set("usingDate", filters.usingDate);
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo) params.set("dateTo", filters.dateTo);
+  if (filters.requestType) params.set("requestType", filters.requestType);
+  if (filters.assignmentStatus)
+    params.set("assignmentStatus", filters.assignmentStatus);
+  if (filters.urgent) params.set("urgent", "true");
+  if (filters.otVerification) params.set("otVerification", "true");
 
   const res = await fetch(`/api/v1/bookings?${params.toString()}`);
   if (!res.ok) {
@@ -47,13 +74,17 @@ async function fetchBookings(
   return res.json();
 }
 
-export function useBookingsQuery(filters: BookingFilters = {}) {
+export function useBookingsQuery(
+  filters: BookingFilters = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: ["bookings", filters],
     queryFn: () => fetchBookings(filters),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   });
 }
 

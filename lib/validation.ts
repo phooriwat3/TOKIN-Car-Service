@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getBangkokDateString } from "@/lib/date-format";
+import { getBangkokDateString } from "./date-format";
 export const bookingSchema = z
   .object({
     category: z.enum([
@@ -76,3 +76,13 @@ export const tripCompleteSchema = z.object({
   parkingFee: z.coerce.number().min(0),
   remarks: z.string().optional(),
 });
+
+export function normalizeThaiPhone(phone: string): string {
+  return phone.replace(/[-\s]/g, "").trim();
+}
+
+export function isValidThaiMobilePhone(phone?: string): boolean {
+  if (!phone) return false;
+  const cleaned = normalizeThaiPhone(phone);
+  return /^0[689]\d{8}$/.test(cleaned);
+}

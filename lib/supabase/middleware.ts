@@ -1,5 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { canAccessPath, isPublicPath } from "@/lib/route-access";
+
+const rejectRequest = (request: NextRequest, status: 401 | 403) => {
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json(
+      { error: status === 401 ? "Unauthorized" : "Forbidden" },
+      { status },
+    );
+  }
+  const url = request.nextUrl.clone();
+  url.pathname = status === 401 ? "/admin/login" : "/access-denied";
+  url.search = "";
+  return NextResponse.redirect(url);
+};
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -25,18 +39,21 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const isPublic =
-    request.nextUrl.pathname === "/login" ||
+  const pathname = request.nextUrl.pathname;
+  if (isPublicPath(pathname)) return response;
+  if (!user) return rejectRequest(request, 401);
 
-    request.nextUrl.pathname === "/admin/login" ||
-    request.nextUrl.pathname.startsWith("/auth/") ||
-    request.nextUrl.pathname === "/" ||
-    request.nextUrl.pathname.startsWith("/request") ||
-    request.nextUrl.pathname.startsWith("/api/request");
-  if (!user && !isPublic) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin/login";
-    return NextResponse.redirect(url);
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role,is_active")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (
+    profileError ||
+    !profile?.is_active ||
+    !canAccessPath(pathname, profile.role)
+  ) {
+    return rejectRequest(request, 403);
   }
   return response;
 }

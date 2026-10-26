@@ -42,6 +42,18 @@ export function BookingActivityLog({ booking }: { booking: Booking }) {
       icon: FileText,
     });
 
+    if (booking.status === "pending_requester_confirmation") {
+      list.push({
+        id: "pending_requester_confirmation",
+        title: "Awaiting Requester Confirmation",
+        description: "A secure confirmation link was sent to the requester's company channel.",
+        actor: booking.requesterName || "Requester",
+        timestamp: booking.createdAt,
+        status: "pending",
+        icon: Clock,
+      });
+    }
+
     // 2. Approval Event
     if (booking.approval) {
       const isApproved = booking.approval.action === "approved";
