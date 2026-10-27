@@ -112,7 +112,6 @@ export default function PublicApproveRequest({
           headers: {
             "Content-Type": "application/json",
             apikey: publishableKey,
-            Authorization: `Bearer ${publishableKey}`,
           },
           body: JSON.stringify({ token: initialToken }),
         },
@@ -154,7 +153,6 @@ export default function PublicApproveRequest({
           headers: {
             "Content-Type": "application/json",
             apikey: publishableKey,
-            Authorization: `Bearer ${publishableKey}`,
           },
           body: JSON.stringify({ token: initialToken, action, comments }),
         },

@@ -22,7 +22,6 @@ export async function checkDatabaseHealth({
       method: "POST",
       headers: {
         apikey: publishableKey,
-        Authorization: `Bearer ${publishableKey}`,
         "Content-Type": "application/json",
       },
       body: "{}",

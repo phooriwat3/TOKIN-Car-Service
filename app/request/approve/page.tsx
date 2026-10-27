@@ -16,7 +16,6 @@ async function loadApproval(token?: string) {
         headers: {
           "Content-Type": "application/json",
           apikey: publishableKey,
-          Authorization: `Bearer ${publishableKey}`,
         },
         body: JSON.stringify({ token }),
       },

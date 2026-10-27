@@ -16,7 +16,7 @@ describe("database health probe", () => {
     await expect(
       checkDatabaseHealth({
         supabaseUrl: "https://project.supabase.co",
-        publishableKey: "publishable-key",
+        publishableKey: "sb_publishable_test",
         fetcher,
       }),
     ).resolves.toBe(true);
@@ -28,6 +28,9 @@ describe("database health probe", () => {
     );
     expect(options?.method).toBe("POST");
     expect(options?.body).toBe("{}");
+    const headers = new Headers(options?.headers);
+    expect(headers.get("apikey")).toBe("sb_publishable_test");
+    expect(headers.has("Authorization")).toBe(false);
   });
 
   it("fails closed for missing configuration and unsuccessful responses", async () => {
@@ -40,7 +43,7 @@ describe("database health probe", () => {
     await expect(
       checkDatabaseHealth({
         supabaseUrl: "https://project.supabase.co",
-        publishableKey: "publishable-key",
+        publishableKey: "sb_publishable_test",
         fetcher,
       }),
     ).resolves.toBe(false);
