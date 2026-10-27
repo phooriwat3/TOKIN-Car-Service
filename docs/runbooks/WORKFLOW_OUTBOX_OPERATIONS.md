@@ -37,6 +37,12 @@ supports a manual dispatch. It sends:
 x-workflow-secret: <WORKFLOW_OUTBOX_SECRET>
 ```
 
+Configure the target project as the GitHub Actions repository variable
+`SUPABASE_PROJECT_REF`. Keep staging and production repositories or GitHub
+environments pointed at their matching Supabase project. The workflow fails
+closed when this variable is missing or malformed; it never falls back to a
+hardcoded project.
+
 Only one schedule is required. Concurrent invocations are safe because rows are
 leased with `FOR UPDATE SKIP LOCKED`. Do not place the secret in a query string.
 Keep the same independently generated secret in the GitHub Actions repository

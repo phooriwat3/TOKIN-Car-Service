@@ -20,12 +20,22 @@ jobs:
     steps:
       - name: Invoke the protected outbox worker
         env:
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
           WORKFLOW_OUTBOX_SECRET: ${{ secrets.WORKFLOW_OUTBOX_SECRET }}
         run: |
+          test -n "$SUPABASE_PROJECT_REF"
           test -n "$WORKFLOW_OUTBOX_SECRET"
+          case "$SUPABASE_PROJECT_REF" in
+            *[!a-z0-9]*)
+              echo "SUPABASE_PROJECT_REF must contain only lowercase letters and numbers." >&2
+              exit 1
+              ;;
+          esac
           curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 60 \
             --request POST \
             --header "content-type: application/json" \
             --header "x-workflow-secret: $WORKFLOW_OUTBOX_SECRET" \
             --data '{"source":"github-actions-schedule"}' \
-            "https://ikglbytkkzkxeowuggke.supabase.co/functions/v1/process-workflow-outbox"
+            "https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/process-workflow-outbox"
