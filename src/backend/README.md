@@ -26,3 +26,15 @@ $env:ConnectionStrings__PrimaryDatabase = "Server=...;Database=TOKIN_CarService_
 ```
 
 Never commit a database password or use the production database for development.
+
+## Database migrations
+
+The EF Core model uses separate SQL Server schemas (`core`, `transport`, `security`, `workflow`, and `audit`). Restore the repository-pinned EF tool and generate or inspect migrations without connecting to a database:
+
+```powershell
+Set-Location .\src\backend
+dotnet tool restore
+dotnet ef migrations script --project .\src\Tokin.CarService.Infrastructure
+```
+
+Applying a migration requires an explicitly supplied development connection string and separate approval. Migration commands must never target the company production database from a developer workstation.
