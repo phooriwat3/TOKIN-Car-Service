@@ -2,6 +2,8 @@
 
 Role-based company transport requisition workflow built with Next.js 16, TypeScript, Tailwind CSS, and Supabase.
 
+The SQL Server and ASP.NET Core migration is being developed separately under `src/backend` on the migration branch. The existing Supabase deployment remains the staging reference until feature parity and security validation are complete.
+
 ## Included scope
 
 - Request submission, approval/rejection, and vehicle/driver assignment

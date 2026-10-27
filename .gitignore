@@ -5,3 +5,9 @@ node_modules
 *.tsbuildinfo
 supabase/.temp/
 Test_Report_*.xls
+
+# .NET build and developer-local configuration
+**/bin/
+**/obj/
+.vs/
+src/backend/**/appsettings.Local.json

@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="src/Tokin.CarService.Api/Tokin.CarService.Api.csproj" />
+  <Project Path="src/Tokin.CarService.Application/Tokin.CarService.Application.csproj" />
+  <Project Path="src/Tokin.CarService.Domain/Tokin.CarService.Domain.csproj" />
+  <Project Path="src/Tokin.CarService.Infrastructure/Tokin.CarService.Infrastructure.csproj" />
+  <Project Path="tests/Tokin.CarService.Api.Tests/Tokin.CarService.Api.Tests.csproj" />
+</Solution>
