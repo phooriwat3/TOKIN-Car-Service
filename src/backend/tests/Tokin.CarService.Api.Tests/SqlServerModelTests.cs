@@ -17,6 +17,7 @@ public sealed class SqlServerModelTests
 
         Assert.Equal("transport", model.FindEntityType(typeof(TransportRequest))?.GetSchema());
         Assert.Equal("RequestAccessTokens", model.FindEntityType(typeof(RequestAccessToken))?.GetTableName());
+        Assert.Equal("PublicRequestAttempts", model.FindEntityType(typeof(PublicRequestAttempt))?.GetTableName());
         Assert.Equal("workflow", model.FindEntityType(typeof(WorkflowOutboxMessage))?.GetSchema());
 
         var request = model.FindEntityType(typeof(TransportRequest));
@@ -40,6 +41,7 @@ public sealed class SqlServerModelTests
         Assert.Contains("CREATE TABLE [transport].[TransportRequests]", script, StringComparison.Ordinal);
         Assert.Contains("CREATE TABLE [workflow].[OutboxMessages]", script, StringComparison.Ordinal);
         Assert.Contains("CREATE TABLE [security].[RequestAccessTokens]", script, StringComparison.Ordinal);
+        Assert.Contains("CREATE TABLE [security].[PublicRequestAttempts]", script, StringComparison.Ordinal);
         Assert.Contains("ISJSON([PayloadJson]) = 1", script, StringComparison.Ordinal);
     }
 

@@ -30,6 +30,9 @@ Separate vehicle and driver master tables are intentionally excluded. GA records
 - Database credentials are supplied through environment variables, user secrets, or the hosting provider's secret store and are never committed.
 - Row-version columns provide optimistic concurrency for mutable operational records.
 - Workflow delivery uses an outbox so request state and notification intent can be committed atomically.
+- Public submissions use a serializable transaction covering booking-number allocation, request data, revision history, token hash, outbox intent, rate-limit attempt, and idempotency response.
+- Confirmation-token plaintext exists only in process memory. SQL stores its SHA-256 hash for later verification and Data Protection ciphertext in the outbox for the future delivery worker.
+- The Data Protection key ring must be persisted and protected by the production host; ephemeral container keys are not acceptable in production.
 - Production deployment, Cloudflare, DNS, and the company domain are deferred until hosting and IT requirements are confirmed.
 
 ## Consequences
@@ -42,7 +45,9 @@ Separate vehicle and driver master tables are intentionally excluded. GA records
 
 ## Validation
 
-The initial migration is tested by generating SQL without a connection and by applying it to a disposable SQL Server 2022 container. Validation requires the expected schemas and migration history plus a clean `DBCC CHECKCONSTRAINTS` result.
+The initial migration is tested by generating SQL without a connection and by applying it to a disposable SQL Server 2022 container. Validation requires the expected schemas and migration history plus a clean `DBCC CHECKCONSTRAINTS` result. The public submission slice additionally verifies atomic persistence, idempotent replay, conflict rejection, token-at-rest controls, and outbox creation against the disposable database.
+
+The editable Phase 2C workflow is [`diagrams/public-request-sqlserver-flow.excalidraw`](diagrams/public-request-sqlserver-flow.excalidraw).
 
 ## Rollback
 

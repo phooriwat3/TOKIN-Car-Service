@@ -346,10 +346,7 @@ namespace Tokin.CarService.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Tokin.CarService.Domain.Requests.BookingYearCounter", b =>
                 {
                     b.Property<int>("Year")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Year"));
 
                     b.Property<long>("LastSequence")
                         .HasColumnType("bigint");
@@ -972,6 +969,35 @@ namespace Tokin.CarService.Infrastructure.Persistence.Migrations
                     b.ToTable("ApiIdempotencyRecords", "security", t =>
                         {
                             t.HasCheckConstraint("CK_ApiIdempotencyRecords_ResponseJson", "[ResponseJson] IS NULL OR ISJSON([ResponseJson]) = 1");
+                        });
+                });
+
+            modelBuilder.Entity("Tokin.CarService.Domain.Security.PublicRequestAttempt", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')");
+
+                    b.Property<string>("FingerprintHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FingerprintHash", "CreatedAtUtc");
+
+                    b.ToTable("PublicRequestAttempts", "security", t =>
+                        {
+                            t.HasCheckConstraint("CK_PublicRequestAttempts_FingerprintHash", "LEN([FingerprintHash]) = 64 AND [FingerprintHash] NOT LIKE '%[^0-9a-f]%'");
                         });
                 });
 

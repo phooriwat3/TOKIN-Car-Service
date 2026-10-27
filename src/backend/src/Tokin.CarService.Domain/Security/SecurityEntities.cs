@@ -37,3 +37,10 @@ public sealed class ApiIdempotencyRecord
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset ExpiresAtUtc { get; set; }
 }
+
+public sealed class PublicRequestAttempt
+{
+    public long Id { get; set; }
+    public string FingerprintHash { get; set; } = string.Empty;
+    public DateTimeOffset CreatedAtUtc { get; set; }
+}

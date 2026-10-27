@@ -50,8 +50,7 @@ namespace Tokin.CarService.Infrastructure.Persistence.Migrations
                 schema: "transport",
                 columns: table => new
                 {
-                    Year = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Year = table.Column<int>(type: "int", nullable: false),
                     LastSequence = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>

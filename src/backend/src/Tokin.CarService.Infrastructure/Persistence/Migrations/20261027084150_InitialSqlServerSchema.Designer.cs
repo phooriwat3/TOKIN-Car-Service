@@ -349,10 +349,7 @@ namespace Tokin.CarService.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Tokin.CarService.Domain.Requests.BookingYearCounter", b =>
                 {
                     b.Property<int>("Year")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Year"));
 
                     b.Property<long>("LastSequence")
                         .HasColumnType("bigint");

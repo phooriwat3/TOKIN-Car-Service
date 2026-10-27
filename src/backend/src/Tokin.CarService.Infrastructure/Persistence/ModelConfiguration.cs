@@ -191,6 +191,7 @@ internal static class ModelConfiguration
             table.HasCheckConstraint("CK_BookingYearCounters_Sequence", "[LastSequence] >= 0");
         });
         counter.HasKey(x => x.Year);
+        counter.Property(x => x.Year).ValueGeneratedNever();
     }
 
     public static void ConfigureAssignments(ModelBuilder modelBuilder)
@@ -276,6 +277,15 @@ internal static class ModelConfiguration
         idempotency.Property(x => x.ResponseJson).HasColumnType("nvarchar(max)");
         idempotency.Property(x => x.CreatedAtUtc).HasDefaultValueSql(UtcNowSql);
         idempotency.HasIndex(x => x.ExpiresAtUtc);
+
+        var attempt = modelBuilder.Entity<PublicRequestAttempt>();
+        attempt.ToTable("PublicRequestAttempts", "security", table =>
+            table.HasCheckConstraint("CK_PublicRequestAttempts_FingerprintHash", "LEN([FingerprintHash]) = 64 AND [FingerprintHash] NOT LIKE '%[^0-9a-f]%'"));
+        attempt.HasKey(x => x.Id);
+        attempt.Property(x => x.Id).UseIdentityColumn();
+        attempt.Property(x => x.FingerprintHash).HasMaxLength(64).IsUnicode(false).IsRequired();
+        attempt.Property(x => x.CreatedAtUtc).HasDefaultValueSql(UtcNowSql);
+        attempt.HasIndex(x => new { x.FingerprintHash, x.CreatedAtUtc });
     }
 
     public static void ConfigureWorkflowAndAudit(ModelBuilder modelBuilder)

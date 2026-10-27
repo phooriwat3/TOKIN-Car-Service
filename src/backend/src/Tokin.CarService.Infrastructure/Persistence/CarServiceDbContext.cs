@@ -26,6 +26,7 @@ public sealed class CarServiceDbContext(DbContextOptions<CarServiceDbContext> op
     public DbSet<DriverDispatchEvent> DriverDispatchEvents => Set<DriverDispatchEvent>();
     public DbSet<RequestAccessToken> RequestAccessTokens => Set<RequestAccessToken>();
     public DbSet<ApiIdempotencyRecord> ApiIdempotencyRecords => Set<ApiIdempotencyRecord>();
+    public DbSet<PublicRequestAttempt> PublicRequestAttempts => Set<PublicRequestAttempt>();
     public DbSet<WorkflowOutboxMessage> WorkflowOutbox => Set<WorkflowOutboxMessage>();
     public DbSet<WorkflowDelivery> WorkflowDeliveries => Set<WorkflowDelivery>();
     public DbSet<AuditRecord> AuditRecords => Set<AuditRecord>();
