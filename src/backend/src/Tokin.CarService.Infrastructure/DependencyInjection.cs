@@ -3,8 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.DataProtection;
 using Tokin.CarService.Application.PublicRequests;
+using Tokin.CarService.Application.ReferenceData;
 using Tokin.CarService.Infrastructure.Persistence;
 using Tokin.CarService.Infrastructure.PublicRequests;
+using Tokin.CarService.Infrastructure.ReferenceData;
 
 namespace Tokin.CarService.Infrastructure;
 
@@ -21,6 +23,7 @@ public static class DependencyInjection
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             services.AddSingleton<IPublicRequestSubmissionService, UnconfiguredPublicRequestSubmissionService>();
+            services.AddSingleton<IPublicReferenceDataService, UnconfiguredPublicReferenceDataService>();
             return services;
         }
 
@@ -28,6 +31,7 @@ public static class DependencyInjection
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddSingleton<ISecureActionTokenService, SecureActionTokenService>();
         services.AddScoped<IPublicRequestSubmissionService, PublicRequestSubmissionService>();
+        services.AddScoped<IPublicReferenceDataService, PublicReferenceDataService>();
         services.AddPooledDbContextFactory<CarServiceDbContext>(options =>
             options.UseSqlServer(connectionString, sqlServer =>
             {

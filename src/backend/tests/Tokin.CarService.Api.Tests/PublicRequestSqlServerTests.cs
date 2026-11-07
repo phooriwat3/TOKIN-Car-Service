@@ -4,9 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Tokin.CarService.Application.PublicRequests;
+using Tokin.CarService.Application.ReferenceData;
 using Tokin.CarService.Domain.ReferenceData;
 using Tokin.CarService.Infrastructure;
 using Tokin.CarService.Infrastructure.Persistence;
+using Tokin.CarService.Infrastructure.ReferenceData;
 using Xunit;
 
 namespace Tokin.CarService.Api.Tests;
@@ -53,9 +55,12 @@ public sealed class PublicRequestSqlServerTests
             await setup.Database.MigrateAsync();
             await SeedReferenceDataAsync(setup);
         }
+        await provider.SeedDevelopmentReferenceDataAsync();
+        await provider.SeedDevelopmentReferenceDataAsync();
 
         using var scope = provider.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<IPublicRequestSubmissionService>();
+        var referenceDataService = scope.ServiceProvider.GetRequiredService<IPublicReferenceDataService>();
         const string key = "sql-integration-00000001";
         const string fingerprint = "a11ce00000000000000000000000000000000000000000000000000000000000";
 
@@ -73,6 +78,19 @@ public sealed class PublicRequestSqlServerTests
         Assert.Equal(first, replay);
         Assert.Equal("CSR-2026-000001", first.RequestNo);
 
+        var departments = await referenceDataService.GetDepartmentsAsync(CancellationToken.None);
+        var departmentApprovers = await referenceDataService.GetDepartmentApproversAsync(
+            "ga",
+            CancellationToken.None);
+        Assert.Contains(departments, x => x.Code == "GA" && x.Name == "General Affairs");
+        Assert.Equal(3, departments.Count);
+        Assert.NotNull(departmentApprovers);
+        Assert.Contains(
+            departmentApprovers.Approvers,
+            x => x.DisplayName == "Test Approver"
+                && !string.IsNullOrWhiteSpace(x.Reference)
+                && !Guid.TryParse(x.Reference, out _));
+
         await using var verification = await factory.CreateDbContextAsync();
         Assert.Equal(1, await verification.TransportRequests.CountAsync());
         Assert.Equal(2, await verification.RequestPassengers.CountAsync());
@@ -81,6 +99,10 @@ public sealed class PublicRequestSqlServerTests
         Assert.Equal(1, await verification.WorkflowOutbox.CountAsync());
         Assert.Equal(1, await verification.ApiIdempotencyRecords.CountAsync());
         Assert.Equal(1, await verification.PublicRequestAttempts.CountAsync());
+        Assert.Equal(
+            3,
+            await verification.UserAccounts.CountAsync(
+                x => x.Email.EndsWith("@example.invalid")));
 
         var token = await verification.RequestAccessTokens.SingleAsync();
         var outbox = await verification.WorkflowOutbox.SingleAsync();

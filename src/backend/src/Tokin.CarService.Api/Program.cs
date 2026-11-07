@@ -2,9 +2,11 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Tokin.CarService.Api.Health;
 using Tokin.CarService.Api.PublicRequests;
+using Tokin.CarService.Api.ReferenceData;
 using Tokin.CarService.Application;
 using Tokin.CarService.Application.PublicRequests;
 using Tokin.CarService.Infrastructure;
+using Tokin.CarService.Infrastructure.ReferenceData;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,9 +34,25 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0,
                 AutoReplenishment = true,
             }));
+    options.AddPolicy("public-reference-read", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true,
+            }));
 });
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment()
+    && app.Configuration.GetValue<bool>("DevelopmentData:SeedReferenceData"))
+{
+    await app.Services.SeedDevelopmentReferenceDataAsync();
+}
 
 app.UseExceptionHandler();
 app.Use(async (context, next) =>
@@ -49,6 +67,7 @@ app.MapGet("/api/health", () => Results.Ok(HealthResponse.Create()))
     .WithName("GetHealth")
     .AllowAnonymous();
 app.MapPublicRequestEndpoints();
+app.MapPublicReferenceDataEndpoints();
 
 app.Run();
 

@@ -58,6 +58,27 @@ The current Next.js request form remains on the Supabase staging workflow until 
 
 The editable workflow is in [`../../docs/diagrams/public-request-sqlserver-flow.excalidraw`](../../docs/diagrams/public-request-sqlserver-flow.excalidraw).
 
+## Public reference-data endpoints
+
+Phase 2D.1 provides privacy-minimized options for the request form:
+
+```text
+GET /api/v1/reference/departments
+GET /api/v1/reference/departments/{departmentCode}/approvers
+```
+
+Only active departments are returned. Approvers contain a Data Protection-protected reference and display name; public responses intentionally exclude SQL account IDs, approver email addresses, employee numbers, roles, and internal database relationships. Both endpoints are anonymous because the employee form has no application login, but they use per-IP rate limiting and `Cache-Control: no-store`.
+
+When a dedicated development database has already been migrated, fake reference data can be explicitly enabled for local work:
+
+```powershell
+$env:DevelopmentData__SeedReferenceData = "true"
+$env:PublicRequests__AllowedEmailDomains__0 = "example.invalid"
+dotnet run --project .\src\backend\src\Tokin.CarService.Api
+```
+
+The seed is disabled by default, runs only in the Development environment, and uses reserved `example.invalid` addresses. Never enable it against a shared or production database.
+
 ## Disposable SQL Server integration test
 
 The SQL integration test is opt-in so normal test runs cannot contact an unintended database:
