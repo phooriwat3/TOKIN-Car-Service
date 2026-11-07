@@ -7,6 +7,8 @@ import {
 } from '@/lib/supabase/client';
 
 export function proxy(request: NextRequest) {
+  if (process.env.CAR_SERVICE_BACKEND === 'sqlserver' && request.nextUrl.pathname.startsWith('/api/transport/'))
+    return NextResponse.next();
   if (isSupabaseConfigured) return updateSession(request);
   if (request.nextUrl.pathname === '/api/health' || isDemoModeEnabled)
     return NextResponse.next();

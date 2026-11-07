@@ -69,6 +69,8 @@ GET /api/v1/reference/departments/{departmentCode}/approvers
 
 Only active departments are returned. Approvers contain a Data Protection-protected reference and display name; public responses intentionally exclude SQL account IDs, approver email addresses, employee numbers, roles, and internal database relationships. Both endpoints are anonymous because the employee form has no application login, but they use per-IP rate limiting and `Cache-Control: no-store`.
 
+The Next.js migration branch has server-side proxy routes at `/api/transport/reference/departments`, `/api/transport/reference/departments/{code}/approvers`, and `/api/transport/requests`. They respond with 503 until `CAR_SERVICE_BACKEND=sqlserver` and a valid server-side `CAR_SERVICE_API_URL` are configured. The employee form is not switched yet: the submission contract still needs to accept and verify protected approver references before the form can safely use these choices.
+
 When a dedicated development database has already been migrated, fake reference data can be explicitly enabled for local work:
 
 ```powershell
