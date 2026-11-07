@@ -1,5 +1,7 @@
 using System.Data;
+using System.Security.Cryptography;
 using System.Text.Json;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Tokin.CarService.Application.PublicRequests;
@@ -14,6 +16,7 @@ namespace Tokin.CarService.Infrastructure.PublicRequests;
 internal sealed class PublicRequestSubmissionService(
     IDbContextFactory<CarServiceDbContext> dbContextFactory,
     ISecureActionTokenService tokenService,
+    IDataProtectionProvider dataProtectionProvider,
     IOptions<PublicRequestOptions> options,
     TimeProvider timeProvider)
     : IPublicRequestSubmissionService
@@ -21,6 +24,8 @@ internal sealed class PublicRequestSubmissionService(
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly TimeZoneInfo BangkokTimeZone = ResolveBangkokTimeZone();
     private readonly PublicRequestOptions _options = ValidateOptions(options.Value);
+    private readonly IDataProtector _approverReferenceProtector = dataProtectionProvider.CreateProtector(
+        "Tokin.CarService", "PublicApproverReference", "v1");
 
     public async Task<SubmitPublicRequestResult> SubmitAsync(
         SubmitPublicRequestCommand command,
@@ -93,19 +98,40 @@ internal sealed class PublicRequestSubmissionService(
             UserAccount? approver = null;
             if (request.RequestType == TransportRequestType.OutsideCompany)
             {
+                Guid? approverId = null;
+                if (!string.IsNullOrEmpty(request.ApproverReference))
+                {
+                    try
+                    {
+                        var unprotected = _approverReferenceProtector.Unprotect(request.ApproverReference);
+                        if (!Guid.TryParseExact(unprotected, "D", out var parsed))
+                        {
+                            throw ValidationError("approver.reference", "Select an approver from the department list.");
+                        }
+
+                        approverId = parsed;
+                    }
+                    catch (CryptographicException)
+                    {
+                        throw ValidationError("approver.reference", "Select an approver from the department list.");
+                    }
+                }
+
                 approver = await dbContext.DepartmentApprovers
                     .Where(x =>
                         x.DepartmentId == department.Id
                         && x.IsActive
                         && x.UserAccount.IsActive
                         && x.UserAccount.Role == UserRole.Approver
-                        && x.UserAccount.Email == request.ApproverEmail)
+                        && (approverId.HasValue
+                            ? x.UserAccount.Id == approverId.Value
+                            : x.UserAccount.Email == request.ApproverEmail))
                     .Select(x => x.UserAccount)
                     .SingleOrDefaultAsync(cancellationToken);
                 if (approver is null)
                 {
                     throw ValidationError(
-                        "approver.email",
+                        approverId.HasValue ? "approver.reference" : "approver.email",
                         "Select an active approver assigned to the requester department.");
                 }
             }

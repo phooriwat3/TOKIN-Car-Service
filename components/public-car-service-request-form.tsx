@@ -54,6 +54,11 @@ export type PublicCarServiceRequestFormProps = {
   approverName: string;
   approverEmail: string;
   approverDirectorySelected: boolean;
+  sqlServerMode?: boolean;
+  approverReference?: string;
+  sqlDepartments?: { code: string; name: string }[];
+  sqlApprovers?: { reference: string; displayName: string }[];
+  referenceError?: string;
   usingDate: string;
   startTime: string;
   endTime: string;
@@ -75,6 +80,7 @@ export type PublicCarServiceRequestFormProps = {
   onConfirmedSelfChange: (value: boolean) => void;
   onApproverChange: (field: ApproverField, value: string) => void;
   onApproverDirectorySelect: (person: CompanyUser) => void;
+  onApproverReferenceChange?: (reference: string) => void;
   onUsingDateChange: (value: string) => void;
   onStartTimeChange: (value: string) => void;
   onEndTimeChange: (value: string) => void;
@@ -102,7 +108,7 @@ export function PublicCarServiceRequestForm(
     props.employeeId.trim() &&
     props.department.trim() &&
     props.approverName.trim() &&
-    props.approverEmail.trim() &&
+    (props.sqlServerMode ? props.approverReference : props.approverEmail.trim()) &&
     props.confirmedSelf,
   );
 
@@ -169,7 +175,7 @@ export function PublicCarServiceRequestForm(
             <Summary label="Company email" value={props.requesterEmail} />
             <Summary
               label="Approver"
-              value={`${props.approverName} (${props.approverEmail})`}
+              value={props.sqlServerMode ? props.approverName : `${props.approverName} (${props.approverEmail})`}
             />
             <Summary label="Request type" value="Off-site Business Transport" />
             {props.immediateRequest && (
@@ -293,21 +299,36 @@ export function PublicCarServiceRequestForm(
       >
         <SectionHeader
           title="Employee & Approver information"
-          description="Start with your company email to fill your directory record, then select your designated approver."
+          description={props.sqlServerMode
+            ? "Enter your employee details, then choose your department approver."
+            : "Start with your company email to fill your directory record, then select your designated approver."}
           id="employee-section-heading"
         />
         <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6">
           <div>
-            <CompanyUserField
-              inputId="company-email"
-              label="Company email"
-              required
-              value={props.requesterEmail}
-              onChange={(value) => props.onRequesterChange("email", value)}
-              placeholder="Type your company email..."
-              onSelectUser={props.onDirectorySelect}
-              describedBy="company-email-help"
-            />
+            {props.sqlServerMode ? (
+              <Field label="Company email">
+                <Input
+                  id="company-email"
+                  type="email"
+                  required
+                  value={props.requesterEmail}
+                  onChange={(event) => props.onRequesterChange("email", event.target.value)}
+                  placeholder="name@yageo.com"
+                />
+              </Field>
+            ) : (
+              <CompanyUserField
+                inputId="company-email"
+                label="Company email"
+                required
+                value={props.requesterEmail}
+                onChange={(value) => props.onRequesterChange("email", value)}
+                placeholder="Type your company email..."
+                onSelectUser={props.onDirectorySelect}
+                describedBy="company-email-help"
+              />
+            )}
             {props.errorField === "company-email" ? (
               <p className="mt-1.5 text-xs font-semibold text-danger">
                 ⚠️ {props.error}
@@ -317,7 +338,9 @@ export function PublicCarServiceRequestForm(
                 id="company-email-help"
                 className="mt-1.5 text-xs text-gray-500"
               >
-                Select your email from the directory to fill the fields below.
+                {props.sqlServerMode
+                  ? "Enter your company email and employee details below."
+                  : "Select your email from the directory to fill the fields below."}
               </p>
             )}
           </div>
@@ -383,12 +406,12 @@ export function PublicCarServiceRequestForm(
               }
             >
               <option value="">Select Dept</option>
-              {DEPARTMENTS.map((item) => (
+              {(props.sqlServerMode ? (props.sqlDepartments ?? []).map((item) => item.code) : DEPARTMENTS).map((item) => (
                 <option key={item} value={item}>
                   {item}
                 </option>
               ))}
-              {props.department && !DEPARTMENTS.includes(props.department) && (
+              {!props.sqlServerMode && props.department && !DEPARTMENTS.includes(props.department) && (
                 <option value={props.department}>{props.department}</option>
               )}
             </Select>
@@ -408,6 +431,21 @@ export function PublicCarServiceRequestForm(
               Dept.Manager)
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
+              {props.sqlServerMode ? (
+                <div className="sm:col-span-2">
+                  <Field label="Approver">
+                    <Select id="approver-search" required value={props.approverReference ?? ""}
+                      onChange={(event) => props.onApproverReferenceChange?.(event.target.value)}>
+                      <option value="">Select approver</option>
+                      {(props.sqlApprovers ?? []).map((item) => (
+                        <option key={item.reference} value={item.reference}>{item.displayName}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                  {props.referenceError && <p role="alert" className="mt-1.5 text-xs text-danger">{props.referenceError}</p>}
+                  {props.errorField === "approver-search" && <p className="mt-1.5 text-xs text-danger">{props.error}</p>}
+                </div>
+              ) : <>
               <div>
                 <CompanyUserField
                   inputId="approver-search"
@@ -460,6 +498,7 @@ export function PublicCarServiceRequestForm(
                   </p>
                 )}
               </Field>
+              </>}
             </div>
           </div>
 
@@ -649,6 +688,7 @@ export function PublicCarServiceRequestForm(
           <ApprovalRouteNotice
             approverName={props.approverName}
             approverEmail={props.approverEmail}
+            sqlServerMode={props.sqlServerMode}
           />
         </div>
       </section>
@@ -705,9 +745,11 @@ function SectionHeader({
 function ApprovalRouteNotice({
   approverName,
   approverEmail,
+  sqlServerMode,
 }: {
   approverName: string;
   approverEmail: string;
+  sqlServerMode?: boolean;
 }) {
   return (
     <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3.5">
@@ -717,7 +759,9 @@ function ApprovalRouteNotice({
           Approval notification target
         </p>
         <p className="mt-0.5 text-xs leading-5 text-gray-600">
-          {approverEmail
+          {sqlServerMode && approverName
+            ? `The approval notification will be sent to ${approverName} after you confirm your request.`
+            : approverEmail
             ? `An email with a 1-click approval link will be sent to ${approverName || approverEmail} (${approverEmail}).`
             : "Search and select your designated approver above. The approval notification will be emailed directly to them."}
         </p>

@@ -37,6 +37,34 @@ public sealed class PublicRequestValidatorTests
     }
 
     [Fact]
+    public void ProtectedApproverReferenceDoesNotRequireClientSuppliedEmail()
+    {
+        var command = CreateValidCommand() with
+        {
+            Approver = new PublicApproverInput(null, null, "protected-reference"),
+        };
+
+        var validated = PublicRequestValidator.Validate(command, CreateOptions(), BangkokNow);
+
+        Assert.Equal("protected-reference", validated.ApproverReference);
+        Assert.Equal(string.Empty, validated.ApproverEmail);
+    }
+
+    [Fact]
+    public void OversizedApproverReferenceIsRejected()
+    {
+        var command = CreateValidCommand() with
+        {
+            Approver = new PublicApproverInput(null, null, new string('x', 2049)),
+        };
+
+        var exception = Assert.Throws<PublicRequestValidationException>(
+            () => PublicRequestValidator.Validate(command, CreateOptions(), BangkokNow));
+
+        Assert.Contains("approver.reference", exception.Errors.Keys);
+    }
+
+    [Fact]
     public void OvertimeRequestWithoutTigerSpaceConfirmationIsRejected()
     {
         var request = CreateValidCommand() with

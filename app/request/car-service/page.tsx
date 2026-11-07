@@ -1,4 +1,7 @@
 import PublicRequestForm from "@/components/public-request-form";
+import { sqlServerBackendEnabled } from "@/lib/sqlserver-backend";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Off-site Business Transport | TOKIN Transport",
@@ -6,5 +9,5 @@ export const metadata = {
 };
 
 export default function CarServiceRequestPage() {
-  return <PublicRequestForm initialType="outside_company" />;
+  return <PublicRequestForm initialType="outside_company" sqlServerMode={sqlServerBackendEnabled()} />;
 }

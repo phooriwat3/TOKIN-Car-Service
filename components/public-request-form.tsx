@@ -73,8 +73,10 @@ const emptyEmployee = (): OvertimeEmployee => ({
 
 export default function PublicRequestForm({
   initialType,
+  sqlServerMode = false,
 }: {
   initialType?: RequestType;
+  sqlServerMode?: boolean;
 } = {}) {
   const [requestType, setRequestType] = useState<RequestType | null>(
     initialType ?? null,
@@ -89,6 +91,12 @@ export default function PublicRequestForm({
   const [approverName, setApproverName] = useState("");
   const [approverEmail, setApproverEmail] = useState("");
   const [approverDirectorySelected, setApproverDirectorySelected] = useState(false);
+  const [approverReference, setApproverReference] = useState("");
+  const [sqlDepartments, setSqlDepartments] = useState<{ code: string; name: string }[]>([]);
+  const [sqlApprovers, setSqlApprovers] = useState<{ reference: string; displayName: string }[]>([]);
+  const [referenceError, setReferenceError] = useState("");
+  const idempotencyKey = useRef<string | null>(null);
+  const idempotencyPayload = useRef<string | null>(null);
   const [usingDate, setUsingDate] = useState(getTodayString);
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("17:00");
@@ -121,6 +129,34 @@ export default function PublicRequestForm({
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [requestType]);
+  useEffect(() => {
+    if (!sqlServerMode) return;
+    const controller = new AbortController();
+    fetch("/api/transport/reference/departments", { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Departments are unavailable. Please try again later.");
+        return response.json();
+      })
+      .then((data: { code: string; name: string }[]) => setSqlDepartments(data))
+      .catch((cause) => { if (!controller.signal.aborted) setReferenceError(cause instanceof Error ? cause.message : "Departments are unavailable."); });
+    return () => controller.abort();
+  }, [sqlServerMode]);
+  useEffect(() => {
+    if (!sqlServerMode) return;
+    setSqlApprovers([]);
+    setApproverReference("");
+    setApproverName("");
+    if (!department) return;
+    const controller = new AbortController();
+    fetch(`/api/transport/reference/departments/${encodeURIComponent(department)}/approvers`, { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Approvers are unavailable for this department.");
+        return response.json();
+      })
+      .then((data: { approvers: { reference: string; displayName: string }[] }) => { setSqlApprovers(data.approvers); setReferenceError(""); })
+      .catch((cause) => { if (!controller.signal.aborted) setReferenceError(cause instanceof Error ? cause.message : "Approvers are unavailable."); });
+    return () => controller.abort();
+  }, [sqlServerMode, department]);
   const updateEmployee = <K extends keyof OvertimeEmployee>(
     index: number,
     key: K,
@@ -133,6 +169,8 @@ export default function PublicRequestForm({
     );
 
   const reset = () => {
+    idempotencyKey.current = null;
+    idempotencyPayload.current = null;
     setRequestType(null);
     setUsingDate(getTodayString());
     setDestination("");
@@ -148,6 +186,8 @@ export default function PublicRequestForm({
   };
 
   const handleReset = () => {
+    idempotencyKey.current = null;
+    idempotencyPayload.current = null;
     setUsingDate(getTodayString());
     setRequesterName("");
     setRequesterEmail("");
@@ -155,6 +195,7 @@ export default function PublicRequestForm({
     setDepartment("");
     setApproverName("");
     setApproverEmail("");
+    setApproverReference("");
     setApproverDirectorySelected(false);
     setStartTime("08:00");
     setEndTime("17:00");
@@ -278,17 +319,19 @@ export default function PublicRequestForm({
           "tiger-space-confirmed",
         );
     } else {
+      if (sqlServerMode && !approverReference)
+        return failValidation("Select an approver for your department.", "approver-search");
       if (!approverName.trim())
         return failValidation(
           "Select your approver's English name from the company directory, or enter it.",
           "approver-search",
         );
-      if (!approverEmail.trim())
+      if (!sqlServerMode && !approverEmail.trim())
         return failValidation(
           "Approver company email is required.",
           "approver-email",
         );
-      if (!isCompanyEmail(approverEmail))
+      if (!sqlServerMode && !isCompanyEmail(approverEmail))
         return failValidation(
           `The approver must use a company email (${companyEmailHint()}).`,
           "approver-email",
@@ -337,14 +380,35 @@ export default function PublicRequestForm({
     submitLock.current = true;
     setSubmitting(true);
     try {
+      const passengerList = passengers.split("\n").map((item) => item.trim()).filter(Boolean);
+      if (sqlServerMode && requestType === "outside_company") {
+        const body = JSON.stringify({
+          requestType,
+          requester: { name: requesterName, email: requesterEmail, employeeId, department, phone: employee.employeePhone?.trim() || null },
+          approver: { reference: approverReference },
+          usingDate, startTime, endTime, pickupLocation, destination, purpose,
+          meetingPoint, withStaff, immediateReason: isImmediateOffsite ? immediateReason.trim() : null,
+          passengers: passengerList, overtimeEmployees: [], tigerSpaceConfirmed: false, website,
+        });
+        if (idempotencyPayload.current !== body) {
+          idempotencyKey.current = crypto.randomUUID();
+          idempotencyPayload.current = body;
+        }
+        const response = await fetch("/api/transport/requests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey.current! },
+          body,
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || Object.values(result.errors ?? {}).flat().join(" ") || result.detail || result.title || "Unable to submit request.");
+        setSuccess({ requestNo: result.requestNo, requestType, confirmationDeliveryStatus: "queued", submittedAt: result.submittedAtUtc });
+        setShowSubmitConfirmation(false);
+        return;
+      }
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
       if (!supabaseUrl || !publishableKey)
         throw new Error("Public request service is not configured.");
-      const passengerList = passengers
-        .split("\n")
-        .map((item) => item.trim())
-        .filter(Boolean);
       const overtimeEmployee = {
         ...employee,
         employeeId: employeeId.trim(),
@@ -585,6 +649,11 @@ export default function PublicRequestForm({
               approverName={approverName}
               approverEmail={approverEmail}
               approverDirectorySelected={approverDirectorySelected}
+              sqlServerMode={sqlServerMode}
+              approverReference={approverReference}
+              sqlDepartments={sqlDepartments}
+              sqlApprovers={sqlApprovers}
+              referenceError={referenceError}
               usingDate={usingDate}
               startTime={startTime}
               endTime={endTime}
@@ -632,6 +701,10 @@ export default function PublicRequestForm({
                 setApproverName(person.displayName);
                 setApproverEmail(person.mail);
                 setApproverDirectorySelected(true);
+              }}
+              onApproverReferenceChange={(reference) => {
+                setApproverReference(reference);
+                setApproverName(sqlApprovers.find((item) => item.reference === reference)?.displayName ?? "");
               }}
               onUsingDateChange={setUsingDate}
               onStartTimeChange={setStartTime}

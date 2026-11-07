@@ -60,10 +60,18 @@ public static partial class PublicRequestValidator
 
         var approverName = Optional(command.Approver?.Name, 160);
         var approverEmail = string.Empty;
+        var approverReference = command.Approver?.Reference?.Trim();
         if (requestType == TransportRequestType.OutsideCompany)
         {
-            approverEmail = CompanyEmail(command.Approver?.Email, "approver.email", options, errors);
-            approverName ??= approverEmail;
+            if (string.IsNullOrEmpty(approverReference))
+            {
+                approverEmail = CompanyEmail(command.Approver?.Email, "approver.email", options, errors);
+                approverName ??= approverEmail;
+            }
+            else if (approverReference.Length > 2048)
+            {
+                Add(errors, "approver.reference", "Select an approver from the department list.");
+            }
         }
 
         if (requestType == TransportRequestType.Overtime)
@@ -129,7 +137,8 @@ public static partial class PublicRequestValidator
             isLateOt ? "Submitted after the 15:30 OT planning cutoff." : immediateReason,
             passengers,
             overtimeRiders,
-            command.TigerSpaceConfirmed);
+            command.TigerSpaceConfirmed,
+            requestType == TransportRequestType.OutsideCompany ? approverReference : null);
     }
 
     private static TransportRequestType ParseRequestType(
@@ -393,7 +402,8 @@ public sealed record ValidatedPublicRequest(
     string? UrgentReason,
     IReadOnlyList<string> Passengers,
     IReadOnlyList<ValidatedOvertimeRider> OvertimeRiders,
-    bool TigerSpaceConfirmed);
+    bool TigerSpaceConfirmed,
+    string? ApproverReference = null);
 
 public sealed record ValidatedOvertimeRider(
     string EmployeeId,

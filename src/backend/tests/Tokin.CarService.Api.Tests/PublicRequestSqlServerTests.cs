@@ -61,22 +61,36 @@ public sealed class PublicRequestSqlServerTests
         using var scope = provider.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<IPublicRequestSubmissionService>();
         var referenceDataService = scope.ServiceProvider.GetRequiredService<IPublicReferenceDataService>();
+        var selectedApprover = (await referenceDataService.GetDepartmentApproversAsync("GA", CancellationToken.None))!
+            .Approvers.Single(x => x.DisplayName == "Test Approver");
+        var command = PublicRequestValidatorTests.CreateValidCommand() with
+        {
+            Approver = new PublicApproverInput(null, null, selectedApprover.Reference),
+        };
         const string key = "sql-integration-00000001";
         const string fingerprint = "a11ce00000000000000000000000000000000000000000000000000000000000";
 
         var first = await service.SubmitAsync(
-            PublicRequestValidatorTests.CreateValidCommand(),
+            command,
             key,
             fingerprint,
             CancellationToken.None);
         var replay = await service.SubmitAsync(
-            PublicRequestValidatorTests.CreateValidCommand(),
+            command,
             key,
             fingerprint,
             CancellationToken.None);
 
         Assert.Equal(first, replay);
         Assert.Equal("CSR-2026-000001", first.RequestNo);
+
+        var tampered = command with
+        {
+            Approver = command.Approver! with { Reference = selectedApprover.Reference + "invalid" },
+        };
+        var badReference = await Assert.ThrowsAsync<PublicRequestValidationException>(
+            () => service.SubmitAsync(tampered, "sql-integration-bad-ref-0001", fingerprint, CancellationToken.None));
+        Assert.Contains("approver.reference", badReference.Errors.Keys);
 
         var departments = await referenceDataService.GetDepartmentsAsync(CancellationToken.None);
         var departmentApprovers = await referenceDataService.GetDepartmentApproversAsync(

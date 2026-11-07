@@ -7,7 +7,7 @@ public sealed record PublicRequesterInput(
     string? Department,
     string? Phone);
 
-public sealed record PublicApproverInput(string? Name, string? Email);
+public sealed record PublicApproverInput(string? Name, string? Email, string? Reference = null);
 
 public sealed record PublicOvertimeRiderInput(
     string? EmployeeId,
