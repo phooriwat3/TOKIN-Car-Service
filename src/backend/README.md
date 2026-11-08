@@ -54,7 +54,7 @@ One serializable SQL transaction writes the request, passenger or OT rider detai
 
 Raw confirmation tokens are never persisted. The `security.RequestAccessTokens` table stores a SHA-256 hash. The outbox payload stores only ASP.NET Core Data Protection ciphertext for the later notification worker. Production must persist and protect the Data Protection key ring outside the application container.
 
-The current Next.js request form remains on the Supabase staging workflow until a later migration phase connects it to this endpoint. Phase 2C does not send an email or Teams message.
+The migration branch's off-site request form uses this endpoint only when `CAR_SERVICE_BACKEND=sqlserver` and `CAR_SERVICE_API_URL` are set on the Next.js server. The existing staging deployment stays on Supabase. Request submission queues confirmation intent; this C# slice does not yet deliver an email or Teams message.
 
 The editable workflow is in [`../../docs/diagrams/public-request-sqlserver-flow.excalidraw`](../../docs/diagrams/public-request-sqlserver-flow.excalidraw).
 
@@ -69,7 +69,22 @@ GET /api/v1/reference/departments/{departmentCode}/approvers
 
 Only active departments are returned. Approvers contain a Data Protection-protected reference and display name; public responses intentionally exclude SQL account IDs, approver email addresses, employee numbers, roles, and internal database relationships. Both endpoints are anonymous because the employee form has no application login, but they use per-IP rate limiting and `Cache-Control: no-store`.
 
-The Next.js migration branch has server-side proxy routes at `/api/transport/reference/departments`, `/api/transport/reference/departments/{code}/approvers`, and `/api/transport/requests`. They respond with 503 until `CAR_SERVICE_BACKEND=sqlserver` and a valid server-side `CAR_SERVICE_API_URL` are configured. The employee form is not switched yet: the submission contract still needs to accept and verify protected approver references before the form can safely use these choices.
+The Next.js migration branch has server-side proxy routes at `/api/transport/reference/departments`, `/api/transport/reference/departments/{code}/approvers`, and `/api/transport/requests`. They respond with 503 until `CAR_SERVICE_BACKEND=sqlserver` and a valid server-side `CAR_SERVICE_API_URL` are configured. In SQL Server mode, the off-site form uses these routes and sends a protected approver reference. The API verifies that the reference identifies an active approver in the selected department before saving the request.
+
+## Hosted API key ring
+
+When the API runs outside the Development environment with a SQL Server connection, startup requires all of these settings:
+
+```text
+ConnectionStrings__PrimaryDatabase=...
+DataProtection__KeysPath=/absolute/path/to/persistent/keys
+DataProtection__CertificatePath=/absolute/path/to/private-certificate.pfx
+DataProtection__CertificatePassword=... (host secret store)
+```
+
+Use Windows absolute paths on Windows hosts. Create the key directory before starting the API and mount it as persistent writable storage outside the application and web roots. Supply a valid PFX containing the private key through a restricted secret mount. Data Protection encrypts each key-ring XML file with the certificate. Preserve the key directory **and** the PFX/password in separate protected backups; losing either prevents the API from reading existing approver references and queued protected action tokens. All API instances serving one environment must use the same key directory and certificate. Certificate rollover needs a separately verified procedure before replacing the PFX.
+
+The hosted API fails at startup when its database connection, key directory, or certificate configuration is missing or invalid. Development can omit the key-ring settings, but any partial key-ring configuration also fails at startup. Do not copy development keys or certificates into production.
 
 When a dedicated development database has already been migrated, fake reference data can be explicitly enabled for local work:
 

@@ -17,7 +17,7 @@ builder.Configuration.AddJsonFile(
 
 builder.Services
     .AddApplication()
-    .AddInfrastructure(builder.Configuration);
+    .AddInfrastructure(builder.Configuration, requireProtectedKeyRing: !builder.Environment.IsDevelopment());
 builder.Services.AddProblemDetails();
 builder.Services.Configure<PublicRequestOptions>(
     builder.Configuration.GetSection(PublicRequestOptions.SectionName));

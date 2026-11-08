@@ -32,7 +32,7 @@ Separate vehicle and driver master tables are intentionally excluded. GA records
 - Workflow delivery uses an outbox so request state and notification intent can be committed atomically.
 - Public submissions use a serializable transaction covering booking-number allocation, request data, revision history, token hash, outbox intent, rate-limit attempt, and idempotency response.
 - Confirmation-token plaintext exists only in process memory. SQL stores its SHA-256 hash for later verification and Data Protection ciphertext in the outbox for the future delivery worker.
-- The Data Protection key ring must be persisted and protected by the production host; ephemeral container keys are not acceptable in production.
+- The hosted API requires an absolute persistent key directory and a valid PFX certificate. Its Data Protection key-ring XML is encrypted with that certificate, and startup fails when the database or key-ring configuration is missing.
 - Production deployment, Cloudflare, DNS, and the company domain are deferred until hosting and IT requirements are confirmed.
 
 ## Consequences
