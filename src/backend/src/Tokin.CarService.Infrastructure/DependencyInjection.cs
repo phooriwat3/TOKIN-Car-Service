@@ -31,6 +31,7 @@ public static class DependencyInjection
             }
 
             services.AddSingleton<IPublicRequestSubmissionService, UnconfiguredPublicRequestSubmissionService>();
+            services.AddSingleton<IPublicRequestConfirmationService, UnconfiguredPublicRequestConfirmationService>();
             services.AddSingleton<IPublicReferenceDataService, UnconfiguredPublicReferenceDataService>();
             return services;
         }
@@ -39,6 +40,7 @@ public static class DependencyInjection
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddSingleton<ISecureActionTokenService, SecureActionTokenService>();
         services.AddScoped<IPublicRequestSubmissionService, PublicRequestSubmissionService>();
+        services.AddScoped<IPublicRequestConfirmationService, PublicRequestConfirmationService>();
         services.AddScoped<IPublicReferenceDataService, PublicReferenceDataService>();
         services.AddPooledDbContextFactory<CarServiceDbContext>(options =>
             options.UseSqlServer(connectionString, sqlServer =>

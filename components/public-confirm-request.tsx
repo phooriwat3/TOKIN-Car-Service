@@ -14,14 +14,16 @@ import {
 type Confirmation = {
   requestNo: string;
   status: string;
-  manageUrl: string;
+  manageUrl?: string;
   alreadyConfirmed?: boolean;
 };
 
 export default function PublicConfirmRequest({
   initialToken,
+  sqlServerMode = false,
 }: {
   initialToken?: string;
+  sqlServerMode?: boolean;
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(
@@ -34,6 +36,17 @@ export default function PublicConfirmRequest({
     setSubmitting(true);
     setError("");
     try {
+      if (sqlServerMode) {
+        const response = await fetch("/api/transport/requests/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: initialToken }),
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.error || body.title || "Unable to confirm this request.");
+        setConfirmation(body as Confirmation);
+        return;
+      }
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
       if (!supabaseUrl || !publishableKey)
@@ -87,21 +100,21 @@ export default function PublicConfirmRequest({
             origin="Requester confirmation"
             destination="Approval / verification queue"
             footer={
-              <a
+              confirmation.manageUrl ? <a
                 href={confirmation.manageUrl}
                 className="inline-flex h-11 w-full items-center justify-center rounded-md bg-brand px-5 text-sm font-semibold text-white shadow-btn hover:bg-brand-dark"
               >
                 View and manage booking
-              </a>
+              </a> : <span className="text-sm text-slate-600">Your booking is awaiting company review.</span>
             }
           >
-            <p className="text-sm leading-6 text-slate-600">
+            {confirmation.manageUrl && <><p className="text-sm leading-6 text-slate-600">
               This verified link is your secure way to view status, edit trip
               details, or cancel the request when the workflow permits.
             </p>
             <p className="mt-4 rounded-lg border border-blue-100 bg-blue-50 px-3.5 py-3 text-xs text-blue-900">
               Do not forward the management link. It provides access to your request.
-            </p>
+            </p></>}
           </DigitalTransportTicket>
         </div>
       </PublicFrame>

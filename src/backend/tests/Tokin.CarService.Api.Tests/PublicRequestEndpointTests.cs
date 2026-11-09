@@ -58,6 +58,26 @@ public sealed class PublicRequestEndpointTests
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
+    [Fact]
+    public async Task ConfirmationEndpointReturnsNoStoreAndRejectsUsedToken()
+    {
+        var confirmation = new StubConfirmationService();
+        using var factory = new RequestApiFactory(
+            new StubSubmissionService(new SubmitPublicRequestResult(
+                Guid.NewGuid(), "unused", "unused", DateTimeOffset.UtcNow)),
+            confirmation);
+        using var client = factory.CreateClient();
+
+        using var accepted = await client.PostAsJsonAsync(
+            "/api/v1/requests/confirm", new ConfirmPublicRequestCommand("valid-token"));
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        Assert.Equal("no-store", accepted.Headers.CacheControl?.ToString());
+
+        using var rejected = await client.PostAsJsonAsync(
+            "/api/v1/requests/confirm", new ConfirmPublicRequestCommand("used-token"));
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+    }
+
     private static HttpRequestMessage CreateRequest()
     {
         var message = new HttpRequestMessage(HttpMethod.Post, "/api/v1/requests")
@@ -68,7 +88,9 @@ public sealed class PublicRequestEndpointTests
         return message;
     }
 
-    private sealed class RequestApiFactory(IPublicRequestSubmissionService service)
+    private sealed class RequestApiFactory(
+        IPublicRequestSubmissionService service,
+        IPublicRequestConfirmationService? confirmationService = null)
         : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -77,6 +99,11 @@ public sealed class PublicRequestEndpointTests
             {
                 services.RemoveAll<IPublicRequestSubmissionService>();
                 services.AddSingleton(service);
+                if (confirmationService is not null)
+                {
+                    services.RemoveAll<IPublicRequestConfirmationService>();
+                    services.AddSingleton(confirmationService);
+                }
             });
         }
     }
@@ -104,5 +131,15 @@ public sealed class PublicRequestEndpointTests
         {
             throw new PublicRequestConflictException("The key has already been used.");
         }
+    }
+
+    private sealed class StubConfirmationService : IPublicRequestConfirmationService
+    {
+        public Task<ConfirmPublicRequestResult?> ConfirmAsync(
+            string? token,
+            CancellationToken cancellationToken) => Task.FromResult(
+            token == "valid-token"
+                ? new ConfirmPublicRequestResult("CSR-2026-000001", "PendingApproval")
+                : null);
     }
 }

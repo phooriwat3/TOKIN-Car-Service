@@ -24,7 +24,38 @@ public static partial class PublicRequestEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
+        endpoints.MapPost("/api/v1/requests/confirm", ConfirmAsync)
+            .WithName("ConfirmPublicTransportRequest")
+            .WithMetadata(new RequestSizeLimitAttribute(1024))
+            .RequireRateLimiting("public-request-submit")
+            .AllowAnonymous()
+            .Produces<ConfirmPublicRequestResult>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+
         return endpoints;
+    }
+
+    private static async Task<IResult> ConfirmAsync(
+        ConfirmPublicRequestCommand command,
+        HttpContext httpContext,
+        IPublicRequestConfirmationService confirmationService,
+        CancellationToken cancellationToken)
+    {
+        httpContext.Response.Headers.CacheControl = "no-store";
+        try
+        {
+            var result = await confirmationService.ConfirmAsync(command.Token, cancellationToken);
+            return result is null
+                ? Results.Problem(statusCode: StatusCodes.Status400BadRequest,
+                    title: "Confirmation link is invalid or expired")
+                : Results.Ok(result);
+        }
+        catch (PublicRequestServiceUnavailableException)
+        {
+            return Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Confirmation service unavailable");
+        }
     }
 
     private static async Task<IResult> SubmitAsync(

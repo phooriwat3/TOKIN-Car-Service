@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,9 +8,11 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Tokin.CarService.Application.PublicRequests;
 using Tokin.CarService.Application.ReferenceData;
 using Tokin.CarService.Domain.ReferenceData;
+using Tokin.CarService.Domain.Workflow;
 using Tokin.CarService.Infrastructure;
 using Tokin.CarService.Infrastructure.Persistence;
 using Tokin.CarService.Infrastructure.ReferenceData;
+using Tokin.CarService.Infrastructure.Workflow;
 using Xunit;
 
 namespace Tokin.CarService.Api.Tests;
@@ -43,10 +47,10 @@ public sealed class PublicRequestSqlServerTests
         services.AddInfrastructure(configuration);
         services.Configure<PublicRequestOptions>(configuration.GetSection(PublicRequestOptions.SectionName));
         services.RemoveAll<TimeProvider>();
-        services.AddSingleton<TimeProvider>(
-            new FixedTimeProvider(DateTimeOffset.Parse(
+        var clock = new FixedTimeProvider(DateTimeOffset.Parse(
                 "2026-10-27T03:00:00Z",
-                System.Globalization.CultureInfo.InvariantCulture)));
+                System.Globalization.CultureInfo.InvariantCulture));
+        services.AddSingleton<TimeProvider>(clock);
 
         await using var provider = services.BuildServiceProvider();
         var factory = provider.GetRequiredService<IDbContextFactory<CarServiceDbContext>>();
@@ -133,6 +137,40 @@ public sealed class PublicRequestSqlServerTests
         await Assert.ThrowsAsync<PublicRequestConflictException>(
             () => service.SubmitAsync(changed, key, fingerprint, CancellationToken.None));
         Assert.Equal(1, await verification.TransportRequests.CountAsync());
+
+        var notificationSender = new RecordingNotificationSender { FailuresRemaining = 1 };
+        var deliveryConfiguration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["WorkflowDelivery:AppBaseUrl"] = "https://transport.example.invalid/",
+            })
+            .Build();
+        var processor = new WorkflowOutboxProcessor(
+            factory,
+            provider.GetRequiredService<IDataProtectionProvider>(),
+            notificationSender,
+            deliveryConfiguration,
+            scope.ServiceProvider.GetRequiredService<TimeProvider>());
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        Assert.Equal(OutboxStatus.Failed,
+            (await verification.WorkflowOutbox.AsNoTracking().SingleAsync()).Status);
+        clock.Advance(TimeSpan.FromMinutes(3));
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        var confirmationEmail = notificationSender.Sent[1];
+        Assert.Equal("phooriwat.pungpech@yageo.com", confirmationEmail.RecipientEmail);
+        var match = Regex.Match(confirmationEmail.EmailBodyHtml, "token=([A-Za-z0-9_-]+)");
+        Assert.True(match.Success);
+        var confirmationService = scope.ServiceProvider.GetRequiredService<IPublicRequestConfirmationService>();
+        var confirmed = await confirmationService.ConfirmAsync(match.Groups[1].Value, CancellationToken.None);
+        Assert.Equal(first.RequestNo, confirmed?.RequestNo);
+        Assert.Equal("PendingApproval", confirmed?.Status);
+        Assert.Null(await confirmationService.ConfirmAsync(match.Groups[1].Value, CancellationToken.None));
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        Assert.Equal(3, notificationSender.Sent.Count);
+        Assert.Equal("approver@yageo.com", notificationSender.Sent[2].RecipientEmail);
+        Assert.Equal(2, await verification.WorkflowOutbox.CountAsync());
+        Assert.Equal(3, await verification.WorkflowDeliveries.CountAsync());
+        Assert.Equal(2, await verification.RequestRevisions.CountAsync());
     }
 
     private static async Task SeedReferenceDataAsync(CarServiceDbContext context)
@@ -181,6 +219,27 @@ public sealed class PublicRequestSqlServerTests
 
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
-        public override DateTimeOffset GetUtcNow() => utcNow;
+        private DateTimeOffset _utcNow = utcNow;
+        public override DateTimeOffset GetUtcNow() => _utcNow;
+        public void Advance(TimeSpan duration) => _utcNow = _utcNow.Add(duration);
+    }
+
+    private sealed class RecordingNotificationSender : IWorkflowNotificationSender
+    {
+        public List<WorkflowNotification> Sent { get; } = [];
+        public int FailuresRemaining { get; set; }
+
+        public Task<WorkflowDeliveryResult> SendAsync(
+            WorkflowNotification notification,
+            CancellationToken cancellationToken)
+        {
+            Sent.Add(notification);
+            if (FailuresRemaining > 0)
+            {
+                FailuresRemaining--;
+                return Task.FromResult(new WorkflowDeliveryResult(false, 503, "Notification provider rejected the request."));
+            }
+            return Task.FromResult(new WorkflowDeliveryResult(true, 200, null));
+        }
     }
 }
