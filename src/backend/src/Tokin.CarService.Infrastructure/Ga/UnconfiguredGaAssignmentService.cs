@@ -13,4 +13,10 @@ internal sealed class UnconfiguredGaAssignmentService : IGaAssignmentService
         throw new PublicRequestServiceUnavailableException();
     public Task<GaRequestDetail?> RecordDispatchAsync(Guid actorId, Guid requestId, GaDispatchCommand command, CancellationToken cancellationToken) =>
         throw new PublicRequestServiceUnavailableException();
+    public Task<GaOtRequestPage> ListOtAsync(Guid actorId, int page, CancellationToken cancellationToken) =>
+        throw new PublicRequestServiceUnavailableException();
+    public Task<GaOtRequestDetail?> OtDetailAsync(Guid actorId, Guid requestId, CancellationToken cancellationToken) =>
+        throw new PublicRequestServiceUnavailableException();
+    public Task<GaOtRequestDetail?> VerifyOtAsync(Guid actorId, Guid requestId, GaOtVerifyCommand command, CancellationToken cancellationToken) =>
+        throw new PublicRequestServiceUnavailableException();
 }

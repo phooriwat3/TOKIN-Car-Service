@@ -160,6 +160,127 @@ internal sealed class GaAssignmentService(
         return recorded ? await DetailAsync(actorId, requestId, cancellationToken) : null;
     }
 
+    public async Task<GaOtRequestPage> ListOtAsync(Guid actorId, int page, CancellationToken cancellationToken)
+    {
+        await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await EnsureAdminAsync(db, actorId, cancellationToken);
+        const int pageSize = 25;
+        var query = db.TransportRequests.AsNoTracking().Where(x =>
+            x.RequestType == TransportRequestType.Overtime
+            && x.OtVerificationMode == OtVerificationMode.TigerSpace
+            && x.Status == TransportRequestStatus.PendingOtVerification);
+        var total = await query.CountAsync(cancellationToken);
+        var requests = await query.OrderBy(x => x.UsingDate).ThenBy(x => x.StartTime)
+            .ThenBy(x => x.Id).Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(cancellationToken);
+        return new GaOtRequestPage(requests.Select(x => new GaOtRequestItem(
+            x.Id, x.BookingNumber, x.RequesterName,
+            x.UsingDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            x.StartTime.ToString("HH:mm", CultureInfo.InvariantCulture),
+            x.OtVerificationStatus.ToString(), x.RevisionNumber)).ToArray(), page, pageSize, total);
+    }
+
+    public async Task<GaOtRequestDetail?> OtDetailAsync(Guid actorId, Guid requestId, CancellationToken cancellationToken)
+    {
+        await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await EnsureAdminAsync(db, actorId, cancellationToken);
+        return await OtDetailCoreAsync(db, requestId, cancellationToken);
+    }
+
+    public async Task<GaOtRequestDetail?> VerifyOtAsync(
+        Guid actorId, Guid requestId, GaOtVerifyCommand command, CancellationToken cancellationToken)
+    {
+        var result = command.Result?.Trim().ToLowerInvariant() switch
+        {
+            "verified" => OtVerificationStatus.Verified,
+            "not_found" => OtVerificationStatus.NotFound,
+            "rejected" => OtVerificationStatus.Rejected,
+            _ => throw ValidationError("result", "Choose verified, not_found, or rejected."),
+        };
+        var note = command.Note?.Trim();
+        if (note?.Length > 1000 || (result != OtVerificationStatus.Verified && string.IsNullOrEmpty(note)))
+            throw ValidationError("note", "Enter a note of at most 1,000 characters for not found or rejected.");
+        var now = timeProvider.GetUtcNow();
+        await using var strategyContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var strategy = strategyContext.Database.CreateExecutionStrategy();
+        var saved = await strategy.ExecuteAsync(async () =>
+        {
+            await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+            await EnsureAdminAsync(db, actorId, cancellationToken);
+            var request = await db.TransportRequests.SingleOrDefaultAsync(x => x.Id == requestId
+                && x.RequestType == TransportRequestType.Overtime
+                && x.OtVerificationMode == OtVerificationMode.TigerSpace, cancellationToken);
+            if (request is null) return false;
+            if (request.Status != TransportRequestStatus.PendingOtVerification
+                || request.RevisionNumber != command.ExpectedRevision)
+                throw new GaAssignmentConflictException("This OT request has changed. Reload before verifying.");
+            request.OtVerificationStatus = result;
+            request.OtVerificationNote = note;
+            request.OtVerifiedAtUtc = result == OtVerificationStatus.Verified ? now : null;
+            request.OtVerifiedByAccountId = actorId;
+            request.Status = result switch
+            {
+                OtVerificationStatus.Verified => TransportRequestStatus.Approved,
+                OtVerificationStatus.Rejected => TransportRequestStatus.Rejected,
+                _ => TransportRequestStatus.PendingOtVerification,
+            };
+            request.DecisionReason = result == OtVerificationStatus.Rejected ? note : null;
+            request.RevisionNumber++;
+            request.WorkflowVersion++;
+            request.UpdatedAtUtc = now;
+            var actorEmail = await db.UserAccounts.Where(x => x.Id == actorId)
+                .Select(x => x.Email).SingleAsync(cancellationToken);
+            db.RequestRevisions.Add(new RequestRevision
+            {
+                Id = Guid.CreateVersion7(), TransportRequestId = requestId,
+                RevisionNumber = request.RevisionNumber, Status = request.Status,
+                SnapshotJson = JsonSerializer.Serialize(new
+                {
+                    request.BookingNumber, request.Status, request.OtVerificationStatus,
+                    request.OtVerificationNote, request.WorkflowVersion,
+                }),
+                ChangeSource = "ga_ot_verification", ChangedByEmail = actorEmail,
+                CreatedAtUtc = now,
+            });
+            db.WorkflowOutbox.Add(new WorkflowOutboxMessage
+            {
+                Id = Guid.CreateVersion7(), TransportRequestId = requestId,
+                EventType = "request.ot_verification.decided.requester",
+                DeduplicationKey = $"ot-verification:{requestId:N}:{request.WorkflowVersion}:requester",
+                PayloadJson = JsonSerializer.Serialize(new
+                {
+                    requestId, status = request.Status.ToString(), result = result.ToString(),
+                    revision = request.RevisionNumber, note,
+                }),
+                Status = OutboxStatus.Pending, MaxAttempts = 8, AvailableAtUtc = now,
+                CorrelationId = Guid.CreateVersion7(), CreatedAtUtc = now, UpdatedAtUtc = now,
+            });
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return true;
+        });
+        return saved ? await OtDetailAsync(actorId, requestId, cancellationToken) : null;
+    }
+
+    private static async Task<GaOtRequestDetail?> OtDetailCoreAsync(
+        CarServiceDbContext db, Guid requestId, CancellationToken cancellationToken)
+    {
+        var request = await db.TransportRequests.AsNoTracking().Include(x => x.OvertimeRiders)
+            .SingleOrDefaultAsync(x => x.Id == requestId && x.RequestType == TransportRequestType.Overtime
+                && x.OtVerificationMode == OtVerificationMode.TigerSpace, cancellationToken);
+        if (request is null) return null;
+        return new GaOtRequestDetail(request.Id, request.BookingNumber, request.RequesterName,
+            request.UsingDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            request.StartTime.ToString("HH:mm", CultureInfo.InvariantCulture),
+            request.EndTime.ToString("HH:mm", CultureInfo.InvariantCulture),
+            request.PickupLocation, request.Destination, request.Status.ToString(),
+            request.OtVerificationStatus.ToString(), request.OtVerificationNote, request.RevisionNumber,
+            request.OvertimeRiders.OrderBy(x => x.Sequence).Select(x => new GaOtRider(
+                x.EmployeeId, x.EmployeeName, x.EmployeeEmail, x.WorkDescription,
+                x.WorkStart.ToString("HH:mm", CultureInfo.InvariantCulture),
+                x.WorkEnd.ToString("HH:mm", CultureInfo.InvariantCulture), x.BusStop)).ToArray());
+    }
+
     private static async Task<GaRequestDetail?> DetailCoreAsync(
         CarServiceDbContext db, Guid requestId, CancellationToken cancellationToken)
     {

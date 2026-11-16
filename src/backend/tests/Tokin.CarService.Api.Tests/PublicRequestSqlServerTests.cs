@@ -317,6 +317,72 @@ public sealed class PublicRequestSqlServerTests
         Assert.Equal(3, await verification.ApprovalRecords.CountAsync());
         Assert.Equal(15, await verification.WorkflowDeliveries.CountAsync());
 
+        var otCommand = command with
+        {
+            RequestType = "overtime", Approver = null, TigerSpaceConfirmed = true,
+            OvertimeEmployees =
+            [
+                new PublicOvertimeRiderInput("7654321", "Test OT Rider", "rider@yageo.com",
+                    "0800000000", "Inventory closing", "17:00", "19:00", 40, true, "Bang Na"),
+            ],
+        };
+        var ot = await service.SubmitAsync(otCommand, "sql-integration-ot-0001", fingerprint, CancellationToken.None);
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        var otConfirmation = Regex.Match(notificationSender.Sent[^1].EmailBodyHtml, "token=([A-Za-z0-9_-]+)");
+        Assert.True(otConfirmation.Success);
+        Assert.Equal("PendingOtVerification", (await confirmationService.ConfirmAsync(
+            otConfirmation.Groups[1].Value, CancellationToken.None))?.Status);
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        Assert.Equal("ga@example.invalid", notificationSender.Sent[^1].RecipientEmail);
+        Assert.Contains("/admin/ot-verification", notificationSender.Sent[^1].EmailBodyHtml);
+        Assert.DoesNotContain("token=", notificationSender.Sent[^1].EmailBodyHtml);
+        var otQueue = await gaService.ListOtAsync(gaId, 1, CancellationToken.None);
+        Assert.Contains(otQueue.Items, x => x.Id == ot.RequestId);
+        var otDetail = await gaService.OtDetailAsync(gaId, ot.RequestId, CancellationToken.None);
+        Assert.Equal("Test OT Rider", Assert.Single(otDetail!.Riders).EmployeeName);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            gaService.ListOtAsync(Guid.NewGuid(), 1, CancellationToken.None));
+        await Assert.ThrowsAsync<PublicRequestValidationException>(() =>
+            gaService.VerifyOtAsync(gaId, ot.RequestId,
+                new GaOtVerifyCommand(otDetail.RevisionNumber, "not_found", ""), CancellationToken.None));
+        var notFound = await gaService.VerifyOtAsync(gaId, ot.RequestId,
+            new GaOtVerifyCommand(otDetail.RevisionNumber, "not_found", "No matching Tiger Space entry."),
+            CancellationToken.None);
+        Assert.Equal("PendingOtVerification", notFound?.Status);
+        Assert.Equal("NotFound", notFound?.VerificationStatus);
+        Assert.Contains((await gaService.ListOtAsync(gaId, 1, CancellationToken.None)).Items,
+            x => x.Id == ot.RequestId && x.VerificationStatus == "NotFound");
+        await Assert.ThrowsAsync<GaAssignmentConflictException>(() =>
+            gaService.VerifyOtAsync(gaId, ot.RequestId,
+                new GaOtVerifyCommand(otDetail.RevisionNumber, "verified", null), CancellationToken.None));
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        Assert.Contains("not found", notificationSender.Sent[^1].EmailBodyHtml, StringComparison.OrdinalIgnoreCase);
+        var verified = await gaService.VerifyOtAsync(gaId, ot.RequestId,
+            new GaOtVerifyCommand(notFound!.RevisionNumber, "verified", "Matched Tiger Space."),
+            CancellationToken.None);
+        Assert.Equal("Approved", verified?.Status);
+        Assert.Equal("Verified", verified?.VerificationStatus);
+        Assert.DoesNotContain((await gaService.ListOtAsync(gaId, 1, CancellationToken.None)).Items,
+            x => x.Id == ot.RequestId);
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        Assert.Contains("approved", notificationSender.Sent[^1].EmailBodyHtml, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(4, await verification.RequestRevisions.CountAsync(x => x.TransportRequestId == ot.RequestId));
+        var rejectedOt = await service.SubmitAsync(otCommand with { Purpose = "Unapproved OT work" },
+            "sql-integration-ot-reject-0001", fingerprint, CancellationToken.None);
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        var rejectedConfirmation = Regex.Match(notificationSender.Sent[^1].EmailBodyHtml, "token=([A-Za-z0-9_-]+)");
+        Assert.True(rejectedConfirmation.Success);
+        Assert.NotNull(await confirmationService.ConfirmAsync(rejectedConfirmation.Groups[1].Value, CancellationToken.None));
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        var rejectedDetail = await gaService.OtDetailAsync(gaId, rejectedOt.RequestId, CancellationToken.None);
+        var rejected = await gaService.VerifyOtAsync(gaId, rejectedOt.RequestId,
+            new GaOtVerifyCommand(rejectedDetail!.RevisionNumber, "rejected", "OT entry was declined."),
+            CancellationToken.None);
+        Assert.Equal("Rejected", rejected?.Status);
+        Assert.Equal("Rejected", rejected?.VerificationStatus);
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        Assert.Contains("OT entry was declined.", notificationSender.Sent[^1].EmailBodyHtml);
+
         await service.SubmitAsync(
             command with { Destination = "Inactive approver destination" },
             "sql-integration-inactive-0001", fingerprint, CancellationToken.None);

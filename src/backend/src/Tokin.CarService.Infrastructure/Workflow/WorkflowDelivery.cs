@@ -97,7 +97,9 @@ internal sealed class WorkflowOutboxProcessor(
                     || x.EventType == "request.approval.requested"
                     || x.EventType == "request.approval.decided.requester"
                     || x.EventType == "request.approval.decided.ga"
-                    || x.EventType == "request.assignment.requester")
+                    || x.EventType == "request.assignment.requester"
+                    || x.EventType == "request.ot_verification.requested"
+                    || x.EventType == "request.ot_verification.decided.requester")
                 && x.AttemptCount < x.MaxAttempts
                 && ((x.Status == OutboxStatus.Pending || x.Status == OutboxStatus.Failed)
                     && x.AvailableAtUtc <= now
@@ -207,6 +209,42 @@ internal sealed class WorkflowOutboxProcessor(
             .SingleOrDefaultAsync(x => x.Id == requestId, cancellationToken);
         if (request is null) return null;
         var bookingNumber = System.Net.WebUtility.HtmlEncode(request.BookingNumber);
+
+        if (message.EventType == "request.ot_verification.requested")
+        {
+            if (request.RequestType != TransportRequestType.Overtime
+                || request.Status != TransportRequestStatus.PendingOtVerification
+                || request.OtVerificationStatus != OtVerificationStatus.Pending
+                || request.OtVerificationMode != OtVerificationMode.TigerSpace) return null;
+            var recipient = configuration["WorkflowDelivery:GaNotificationEmail"];
+            if (string.IsNullOrWhiteSpace(recipient)) return null;
+            var url = new Uri(new Uri(configuration["WorkflowDelivery:AppBaseUrl"]!), "/admin/ot-verification");
+            return new WorkflowNotification(message.DeduplicationKey, recipient,
+                $"Verify OT transport request {request.BookingNumber}",
+                $"<p>OT transport request <strong>{bookingNumber}</strong> is ready for Tiger Space verification.</p>"
+                + $"<p><a href=\"{System.Net.WebUtility.HtmlEncode(url.ToString())}\">Open GA verification queue</a></p>");
+        }
+
+        if (message.EventType == "request.ot_verification.decided.requester")
+        {
+            if (request.RequestType != TransportRequestType.Overtime
+                || request.RevisionNumber != root.GetProperty("revision").GetInt32()
+                || !string.Equals(request.Status.ToString(), root.GetProperty("status").GetString(), StringComparison.Ordinal))
+                return null;
+            var result = root.GetProperty("result").GetString();
+            var messageText = result switch
+            {
+                "Verified" => "Tiger Space details verified. Your request is approved and awaiting transport arrangement.",
+                "NotFound" => "Tiger Space details were not found. Your request is still awaiting verification. Please contact GA.",
+                "Rejected" => "Your OT transport request was rejected after verification.",
+                _ => throw new JsonException("Unknown OT verification result."),
+            };
+            var note = string.IsNullOrWhiteSpace(request.OtVerificationNote) ? string.Empty
+                : $"<p>GA note: {System.Net.WebUtility.HtmlEncode(request.OtVerificationNote)}</p>";
+            return new WorkflowNotification(message.DeduplicationKey, request.RequesterEmail,
+                $"OT transport request {request.BookingNumber}: {result}",
+                $"<p>Request <strong>{bookingNumber}</strong>: {messageText}</p>" + note);
+        }
 
         if (message.EventType == "request.assignment.requester")
         {

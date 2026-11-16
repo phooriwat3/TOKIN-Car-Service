@@ -107,7 +107,8 @@ export default function SqlGaAssignments() {
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><p className="text-xs font-bold uppercase tracking-widest text-brand">TOKIN transport · GA</p>
         <h1 className="mt-1 text-2xl font-bold text-ink">Vehicle assignments</h1></div>
-      <Button type="button" variant="outline" onClick={() => void refresh()}>Refresh</Button>
+      <div className="flex gap-2"><Link href="/admin/ot-verification"><Button type="button" variant="outline">OT verification</Button></Link>
+        <Button type="button" variant="outline" onClick={() => void refresh()}>Refresh</Button></div>
     </div>
     {error && <p role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error} {error.includes("Sign in") && <Link className="underline" href="/admin/login">Open login</Link>}</p>}
     {notice && <p role="status" className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">{notice}</p>}

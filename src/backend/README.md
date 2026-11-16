@@ -105,7 +105,7 @@ After requester confirmation, the API creates a separate 72-hour, one-use approv
 
 For outside-company requests, Request changes issues a separate seven-day, one-use requester link to `/request/manage`. The SQL Server page shows the approver's reason and lets the requester correct trip date, time, locations, purpose, meeting point, passengers, staff travel, and urgent reason. `POST /api/v1/requests/change/access` reads the current revision; `POST /api/v1/requests/change/resubmit` validates the edited details and atomically consumes the link, records a revision, and queues a fresh 72-hour approver link. Requester and approver identities cannot be changed through this link. Invalid edits leave the link usable. OT requests are not part of this edit flow.
 
-An approval or requester-edit link verifies possession of the message, not the person's identity if it is forwarded. The company must approve this access model before production use. OT verification messages stay queued until a dedicated HR/GA recipient and handler are implemented. Keep the production switch off until the real provider and recipient policy are tested. The disposable SQL integration test uses a fake sender and sends no real messages.
+An approval or requester-edit link verifies possession of the message, not the person's identity if it is forwarded. The company must approve this access model before production use. OT verification notices use the configured GA mailbox; a GA administrator checks Tiger Space manually. Keep the production switch off until the real provider and recipient policy are tested. The disposable SQL integration test uses a fake sender and sends no real messages.
 
 ## GA assignment and manual LINE handoff
 
@@ -131,6 +131,10 @@ dotnet run --project .\src\backend\src\Tokin.CarService.Api
 ```
 
 The seed is disabled by default, runs only in the Development environment, and uses reserved `example.invalid` addresses. Never enable it against a shared or production database.
+
+## GA overtime verification
+
+After an employee confirms an OT request, the worker emails `WorkflowDelivery:GaNotificationEmail` a link to `/admin/ot-verification`. The page shows the pending OT queue and rider work details. GA compares them with Tiger Space and records Verified, Not found, or Rejected. Not found and Rejected require a note. Verified moves the request to Approved; Not found keeps it in PendingOtVerification for another check; Rejected closes it. Each decision stores the GA actor, revision, and requester notification. Revision matching prevents a stale screen from overwriting a newer decision. All OT routes use the same signed gateway and active SQL Admin role. This step does not connect to Tiger Space automatically or assign OT vehicles; OT assignment is a later phase.
 
 ## Disposable SQL Server integration test
 

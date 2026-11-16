@@ -28,6 +28,13 @@ public static class GaAssignmentEndpoints
         group.MapPost("/requests/{requestId:guid}/dispatch", DispatchAsync).WithName("RecordGaLineDispatch")
             .WithMetadata(new RequestSizeLimitAttribute(1024))
             .RequireRateLimiting("public-request-submit");
+        group.MapGet("/ot-requests", ListOtAsync).WithName("ListGaOtRequests")
+            .RequireRateLimiting("public-reference-read");
+        group.MapGet("/ot-requests/{requestId:guid}", OtDetailAsync).WithName("ReadGaOtRequest")
+            .RequireRateLimiting("public-reference-read");
+        group.MapPost("/ot-requests/{requestId:guid}/verify", VerifyOtAsync).WithName("VerifyGaOtRequest")
+            .WithMetadata(new RequestSizeLimitAttribute(4096))
+            .RequireRateLimiting("public-request-submit");
         return endpoints;
     }
 
@@ -79,6 +86,41 @@ public static class GaAssignmentEndpoints
         catch (PublicRequestValidationException exception)
         {
             return Results.ValidationProblem(exception.Errors);
+        }
+    }
+
+    private static async Task<IResult> ListOtAsync(int? page, HttpContext context, IGaAssignmentService service,
+        CancellationToken cancellationToken)
+    {
+        var pageNumber = page ?? 1;
+        return pageNumber is < 1 or > 10000
+            ? Results.BadRequest(new { error = "Invalid page." })
+            : Results.Ok(await service.ListOtAsync(Actor(context), pageNumber, cancellationToken));
+    }
+
+    private static async Task<IResult> OtDetailAsync(Guid requestId, HttpContext context,
+        IGaAssignmentService service, CancellationToken cancellationToken)
+    {
+        var detail = await service.OtDetailAsync(Actor(context), requestId, cancellationToken);
+        return detail is null ? Results.NotFound() : Results.Ok(detail);
+    }
+
+    private static async Task<IResult> VerifyOtAsync(Guid requestId, GaOtVerifyCommand command,
+        HttpContext context, IGaAssignmentService service, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var detail = await service.VerifyOtAsync(Actor(context), requestId, command, cancellationToken);
+            return detail is null ? Results.NotFound() : Results.Ok(detail);
+        }
+        catch (PublicRequestValidationException exception)
+        {
+            return Results.ValidationProblem(exception.Errors);
+        }
+        catch (GaAssignmentConflictException exception)
+        {
+            return Results.Problem(statusCode: StatusCodes.Status409Conflict,
+                title: "Verification conflict", detail: exception.Message);
         }
     }
 }
