@@ -15,6 +15,7 @@ namespace Tokin.CarService.Infrastructure.PublicRequests;
 
 internal sealed class PublicApprovalService(
     IDbContextFactory<CarServiceDbContext> dbContextFactory,
+    ISecureActionTokenService tokenService,
     TimeProvider timeProvider) : IPublicApprovalService
 {
     private static readonly string[] DecisionRecipients = ["requester", "ga"];
@@ -99,6 +100,28 @@ internal sealed class PublicApprovalService(
             request.RevisionNumber++;
             request.UpdatedAtUtc = now;
             var correlationId = Guid.CreateVersion7();
+            IssuedActionToken? manageToken = null;
+            Guid? manageTokenId = null;
+            if (status == TransportRequestStatus.ChangesRequested)
+            {
+                await db.RequestAccessTokens.Where(x => x.TransportRequestId == request.Id
+                        && x.TokenType == AccessTokenType.RequesterManage
+                        && x.UsedAtUtc == null && x.RevokedAtUtc == null)
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.RevokedAtUtc, now), cancellationToken);
+                manageToken = tokenService.Issue("requester-manage:v1");
+                manageTokenId = Guid.CreateVersion7();
+                db.RequestAccessTokens.Add(new RequestAccessToken
+                {
+                    Id = manageTokenId.Value,
+                    TransportRequestId = request.Id,
+                    TokenType = AccessTokenType.RequesterManage,
+                    TokenHash = manageToken.TokenHash,
+                    RevisionNumber = request.RevisionNumber,
+                    SubjectEmail = request.RequesterEmail,
+                    ExpiresAtUtc = now.AddDays(7),
+                    CreatedAtUtc = now,
+                });
+            }
             db.ApprovalRecords.Add(new ApprovalRecord
             {
                 Id = Guid.CreateVersion7(),
@@ -141,6 +164,8 @@ internal sealed class PublicApprovalService(
                     {
                         requestId = request.Id,
                         status = status.ToString(),
+                        manageTokenId = recipient == "requester" ? manageTokenId : null,
+                        protectedManageToken = recipient == "requester" ? manageToken?.ProtectedToken : null,
                     }),
                     Status = OutboxStatus.Pending,
                     MaxAttempts = 8,

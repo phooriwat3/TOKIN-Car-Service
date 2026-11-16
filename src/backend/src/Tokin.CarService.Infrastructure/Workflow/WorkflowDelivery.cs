@@ -73,6 +73,8 @@ internal sealed class WorkflowOutboxProcessor(
         "Tokin.CarService", "PublicRequestActionToken", "requester-confirmation:v1");
     private readonly IDataProtector _approvalProtector = dataProtectionProvider.CreateProtector(
         "Tokin.CarService", "PublicRequestActionToken", "approver-decision:v1");
+    private readonly IDataProtector _manageProtector = dataProtectionProvider.CreateProtector(
+        "Tokin.CarService", "PublicRequestActionToken", "requester-manage:v1");
 
     public async Task<bool> ProcessOneAsync(CancellationToken cancellationToken)
     {
@@ -247,12 +249,32 @@ internal sealed class WorkflowOutboxProcessor(
             var reason = string.IsNullOrEmpty(decision.Comments)
                 ? string.Empty
                 : $"<p>Reason: {System.Net.WebUtility.HtmlEncode(decision.Comments)}</p>";
+            var editLink = string.Empty;
+            if (!isGa && request.Status == TransportRequestStatus.ChangesRequested
+                && root.TryGetProperty("manageTokenId", out var manageTokenIdValue)
+                && manageTokenIdValue.ValueKind == JsonValueKind.String
+                && root.TryGetProperty("protectedManageToken", out var protectedManageTokenValue)
+                && protectedManageTokenValue.ValueKind == JsonValueKind.String)
+            {
+                var manageTokenId = manageTokenIdValue.GetGuid();
+                var manageAccess = await db.RequestAccessTokens.AsNoTracking().SingleOrDefaultAsync(x =>
+                    x.Id == manageTokenId && x.TransportRequestId == requestId
+                    && x.TokenType == AccessTokenType.RequesterManage
+                    && x.UsedAtUtc == null && x.RevokedAtUtc == null && x.ExpiresAtUtc > now
+                    && x.RevisionNumber == request.RevisionNumber
+                    && x.SubjectEmail == request.RequesterEmail, cancellationToken);
+                if (manageAccess is null) return null;
+                var manageToken = _manageProtector.Unprotect(protectedManageTokenValue.GetString()!);
+                var manageUrl = new Uri(new Uri(configuration["WorkflowDelivery:AppBaseUrl"]!),
+                    "/request/manage?token=" + Uri.EscapeDataString(manageToken));
+                editLink = $"<p><a href=\"{System.Net.WebUtility.HtmlEncode(manageUrl.ToString())}\">Edit and resubmit request</a> (link expires in seven days).</p>";
+            }
             return new WorkflowNotification(
                 message.DeduplicationKey,
                 recipient,
                 $"Transport request {request.BookingNumber}: {request.Status}",
                 $"<p>Transport request <strong>{bookingNumber}</strong> is now {System.Net.WebUtility.HtmlEncode(request.Status.ToString())}.</p>"
-                    + reason);
+                    + reason + editLink);
         }
 
         if (request.Status != TransportRequestStatus.PendingApproval

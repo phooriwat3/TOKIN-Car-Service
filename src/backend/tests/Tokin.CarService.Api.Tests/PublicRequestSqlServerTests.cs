@@ -195,12 +195,43 @@ public sealed class PublicRequestSqlServerTests
             Assert.True(nextConfirmation.Success);
             Assert.NotNull(await confirmationService.ConfirmAsync(nextConfirmation.Groups[1].Value, CancellationToken.None));
             Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
-            await DecideAndVerifyAsync(
+            var notices = await DecideAndVerifyAsync(
                 notificationSender.Sent[^1], scenario.Action, scenario.Reason, scenario.Status, next.RequestNo);
+            if (scenario.Action == "request_changes")
+            {
+                var requesterNotice = Assert.Single(notices, x => x.RecipientEmail == "phooriwat.pungpech@yageo.com");
+                var manageLink = Regex.Match(requesterNotice.EmailBodyHtml, "token=([A-Za-z0-9_-]+)");
+                Assert.True(manageLink.Success);
+                var manageToken = manageLink.Groups[1].Value;
+                var changeService = scope.ServiceProvider.GetRequiredService<IPublicRequestChangeService>();
+                var editable = await changeService.ReadAsync(manageToken, CancellationToken.None);
+                Assert.Equal(next.RequestNo, editable?.RequestNo);
+                Assert.Equal(scenario.Reason, editable?.Reason);
+                var correctedCommand = new PublicRequestChangeCommand(
+                    manageToken, editable!.UsingDate, editable.StartTime, editable.EndTime,
+                    editable.PickupLocation, "Corrected destination", editable.Purpose,
+                    editable.MeetingPoint, editable.WithStaff, editable.ImmediateReason,
+                    ["Updated passenger"]);
+                await Assert.ThrowsAsync<PublicRequestValidationException>(() =>
+                    changeService.ResubmitAsync(correctedCommand with { UsingDate = "2000-01-01" }, CancellationToken.None));
+                Assert.NotNull(await changeService.ReadAsync(manageToken, CancellationToken.None));
+                var resubmitted = await changeService.ResubmitAsync(correctedCommand, CancellationToken.None);
+                Assert.Equal("PendingApproval", resubmitted?.Status);
+                Assert.Equal("Updated passenger", (await verification.RequestPassengers.AsNoTracking()
+                    .SingleAsync(x => x.TransportRequestId == next.RequestId)).Name);
+                Assert.Null(await changeService.ReadAsync(manageToken, CancellationToken.None));
+                Assert.Null(await changeService.ResubmitAsync(correctedCommand, CancellationToken.None));
+                Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+                Assert.Equal("approver@yageo.com", notificationSender.Sent[^1].RecipientEmail);
+                var newApprovalLink = Regex.Match(notificationSender.Sent[^1].EmailBodyHtml, "token=([A-Za-z0-9_-]+)");
+                Assert.True(newApprovalLink.Success);
+                Assert.Equal("Corrected destination", (await approvalService.ReadAsync(
+                    newApprovalLink.Groups[1].Value, CancellationToken.None))?.Destination);
+            }
         }
 
         Assert.Equal(3, await verification.ApprovalRecords.CountAsync());
-        Assert.Equal(13, await verification.WorkflowDeliveries.CountAsync());
+        Assert.Equal(14, await verification.WorkflowDeliveries.CountAsync());
 
         await service.SubmitAsync(
             command with { Destination = "Inactive approver destination" },
@@ -226,7 +257,7 @@ public sealed class PublicRequestSqlServerTests
         clock.Advance(TimeSpan.FromHours(73));
         Assert.Null(await approvalService.ReadAsync(finalApproval.Groups[1].Value, CancellationToken.None));
 
-        async Task DecideAndVerifyAsync(
+        async Task<WorkflowNotification[]> DecideAndVerifyAsync(
             WorkflowNotification notification,
             string action,
             string reason,
@@ -247,10 +278,11 @@ public sealed class PublicRequestSqlServerTests
             var sentBefore = notificationSender.Sent.Count;
             Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
             Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
-            var recipients = notificationSender.Sent.Skip(sentBefore)
-                .Select(x => x.RecipientEmail).ToArray();
+            var notices = notificationSender.Sent.Skip(sentBefore).ToArray();
+            var recipients = notices.Select(x => x.RecipientEmail).ToArray();
             Assert.Contains("phooriwat.pungpech@yageo.com", recipients);
             Assert.Contains("ga@example.invalid", recipients);
+            return notices;
         }
     }
 

@@ -102,6 +102,7 @@ app.MapGet("/api/health", () => Results.Ok(HealthResponse.Create()))
     .AllowAnonymous();
 app.MapPublicRequestEndpoints();
 app.MapPublicApprovalEndpoints();
+app.MapPublicRequestChangeEndpoints();
 app.MapPublicReferenceDataEndpoints();
 
 app.Run();
