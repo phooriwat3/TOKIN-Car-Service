@@ -32,6 +32,7 @@ public static class DependencyInjection
 
             services.AddSingleton<IPublicRequestSubmissionService, UnconfiguredPublicRequestSubmissionService>();
             services.AddSingleton<IPublicRequestConfirmationService, UnconfiguredPublicRequestConfirmationService>();
+            services.AddSingleton<IPublicApprovalService, UnconfiguredPublicApprovalService>();
             services.AddSingleton<IPublicReferenceDataService, UnconfiguredPublicReferenceDataService>();
             return services;
         }
@@ -41,6 +42,7 @@ public static class DependencyInjection
         services.AddSingleton<ISecureActionTokenService, SecureActionTokenService>();
         services.AddScoped<IPublicRequestSubmissionService, PublicRequestSubmissionService>();
         services.AddScoped<IPublicRequestConfirmationService, PublicRequestConfirmationService>();
+        services.AddScoped<IPublicApprovalService, PublicApprovalService>();
         services.AddScoped<IPublicReferenceDataService, PublicReferenceDataService>();
         services.AddPooledDbContextFactory<CarServiceDbContext>(options =>
             options.UseSqlServer(connectionString, sqlServer =>

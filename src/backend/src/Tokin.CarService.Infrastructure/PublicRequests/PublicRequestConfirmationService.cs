@@ -13,6 +13,7 @@ namespace Tokin.CarService.Infrastructure.PublicRequests;
 
 internal sealed class PublicRequestConfirmationService(
     IDbContextFactory<CarServiceDbContext> dbContextFactory,
+    ISecureActionTokenService tokenService,
     TimeProvider timeProvider) : IPublicRequestConfirmationService
 {
     public async Task<ConfirmPublicRequestResult?> ConfirmAsync(
@@ -90,6 +91,26 @@ internal sealed class PublicRequestConfirmationService(
                 CreatedAtUtc = utcNow,
             });
             request.RevisionNumber++;
+            IssuedActionToken? approvalToken = null;
+            Guid? approvalTokenId = null;
+            if (request.Status == TransportRequestStatus.PendingApproval
+                && request.ApproverAccountId.HasValue
+                && !string.IsNullOrWhiteSpace(request.ApproverEmail))
+            {
+                approvalToken = tokenService.Issue("approver-decision:v1");
+                approvalTokenId = Guid.CreateVersion7();
+                db.RequestAccessTokens.Add(new RequestAccessToken
+                {
+                    Id = approvalTokenId.Value,
+                    TransportRequestId = request.Id,
+                    TokenType = AccessTokenType.Approval,
+                    TokenHash = approvalToken.TokenHash,
+                    RevisionNumber = request.RevisionNumber,
+                    SubjectEmail = request.ApproverEmail,
+                    ExpiresAtUtc = utcNow.AddHours(72),
+                    CreatedAtUtc = utcNow,
+                });
+            }
             db.WorkflowOutbox.Add(new WorkflowOutboxMessage
             {
                 Id = Guid.CreateVersion7(),
@@ -98,7 +119,12 @@ internal sealed class PublicRequestConfirmationService(
                     ? "request.ot_verification.requested"
                     : "request.approval.requested",
                 DeduplicationKey = $"post-confirmation:{request.Id:N}:{request.WorkflowVersion}",
-                PayloadJson = JsonSerializer.Serialize(new { requestId = request.Id }),
+                PayloadJson = JsonSerializer.Serialize(new
+                {
+                    requestId = request.Id,
+                    approvalTokenId,
+                    protectedToken = approvalToken?.ProtectedToken,
+                }),
                 Status = OutboxStatus.Pending,
                 MaxAttempts = 8,
                 AvailableAtUtc = utcNow,

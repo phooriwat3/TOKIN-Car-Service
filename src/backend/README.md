@@ -96,11 +96,14 @@ Configure the hosted delivery worker through the API host's secret store:
 WorkflowDelivery__EndpointUrl=https://approved-email-webhook.example/trigger
 WorkflowDelivery__AppBaseUrl=https://approved-transport-site.example/
 WorkflowDelivery__SharedSecret=<at least 32 random characters>
+WorkflowDelivery__GaNotificationEmail=<approved GA mailbox>
 ```
 
 The worker posts JSON with `deduplicationKey`, `recipientEmail`, `emailSubject`, and `emailBodyHtml` to the fixed HTTPS endpoint. It sends `x-workflow-secret` and `Idempotency-Key` headers. Configure the receiving flow to validate the shared secret, send the supplied email to the supplied recipient, and suppress duplicate `Idempotency-Key` values before sending. The webhook URL and secret remain server-side. A 2xx response means the provider accepted delivery; the API records the attempt, retries failures with backoff, and dead-letters exhausted messages. If the process stops after the provider accepts a message but before SQL records success, it may retry; provider-side deduplication is required. The worker never logs the confirmation token or email body.
 
-The post-confirmation approver email is informational in this slice. Approval links and decision endpoints belong to the next migration phase. OT verification messages stay queued until a dedicated HR/GA recipient and handler are implemented. Keep the production switch off until the real provider, recipient policy, and approval workflow are tested. The disposable SQL integration test uses a fake sender and sends no real messages.
+After requester confirmation, the API creates a separate 72-hour, one-use approval token tied to the assigned approver and current request revision. The approver email includes a link to `/request/approve` in SQL Server mode. The API rechecks the approver's active account and department assignment when opening the link and when submitting a decision. `POST /api/v1/approvals/access` returns the trip summary. `POST /api/v1/approvals/action` accepts `approve`, `reject`, or `request_changes`; the last two require a reason. A decision consumes the token, stores an approval record and revision, changes request status, and queues requester and GA notices in one transaction. Reusing the link cannot record a second decision. GA notices go to the configured mailbox.
+
+An approval link verifies possession of the message, not the person's identity if it is forwarded. The company must approve this access model before production use. Request changes currently records the decision and notifies the requester; SQL Server requester editing and resubmission are a later phase. OT verification messages stay queued until a dedicated HR/GA recipient and handler are implemented. Keep the production switch off until the real provider and recipient policy are tested. The disposable SQL integration test uses a fake sender and sends no real messages.
 
 When a dedicated development database has already been migrated, fake reference data can be explicitly enabled for local work:
 

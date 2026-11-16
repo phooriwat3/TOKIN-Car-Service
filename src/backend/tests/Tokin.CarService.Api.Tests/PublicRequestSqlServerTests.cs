@@ -19,6 +19,12 @@ namespace Tokin.CarService.Api.Tests;
 
 public sealed class PublicRequestSqlServerTests
 {
+    private static readonly (string Action, string Reason, string Status)[] OtherDecisions =
+    [
+        ("reject", "Trip is not authorized.", "Rejected"),
+        ("request_changes", "Please correct the destination.", "ChangesRequested"),
+    ];
+
     [Fact]
     public async Task SubmissionIsAtomicSecureAndIdempotentWhenSqlServerIsAvailable()
     {
@@ -143,6 +149,7 @@ public sealed class PublicRequestSqlServerTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["WorkflowDelivery:AppBaseUrl"] = "https://transport.example.invalid/",
+                ["WorkflowDelivery:GaNotificationEmail"] = "ga@example.invalid",
             })
             .Build();
         var processor = new WorkflowOutboxProcessor(
@@ -171,6 +178,80 @@ public sealed class PublicRequestSqlServerTests
         Assert.Equal(2, await verification.WorkflowOutbox.CountAsync());
         Assert.Equal(3, await verification.WorkflowDeliveries.CountAsync());
         Assert.Equal(2, await verification.RequestRevisions.CountAsync());
+
+        var approvalService = scope.ServiceProvider.GetRequiredService<IPublicApprovalService>();
+        await DecideAndVerifyAsync(
+            notificationSender.Sent[2], "approve", "", "Approved", first.RequestNo);
+
+        foreach (var scenario in OtherDecisions)
+        {
+            var next = await service.SubmitAsync(
+                command with { Destination = scenario.Status + " destination" },
+                "sql-integration-" + scenario.Action + "-0001",
+                fingerprint,
+                CancellationToken.None);
+            Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+            var nextConfirmation = Regex.Match(notificationSender.Sent[^1].EmailBodyHtml, "token=([A-Za-z0-9_-]+)");
+            Assert.True(nextConfirmation.Success);
+            Assert.NotNull(await confirmationService.ConfirmAsync(nextConfirmation.Groups[1].Value, CancellationToken.None));
+            Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+            await DecideAndVerifyAsync(
+                notificationSender.Sent[^1], scenario.Action, scenario.Reason, scenario.Status, next.RequestNo);
+        }
+
+        Assert.Equal(3, await verification.ApprovalRecords.CountAsync());
+        Assert.Equal(13, await verification.WorkflowDeliveries.CountAsync());
+
+        await service.SubmitAsync(
+            command with { Destination = "Inactive approver destination" },
+            "sql-integration-inactive-0001", fingerprint, CancellationToken.None);
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        var finalConfirmation = Regex.Match(notificationSender.Sent[^1].EmailBodyHtml, "token=([A-Za-z0-9_-]+)");
+        Assert.True(finalConfirmation.Success);
+        Assert.NotNull(await confirmationService.ConfirmAsync(finalConfirmation.Groups[1].Value, CancellationToken.None));
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        var finalApproval = Regex.Match(notificationSender.Sent[^1].EmailBodyHtml, "token=([A-Za-z0-9_-]+)");
+        Assert.True(finalApproval.Success);
+        var approverId = Guid.Parse("019a2aa0-0000-7000-8000-000000000002");
+        await verification.DepartmentApprovers
+            .Where(x => x.UserAccountId == approverId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.IsActive, false));
+        Assert.Null(await approvalService.ReadAsync(finalApproval.Groups[1].Value, CancellationToken.None));
+        Assert.Null(await approvalService.DecideAsync(
+            new PublicApprovalActionCommand(finalApproval.Groups[1].Value, "approve", ""),
+            CancellationToken.None));
+        await verification.DepartmentApprovers
+            .Where(x => x.UserAccountId == approverId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.IsActive, true));
+        clock.Advance(TimeSpan.FromHours(73));
+        Assert.Null(await approvalService.ReadAsync(finalApproval.Groups[1].Value, CancellationToken.None));
+
+        async Task DecideAndVerifyAsync(
+            WorkflowNotification notification,
+            string action,
+            string reason,
+            string expectedStatus,
+            string expectedNumber)
+        {
+            var link = Regex.Match(notification.EmailBodyHtml, "token=([A-Za-z0-9_-]+)");
+            Assert.True(link.Success);
+            var approvalToken = link.Groups[1].Value;
+            var preview = await approvalService.ReadAsync(approvalToken, CancellationToken.None);
+            Assert.Equal(expectedNumber, preview?.RequestNo);
+            var decision = await approvalService.DecideAsync(
+                new PublicApprovalActionCommand(approvalToken, action, reason), CancellationToken.None);
+            Assert.Equal(expectedStatus, decision?.Status);
+            Assert.Null(await approvalService.ReadAsync(approvalToken, CancellationToken.None));
+            Assert.Null(await approvalService.DecideAsync(
+                new PublicApprovalActionCommand(approvalToken, action, reason), CancellationToken.None));
+            var sentBefore = notificationSender.Sent.Count;
+            Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+            Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+            var recipients = notificationSender.Sent.Skip(sentBefore)
+                .Select(x => x.RecipientEmail).ToArray();
+            Assert.Contains("phooriwat.pungpech@yageo.com", recipients);
+            Assert.Contains("ga@example.invalid", recipients);
+        }
     }
 
     private static async Task SeedReferenceDataAsync(CarServiceDbContext context)

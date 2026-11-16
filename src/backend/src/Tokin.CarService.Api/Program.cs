@@ -23,6 +23,7 @@ builder.Services
 var deliveryEndpoint = builder.Configuration["WorkflowDelivery:EndpointUrl"];
 var deliveryBaseUrl = builder.Configuration["WorkflowDelivery:AppBaseUrl"];
 var deliverySecret = builder.Configuration["WorkflowDelivery:SharedSecret"];
+var gaNotificationEmail = builder.Configuration["WorkflowDelivery:GaNotificationEmail"];
 var deliveryConfigured = Uri.TryCreate(deliveryEndpoint, UriKind.Absolute, out var endpointUri)
     && endpointUri.Scheme == Uri.UriSchemeHttps
     && endpointUri.UserInfo.Length == 0
@@ -34,13 +35,17 @@ var deliveryConfigured = Uri.TryCreate(deliveryEndpoint, UriKind.Absolute, out v
     && baseUri.Fragment.Length == 0
     && baseUri.AbsolutePath == "/"
     && !string.IsNullOrWhiteSpace(deliverySecret)
-    && deliverySecret.Length >= 32;
+    && deliverySecret.Length >= 32
+    && !string.IsNullOrWhiteSpace(gaNotificationEmail)
+    && gaNotificationEmail.Contains('@', StringComparison.Ordinal)
+    && !gaNotificationEmail.Any(char.IsWhiteSpace);
 var deliveryPartiallyConfigured = !string.IsNullOrWhiteSpace(deliveryEndpoint)
     || !string.IsNullOrWhiteSpace(deliveryBaseUrl)
-    || !string.IsNullOrWhiteSpace(deliverySecret);
+    || !string.IsNullOrWhiteSpace(deliverySecret)
+    || !string.IsNullOrWhiteSpace(gaNotificationEmail);
 if ((!builder.Environment.IsDevelopment() || deliveryPartiallyConfigured) && !deliveryConfigured)
 {
-    throw new InvalidOperationException("Hosted workflow delivery requires HTTPS endpoint, HTTPS app base URL, and a shared secret of at least 32 characters.");
+    throw new InvalidOperationException("Hosted workflow delivery requires HTTPS endpoint, HTTPS app base URL, a shared secret of at least 32 characters, and a GA notification email.");
 }
 if (deliveryConfigured)
 {
@@ -96,6 +101,7 @@ app.MapGet("/api/health", () => Results.Ok(HealthResponse.Create()))
     .WithName("GetHealth")
     .AllowAnonymous();
 app.MapPublicRequestEndpoints();
+app.MapPublicApprovalEndpoints();
 app.MapPublicReferenceDataEndpoints();
 
 app.Run();

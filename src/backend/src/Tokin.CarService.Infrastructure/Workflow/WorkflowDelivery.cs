@@ -71,6 +71,8 @@ internal sealed class WorkflowOutboxProcessor(
 {
     private readonly IDataProtector _tokenProtector = dataProtectionProvider.CreateProtector(
         "Tokin.CarService", "PublicRequestActionToken", "requester-confirmation:v1");
+    private readonly IDataProtector _approvalProtector = dataProtectionProvider.CreateProtector(
+        "Tokin.CarService", "PublicRequestActionToken", "approver-decision:v1");
 
     public async Task<bool> ProcessOneAsync(CancellationToken cancellationToken)
     {
@@ -90,7 +92,9 @@ internal sealed class WorkflowOutboxProcessor(
         var candidate = await db.WorkflowOutbox.AsNoTracking()
             .Where(x =>
                 (x.EventType == "request.confirmation.requested"
-                    || x.EventType == "request.approval.requested")
+                    || x.EventType == "request.approval.requested"
+                    || x.EventType == "request.approval.decided.requester"
+                    || x.EventType == "request.approval.decided.ga")
                 && x.AttemptCount < x.MaxAttempts
                 && ((x.Status == OutboxStatus.Pending || x.Status == OutboxStatus.Failed)
                     && x.AvailableAtUtc <= now
@@ -225,6 +229,32 @@ internal sealed class WorkflowOutboxProcessor(
                     + "<p>If you did not submit this request, ignore this message.</p>");
         }
 
+        if (message.EventType is "request.approval.decided.requester" or "request.approval.decided.ga")
+        {
+            var expectedStatus = root.GetProperty("status").GetString();
+            if (!string.Equals(request.Status.ToString(), expectedStatus, StringComparison.Ordinal))
+                return null;
+            var decision = await db.ApprovalRecords.AsNoTracking()
+                .Where(x => x.TransportRequestId == requestId)
+                .OrderByDescending(x => x.ActedAtUtc)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (decision is null) return null;
+            var isGa = message.EventType.EndsWith(".ga", StringComparison.Ordinal);
+            var recipient = isGa
+                ? configuration["WorkflowDelivery:GaNotificationEmail"]
+                : request.RequesterEmail;
+            if (string.IsNullOrWhiteSpace(recipient)) return null;
+            var reason = string.IsNullOrEmpty(decision.Comments)
+                ? string.Empty
+                : $"<p>Reason: {System.Net.WebUtility.HtmlEncode(decision.Comments)}</p>";
+            return new WorkflowNotification(
+                message.DeduplicationKey,
+                recipient,
+                $"Transport request {request.BookingNumber}: {request.Status}",
+                $"<p>Transport request <strong>{bookingNumber}</strong> is now {System.Net.WebUtility.HtmlEncode(request.Status.ToString())}.</p>"
+                    + reason);
+        }
+
         if (request.Status != TransportRequestStatus.PendingApproval
             || !request.ApproverAccountId.HasValue
             || string.IsNullOrWhiteSpace(request.ApproverEmail)
@@ -236,12 +266,32 @@ internal sealed class WorkflowOutboxProcessor(
                 && x.UserAccount.Role == UserRole.Approver
                 && x.UserAccount.Email == request.ApproverEmail,
                 cancellationToken)) return null;
+        if (!root.TryGetProperty("approvalTokenId", out var approvalTokenIdValue)
+            || approvalTokenIdValue.ValueKind != JsonValueKind.String
+            || !root.TryGetProperty("protectedToken", out var protectedTokenValue)
+            || protectedTokenValue.ValueKind != JsonValueKind.String)
+            return null;
+        var approvalTokenId = approvalTokenIdValue.GetGuid();
+        var access = await db.RequestAccessTokens.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == approvalTokenId
+                && x.TransportRequestId == requestId
+                && x.TokenType == AccessTokenType.Approval
+                && x.UsedAtUtc == null && x.RevokedAtUtc == null
+                && x.ExpiresAtUtc > now
+                && x.RevisionNumber == request.RevisionNumber
+                && x.SubjectEmail == request.ApproverEmail,
+                cancellationToken);
+        if (access is null) return null;
+        var approvalToken = _approvalProtector.Unprotect(protectedTokenValue.GetString()!);
+        var approvalUrl = new Uri(new Uri(configuration["WorkflowDelivery:AppBaseUrl"]!),
+            "/request/approve?token=" + Uri.EscapeDataString(approvalToken));
         return new WorkflowNotification(
             message.DeduplicationKey,
             request.ApproverEmail,
             $"Transport request awaiting review: {request.BookingNumber}",
             $"<p>Transport request <strong>{bookingNumber}</strong> has been confirmed by the requester and is awaiting your review.</p>"
-                + "<p>GA will coordinate the approval process.</p>");
+                + $"<p><a href=\"{System.Net.WebUtility.HtmlEncode(approvalUrl.ToString())}\">Review request</a></p>"
+                + "<p>Open the link only if you are the assigned approver.</p>");
     }
 }
 

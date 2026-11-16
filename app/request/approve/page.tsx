@@ -1,4 +1,8 @@
 import PublicApproveRequest from "@/components/public-approve-request";
+import SqlPublicApproval from "@/components/sql-public-approval";
+import { sqlServerBackendEnabled } from "@/lib/sqlserver-backend";
+
+export const dynamic = "force-dynamic";
 
 async function loadApproval(token?: string) {
   if (!token) return { error: "Approval link is missing." };
@@ -44,6 +48,8 @@ export default async function ApproveRequestPage({
   searchParams: Promise<{ token?: string }>;
 }) {
   const params = await searchParams;
+  if (sqlServerBackendEnabled())
+    return <SqlPublicApproval token={params.token} />;
   const approval = await loadApproval(params.token);
   return (
     <PublicApproveRequest
