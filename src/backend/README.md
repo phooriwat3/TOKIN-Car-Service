@@ -107,6 +107,21 @@ For outside-company requests, Request changes issues a separate seven-day, one-u
 
 An approval or requester-edit link verifies possession of the message, not the person's identity if it is forwarded. The company must approve this access model before production use. OT verification messages stay queued until a dedicated HR/GA recipient and handler are implemented. Keep the production switch off until the real provider and recipient policy are tested. The disposable SQL integration test uses a fake sender and sends no real messages.
 
+## GA assignment and manual LINE handoff
+
+In SQL Server mode `/admin/bookings` shows the GA queue. A verified, active Supabase admin session is checked on the Next.js server for each GA proxy call. The .NET API requires a matching active `Admin` account in SQL Server and a request signature from the Next.js server. This reuses the existing admin login during migration; the Supabase project must be company-owned before production. Employee and approver email links remain separate from GA access.
+
+Configure the same random secret of at least 32 characters in **server-side** settings only:
+
+```text
+Next.js: GA_GATEWAY_SHARED_SECRET=...
+.NET API: GaGateway__SharedSecret=...
+```
+
+Do not use a `NEXT_PUBLIC_` variable for this secret. The signing key binds method, path, request body, timestamp, and verified admin email. The API rejects expired or invalid signatures and rechecks the SQL account role. Provision the SQL `Admin` account with the same verified email as the authorized Supabase admin profile. The SQL Server backend remains unavailable for GA actions when the secret or database is missing.
+
+`GET /api/v1/ga/requests` returns 25 approved or assigned outside-company requests per page, with approved requests first. GA can inspect a request, assign one vehicle and driver exactly once, and the worker queues the assignment email to the requester. The GA page then provides plain text to copy into the driver's LINE chat. “Mark sent in LINE” records a GA attestation; the application does not send a LINE message automatically or prove delivery. Repeated sent actions do not create another sent record. All GA routes require the signed gateway and active SQL Admin role. The disposable SQL integration test checks authorization, assignment, notification, and dispatch with fake data and a fake sender.
+
 When a dedicated development database has already been migrated, fake reference data can be explicitly enabled for local work:
 
 ```powershell

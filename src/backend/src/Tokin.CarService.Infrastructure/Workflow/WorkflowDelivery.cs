@@ -96,7 +96,8 @@ internal sealed class WorkflowOutboxProcessor(
                 (x.EventType == "request.confirmation.requested"
                     || x.EventType == "request.approval.requested"
                     || x.EventType == "request.approval.decided.requester"
-                    || x.EventType == "request.approval.decided.ga")
+                    || x.EventType == "request.approval.decided.ga"
+                    || x.EventType == "request.assignment.requester")
                 && x.AttemptCount < x.MaxAttempts
                 && ((x.Status == OutboxStatus.Pending || x.Status == OutboxStatus.Failed)
                     && x.AvailableAtUtc <= now
@@ -206,6 +207,26 @@ internal sealed class WorkflowOutboxProcessor(
             .SingleOrDefaultAsync(x => x.Id == requestId, cancellationToken);
         if (request is null) return null;
         var bookingNumber = System.Net.WebUtility.HtmlEncode(request.BookingNumber);
+
+        if (message.EventType == "request.assignment.requester")
+        {
+            if (request.Status != TransportRequestStatus.Assigned) return null;
+            var unit = await db.TransportUnits.AsNoTracking()
+                .Where(x => x.TransportAssignment.TransportRequestId == requestId)
+                .SingleOrDefaultAsync(cancellationToken);
+            if (unit is null) return null;
+            var date = request.UsingDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            var start = request.StartTime.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+            return new WorkflowNotification(
+                message.DeduplicationKey, request.RequesterEmail,
+                $"Vehicle assigned for transport request {request.BookingNumber}",
+                $"<p>Vehicle and driver are assigned for <strong>{bookingNumber}</strong>.</p>"
+                + $"<p>{date} at {start}. Vehicle: {System.Net.WebUtility.HtmlEncode(unit.VehicleType)} "
+                + $"({System.Net.WebUtility.HtmlEncode(unit.LicensePlate)}). "
+                + $"Driver: {System.Net.WebUtility.HtmlEncode(unit.DriverName)} "
+                + $"({System.Net.WebUtility.HtmlEncode(unit.DriverPhone)}).</p>"
+                + "<p>GA will share the trip details with the driver through LINE.</p>");
+        }
 
         if (message.EventType == "request.confirmation.requested")
         {

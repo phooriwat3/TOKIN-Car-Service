@@ -4,9 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.DataProtection;
 using Tokin.CarService.Application.PublicRequests;
+using Tokin.CarService.Application.Ga;
 using Tokin.CarService.Application.ReferenceData;
 using Tokin.CarService.Infrastructure.Persistence;
 using Tokin.CarService.Infrastructure.PublicRequests;
+using Tokin.CarService.Infrastructure.Ga;
 using Tokin.CarService.Infrastructure.ReferenceData;
 
 namespace Tokin.CarService.Infrastructure;
@@ -34,6 +36,7 @@ public static class DependencyInjection
             services.AddSingleton<IPublicRequestConfirmationService, UnconfiguredPublicRequestConfirmationService>();
             services.AddSingleton<IPublicApprovalService, UnconfiguredPublicApprovalService>();
             services.AddSingleton<IPublicRequestChangeService, UnconfiguredPublicRequestChangeService>();
+            services.AddSingleton<IGaAssignmentService, UnconfiguredGaAssignmentService>();
             services.AddSingleton<IPublicReferenceDataService, UnconfiguredPublicReferenceDataService>();
             return services;
         }
@@ -45,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IPublicRequestConfirmationService, PublicRequestConfirmationService>();
         services.AddScoped<IPublicApprovalService, PublicApprovalService>();
         services.AddScoped<IPublicRequestChangeService, PublicRequestChangeService>();
+        services.AddScoped<IGaAssignmentService, GaAssignmentService>();
         services.AddScoped<IPublicReferenceDataService, PublicReferenceDataService>();
         services.AddPooledDbContextFactory<CarServiceDbContext>(options =>
             options.UseSqlServer(connectionString, sqlServer =>

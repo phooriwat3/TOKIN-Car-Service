@@ -1,13 +1,19 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Tokin.CarService.Application.PublicRequests;
+using Tokin.CarService.Application.Ga;
 using Tokin.CarService.Application.ReferenceData;
 using Tokin.CarService.Domain.ReferenceData;
+using Tokin.CarService.Domain.Requests;
 using Tokin.CarService.Domain.Workflow;
 using Tokin.CarService.Infrastructure;
 using Tokin.CarService.Infrastructure.Persistence;
@@ -183,6 +189,84 @@ public sealed class PublicRequestSqlServerTests
         await DecideAndVerifyAsync(
             notificationSender.Sent[2], "approve", "", "Approved", first.RequestNo);
 
+        var gaService = scope.ServiceProvider.GetRequiredService<IGaAssignmentService>();
+        var gaId = Guid.Parse("019a2aa0-0000-7000-8000-000000000003");
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            gaService.ListAsync(Guid.NewGuid(), 1, CancellationToken.None));
+        Assert.Contains((await gaService.ListAsync(gaId, 1, CancellationToken.None)).Items,
+            x => x.Id == first.RequestId && x.Status == "Approved");
+        var gaDetail = await gaService.DetailAsync(gaId, first.RequestId, CancellationToken.None);
+        Assert.Equal("Approved", gaDetail?.Status);
+        var assigned = await gaService.AssignAsync(gaId, first.RequestId,
+            new GaAssignCommand(gaDetail!.RevisionNumber, "AB-1234", "Van", "Test Driver", "0812345678", "Test notes"),
+            CancellationToken.None);
+        Assert.Equal("Assigned", assigned?.Status);
+        Assert.Contains("AB-1234", assigned!.LineMessage);
+        await Assert.ThrowsAsync<GaAssignmentConflictException>(() =>
+            gaService.AssignAsync(gaId, first.RequestId,
+                new GaAssignCommand(gaDetail.RevisionNumber, "XX-9999", "Car", "Other", "0800000000", null),
+                CancellationToken.None));
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        Assert.Equal("phooriwat.pungpech@yageo.com", notificationSender.Sent[^1].RecipientEmail);
+        Assert.Contains("AB-1234", notificationSender.Sent[^1].EmailBodyHtml);
+        Assert.False((await gaService.RecordDispatchAsync(gaId, first.RequestId,
+            new GaDispatchCommand("copied"), CancellationToken.None))?.LineSent);
+        Assert.True((await gaService.RecordDispatchAsync(gaId, first.RequestId,
+            new GaDispatchCommand("sent"), CancellationToken.None))?.LineSent);
+        await gaService.RecordDispatchAsync(gaId, first.RequestId,
+            new GaDispatchCommand("sent"), CancellationToken.None);
+        Assert.Equal(1, await verification.DriverDispatchEvents.CountAsync(x =>
+            x.TransportRequestId == first.RequestId && x.Action == DriverDispatchAction.Sent));
+        const string gatewaySecret = "isolated-ga-gateway-secret-at-least-32-chars";
+        using (var apiFactory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, settings) => settings.AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["ConnectionStrings:PrimaryDatabase"] = connectionString,
+                    ["GaGateway:SharedSecret"] = gatewaySecret,
+                }));
+            builder.ConfigureServices(services => services.AddInfrastructure(configuration));
+        }))
+        using (var client = apiFactory.CreateClient())
+        {
+            using var unsigned = await client.GetAsync("/api/v1/ga/requests");
+            Assert.Equal(HttpStatusCode.Unauthorized, unsigned.StatusCode);
+            using var wrongRole = await SendSignedAsync("approver@yageo.com", HttpMethod.Get,
+                "/api/v1/ga/requests", null);
+            Assert.Equal(HttpStatusCode.Forbidden, wrongRole.StatusCode);
+            using var authorized = await SendSignedAsync("ga.admin@yageo.com", HttpMethod.Get,
+                "/api/v1/ga/requests", null);
+            Assert.Equal(HttpStatusCode.OK, authorized.StatusCode);
+            using var paged = await SendSignedAsync("ga.admin@yageo.com", HttpMethod.Get,
+                "/api/v1/ga/requests?page=1", null);
+            Assert.Equal(HttpStatusCode.OK, paged.StatusCode);
+            using var tamperedGateway = await SendSignedAsync("ga.admin@yageo.com", HttpMethod.Post,
+                $"/api/v1/ga/requests/{first.RequestId:D}/dispatch", "{\"action\":\"copied\"}",
+                "{\"action\":\"sent\"}");
+            Assert.Equal(HttpStatusCode.Unauthorized, tamperedGateway.StatusCode);
+            using var signedPost = await SendSignedAsync("ga.admin@yageo.com", HttpMethod.Post,
+                $"/api/v1/ga/requests/{first.RequestId:D}/dispatch", "{\"action\":\"sent\"}");
+            Assert.Equal(HttpStatusCode.OK, signedPost.StatusCode);
+
+            async Task<HttpResponseMessage> SendSignedAsync(
+                string email, HttpMethod method, string path, string? body, string? signedBody = null)
+            {
+                var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(
+                    System.Globalization.CultureInfo.InvariantCulture);
+                var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(signedBody ?? body ?? string.Empty)));
+                var canonical = $"{method.Method}\n{path}\n{hash}\n{timestamp}\n{email}";
+                var signature = Convert.ToHexStringLower(HMACSHA256.HashData(
+                    Encoding.UTF8.GetBytes(gatewaySecret), Encoding.UTF8.GetBytes(canonical)));
+                using var message = new HttpRequestMessage(method, path);
+                message.Headers.Add("x-ga-email", email);
+                message.Headers.Add("x-ga-timestamp", timestamp);
+                message.Headers.Add("x-ga-signature", signature);
+                if (body is not null) message.Content = new StringContent(body, Encoding.UTF8, "application/json");
+                return await client.SendAsync(message);
+            }
+        }
+
         foreach (var scenario in OtherDecisions)
         {
             var next = await service.SubmitAsync(
@@ -231,7 +315,7 @@ public sealed class PublicRequestSqlServerTests
         }
 
         Assert.Equal(3, await verification.ApprovalRecords.CountAsync());
-        Assert.Equal(14, await verification.WorkflowDeliveries.CountAsync());
+        Assert.Equal(15, await verification.WorkflowDeliveries.CountAsync());
 
         await service.SubmitAsync(
             command with { Destination = "Inactive approver destination" },
@@ -317,8 +401,17 @@ public sealed class PublicRequestSqlServerTests
             CreatedAtUtc = timestamp,
             UpdatedAtUtc = timestamp,
         };
+        var gaAdmin = new UserAccount
+        {
+            Id = Guid.Parse("019a2aa0-0000-7000-8000-000000000003"),
+            EmployeeId = "7654322", FullName = "Test GA Admin",
+            Email = "ga.admin@yageo.com", DepartmentId = department.Id,
+            Role = UserRole.Admin, IsActive = true,
+            CreatedAtUtc = timestamp, UpdatedAtUtc = timestamp,
+        };
         context.Departments.Add(department);
         context.UserAccounts.Add(approver);
+        context.UserAccounts.Add(gaAdmin);
         context.DepartmentApprovers.Add(new DepartmentApprover
         {
             DepartmentId = department.Id,

@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Tokin.CarService.Api.Health;
+using Tokin.CarService.Api.Ga;
 using Tokin.CarService.Api.PublicRequests;
 using Tokin.CarService.Api.ReferenceData;
 using Tokin.CarService.Api.Workflow;
@@ -96,6 +97,8 @@ app.Use(async (context, next) =>
     await next(context);
 });
 app.UseRateLimiter();
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/api/v1/ga"),
+    branch => branch.UseMiddleware<GaGatewayMiddleware>());
 
 app.MapGet("/api/health", () => Results.Ok(HealthResponse.Create()))
     .WithName("GetHealth")
@@ -103,6 +106,7 @@ app.MapGet("/api/health", () => Results.Ok(HealthResponse.Create()))
 app.MapPublicRequestEndpoints();
 app.MapPublicApprovalEndpoints();
 app.MapPublicRequestChangeEndpoints();
+app.MapGaAssignmentEndpoints();
 app.MapPublicReferenceDataEndpoints();
 
 app.Run();
