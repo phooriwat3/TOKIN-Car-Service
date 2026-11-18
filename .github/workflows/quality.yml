@@ -38,4 +38,28 @@ jobs:
         run: npm test
 
       - name: Type-check and build
+        env:
+          # Prerendered shared pages initialize the Supabase client during the build.
+          # These public placeholders are used only by this CI step.
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-build-placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-build-placeholder
         run: npm run verify
+
+  backend:
+    name: .NET unit and API tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore backend dependencies
+        run: dotnet restore src/backend/Tokin.CarService.slnx
+
+      - name: Run backend tests
+        run: dotnet test src/backend/Tokin.CarService.slnx --no-restore --configuration Release

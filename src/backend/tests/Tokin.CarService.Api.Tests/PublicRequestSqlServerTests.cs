@@ -248,6 +248,14 @@ public sealed class PublicRequestSqlServerTests
             using var signedPost = await SendSignedAsync("ga.admin@yageo.com", HttpMethod.Post,
                 $"/api/v1/ga/requests/{first.RequestId:D}/dispatch", "{\"action\":\"sent\"}");
             Assert.Equal(HttpStatusCode.OK, signedPost.StatusCode);
+            using var unsignedOt = await client.GetAsync("/api/v1/ga/ot-assignments");
+            Assert.Equal(HttpStatusCode.Unauthorized, unsignedOt.StatusCode);
+            using var wrongOtRole = await SendSignedAsync("approver@yageo.com", HttpMethod.Get,
+                "/api/v1/ga/ot-assignments", null);
+            Assert.Equal(HttpStatusCode.Forbidden, wrongOtRole.StatusCode);
+            using var authorizedOt = await SendSignedAsync("ga.admin@yageo.com", HttpMethod.Get,
+                "/api/v1/ga/ot-assignments", null);
+            Assert.Equal(HttpStatusCode.OK, authorizedOt.StatusCode);
 
             async Task<HttpResponseMessage> SendSignedAsync(
                 string email, HttpMethod method, string path, string? body, string? signedBody = null)
@@ -324,6 +332,8 @@ public sealed class PublicRequestSqlServerTests
             [
                 new PublicOvertimeRiderInput("7654321", "Test OT Rider", "rider@yageo.com",
                     "0800000000", "Inventory closing", "17:00", "19:00", 40, true, "Bang Na"),
+                new PublicOvertimeRiderInput("7654323", "Second OT Rider", "second.rider@yageo.com",
+                    "0811111111", "Stock count", "17:00", "19:00", 40, true, "Samut Prakan"),
             ],
         };
         var ot = await service.SubmitAsync(otCommand, "sql-integration-ot-0001", fingerprint, CancellationToken.None);
@@ -339,7 +349,8 @@ public sealed class PublicRequestSqlServerTests
         var otQueue = await gaService.ListOtAsync(gaId, 1, CancellationToken.None);
         Assert.Contains(otQueue.Items, x => x.Id == ot.RequestId);
         var otDetail = await gaService.OtDetailAsync(gaId, ot.RequestId, CancellationToken.None);
-        Assert.Equal("Test OT Rider", Assert.Single(otDetail!.Riders).EmployeeName);
+        Assert.Equal(2, otDetail!.Riders.Count);
+        Assert.Contains(otDetail.Riders, x => x.EmployeeName == "Test OT Rider");
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             gaService.ListOtAsync(Guid.NewGuid(), 1, CancellationToken.None));
         await Assert.ThrowsAsync<PublicRequestValidationException>(() =>
@@ -367,6 +378,59 @@ public sealed class PublicRequestSqlServerTests
         Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
         Assert.Contains("approved", notificationSender.Sent[^1].EmailBodyHtml, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(4, await verification.RequestRevisions.CountAsync(x => x.TransportRequestId == ot.RequestId));
+
+        var otAssignmentService = scope.ServiceProvider.GetRequiredService<IGaOtAssignmentService>();
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            otAssignmentService.ListAsync(Guid.NewGuid(), 1, CancellationToken.None));
+        Assert.Contains((await otAssignmentService.ListAsync(gaId, 1, CancellationToken.None)).Items,
+            x => x.Id == ot.RequestId && x.Status == "Approved");
+        var otAssignmentDetail = await otAssignmentService.DetailAsync(gaId, ot.RequestId, CancellationToken.None);
+        Assert.Equal(2, otAssignmentDetail?.Riders.Count);
+        var firstRiderId = otAssignmentDetail!.Riders[0].Id;
+        var secondRiderId = otAssignmentDetail.Riders[1].Id;
+        await Assert.ThrowsAsync<PublicRequestValidationException>(() =>
+            otAssignmentService.AssignAsync(gaId, ot.RequestId,
+                new GaOtAssignCommand(otAssignmentDetail.RevisionNumber,
+                    [new GaOtAssignUnitCommand("AB-1234", "Van", "Driver A", "0812345678", [firstRiderId])], null),
+                CancellationToken.None));
+        await Assert.ThrowsAsync<PublicRequestValidationException>(() =>
+            otAssignmentService.AssignAsync(gaId, ot.RequestId,
+                new GaOtAssignCommand(otAssignmentDetail.RevisionNumber,
+                    [new GaOtAssignUnitCommand("AB-1234", "Van", "Driver A", "0812345678",
+                        [firstRiderId, firstRiderId, secondRiderId])], null), CancellationToken.None));
+        var otAssigned = await otAssignmentService.AssignAsync(gaId, ot.RequestId,
+            new GaOtAssignCommand(otAssignmentDetail.RevisionNumber,
+            [
+                new GaOtAssignUnitCommand("AB-1234", "Van", "Driver A", "0812345678", [firstRiderId]),
+                new GaOtAssignUnitCommand("CD-5678", "Car", "Driver B", "0898765432", [secondRiderId]),
+            ], "Two routes"), CancellationToken.None);
+        Assert.Equal("Assigned", otAssigned?.Status);
+        Assert.Equal(2, otAssigned!.Units.Count);
+        Assert.Contains("Test OT Rider", otAssigned.Units[0].LineMessage);
+        Assert.DoesNotContain("Second OT Rider", otAssigned.Units[0].LineMessage);
+        Assert.Contains("Second OT Rider", otAssigned.Units[1].LineMessage);
+        Assert.Equal(2, await verification.TransportUnitRiders.CountAsync(x =>
+            x.TransportUnit.TransportAssignment.TransportRequestId == ot.RequestId));
+        await Assert.ThrowsAsync<GaAssignmentConflictException>(() =>
+            otAssignmentService.AssignAsync(gaId, ot.RequestId,
+                new GaOtAssignCommand(otAssignmentDetail.RevisionNumber,
+                    [new GaOtAssignUnitCommand("XX-9999", "Car", "Other Driver", "0800000000",
+                        [firstRiderId, secondRiderId])], null), CancellationToken.None));
+        Assert.True(await processor.ProcessOneAsync(CancellationToken.None));
+        Assert.Equal("phooriwat.pungpech@yageo.com", notificationSender.Sent[^1].RecipientEmail);
+        Assert.Contains("AB-1234", notificationSender.Sent[^1].EmailBodyHtml);
+        Assert.Contains("CD-5678", notificationSender.Sent[^1].EmailBodyHtml);
+        Assert.False((await otAssignmentService.RecordDispatchAsync(gaId, ot.RequestId,
+            otAssigned.Units[0].Id, new GaDispatchCommand("copied"), CancellationToken.None))?.Units[0].LineSent);
+        Assert.True((await otAssignmentService.RecordDispatchAsync(gaId, ot.RequestId,
+            otAssigned.Units[0].Id, new GaDispatchCommand("sent"), CancellationToken.None))?.Units[0].LineSent);
+        Assert.True((await otAssignmentService.RecordDispatchAsync(gaId, ot.RequestId,
+            otAssigned.Units[1].Id, new GaDispatchCommand("sent"), CancellationToken.None))?.Units[1].LineSent);
+        await otAssignmentService.RecordDispatchAsync(gaId, ot.RequestId,
+            otAssigned.Units[0].Id, new GaDispatchCommand("sent"), CancellationToken.None);
+        Assert.Equal(2, await verification.DriverDispatchEvents.CountAsync(x =>
+            x.TransportRequestId == ot.RequestId && x.Action == DriverDispatchAction.Sent));
+        Assert.Equal(5, await verification.RequestRevisions.CountAsync(x => x.TransportRequestId == ot.RequestId));
         var rejectedOt = await service.SubmitAsync(otCommand with { Purpose = "Unapproved OT work" },
             "sql-integration-ot-reject-0001", fingerprint, CancellationToken.None);
         Assert.True(await processor.ProcessOneAsync(CancellationToken.None));

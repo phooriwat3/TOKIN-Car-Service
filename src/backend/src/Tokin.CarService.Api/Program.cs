@@ -107,6 +107,7 @@ app.MapPublicRequestEndpoints();
 app.MapPublicApprovalEndpoints();
 app.MapPublicRequestChangeEndpoints();
 app.MapGaAssignmentEndpoints();
+app.MapGaOtAssignmentEndpoints();
 app.MapPublicReferenceDataEndpoints();
 
 app.Run();

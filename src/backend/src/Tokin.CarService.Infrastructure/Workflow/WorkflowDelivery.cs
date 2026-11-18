@@ -99,7 +99,8 @@ internal sealed class WorkflowOutboxProcessor(
                     || x.EventType == "request.approval.decided.ga"
                     || x.EventType == "request.assignment.requester"
                     || x.EventType == "request.ot_verification.requested"
-                    || x.EventType == "request.ot_verification.decided.requester")
+                    || x.EventType == "request.ot_verification.decided.requester"
+                    || x.EventType == "request.ot_assignment.requester")
                 && x.AttemptCount < x.MaxAttempts
                 && ((x.Status == OutboxStatus.Pending || x.Status == OutboxStatus.Failed)
                     && x.AvailableAtUtc <= now
@@ -244,6 +245,35 @@ internal sealed class WorkflowOutboxProcessor(
             return new WorkflowNotification(message.DeduplicationKey, request.RequesterEmail,
                 $"OT transport request {request.BookingNumber}: {result}",
                 $"<p>Request <strong>{bookingNumber}</strong>: {messageText}</p>" + note);
+        }
+
+        if (message.EventType == "request.ot_assignment.requester")
+        {
+            if (request.RequestType != TransportRequestType.Overtime
+                || request.Status != TransportRequestStatus.Assigned
+                || request.RevisionNumber != root.GetProperty("revision").GetInt32()) return null;
+            var units = await db.TransportUnits.AsNoTracking()
+                .Include(x => x.Riders).ThenInclude(x => x.OvertimeRider)
+                .Where(x => x.TransportAssignment.TransportRequestId == requestId)
+                .ToArrayAsync(cancellationToken);
+            if (units.Length == 0) return null;
+            static string Encode(string? value) => System.Net.WebUtility.HtmlEncode(value) ?? string.Empty;
+            var date = request.UsingDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            var start = request.StartTime.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+            var unitHtml = string.Concat(units.OrderBy(unit =>
+                int.TryParse(unit.UnitCode, System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var number) ? number : int.MaxValue)
+                .ThenBy(unit => unit.UnitCode, StringComparer.Ordinal).Select(unit =>
+                $"<li><strong>Vehicle {Encode(unit.UnitCode)}: {Encode(unit.VehicleType)} "
+                + $"({Encode(unit.LicensePlate)})</strong>; driver {Encode(unit.DriverName)} "
+                + $"({Encode(unit.DriverPhone)}). Riders: "
+                + string.Join(", ", unit.Riders.OrderBy(x => x.OvertimeRider.Sequence).Select(x =>
+                    $"{Encode(x.OvertimeRider.EmployeeName)} ({Encode(x.OvertimeRider.BusStop)})"))
+                + "</li>"));
+            return new WorkflowNotification(message.DeduplicationKey, request.RequesterEmail,
+                $"Vehicles assigned for OT request {request.BookingNumber}",
+                $"<p>Transport is arranged for <strong>{bookingNumber}</strong> on {date} at {start}.</p>"
+                + $"<ul>{unitHtml}</ul><p>GA will send each driver their trip details through LINE.</p>");
         }
 
         if (message.EventType == "request.assignment.requester")

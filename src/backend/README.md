@@ -134,7 +134,11 @@ The seed is disabled by default, runs only in the Development environment, and u
 
 ## GA overtime verification
 
-After an employee confirms an OT request, the worker emails `WorkflowDelivery:GaNotificationEmail` a link to `/admin/ot-verification`. The page shows the pending OT queue and rider work details. GA compares them with Tiger Space and records Verified, Not found, or Rejected. Not found and Rejected require a note. Verified moves the request to Approved; Not found keeps it in PendingOtVerification for another check; Rejected closes it. Each decision stores the GA actor, revision, and requester notification. Revision matching prevents a stale screen from overwriting a newer decision. All OT routes use the same signed gateway and active SQL Admin role. This step does not connect to Tiger Space automatically or assign OT vehicles; OT assignment is a later phase.
+After an employee confirms an OT request, the worker emails `WorkflowDelivery:GaNotificationEmail` a link to `/admin/ot-verification`. The page shows the pending OT queue and rider work details. GA compares them with Tiger Space and records Verified, Not found, or Rejected. Not found and Rejected require a note. Verified moves the request to Approved; Not found keeps it in PendingOtVerification for another check; Rejected closes it. Each decision stores the GA actor, revision, and requester notification. Revision matching prevents a stale screen from overwriting a newer decision. All OT routes use the same signed gateway and active SQL Admin role. Tiger Space is checked manually.
+
+## GA overtime vehicle assignment
+
+Verified OT requests appear at `/admin/ot-assignments`. GA can create one or more vehicles and place each rider in exactly one vehicle. The SQL transaction checks every rider, the current revision, verified status, and that no assignment already exists. It stores normalized transport units and rider links, records a revision, moves the request to Assigned, and queues one requester email with all vehicles and drivers. Each vehicle has its own LINE text and copied/sent audit action. GA sends the text to the driver manually; marking sent records GA's attestation, not LINE delivery. The SQL integration test exercises two vehicle groups, invalid groupings, stale assignment, notification, and per-vehicle handoff with fake data and a fake sender.
 
 ## Disposable SQL Server integration test
 

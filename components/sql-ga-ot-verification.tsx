@@ -75,7 +75,8 @@ export default function SqlGaOtVerification() {
       <div><p className="text-xs font-bold uppercase tracking-widest text-brand">TOKIN transport / GA</p>
         <h1 className="mt-1 text-2xl font-bold text-ink">OT verification</h1>
         <p className="mt-1 text-sm text-slate-600">Check the employee and work details in Tiger Space, then record the result.</p></div>
-      <div className="flex gap-2"><Link href="/admin/bookings"><Button type="button" variant="outline">Vehicle assignments</Button></Link>
+      <div className="flex gap-2"><Link href="/admin/ot-assignments"><Button type="button" variant="outline">OT assignments</Button></Link>
+        <Link href="/admin/bookings"><Button type="button" variant="outline">Other trips</Button></Link>
         <Button type="button" variant="outline" onClick={() => void refresh()}>Refresh</Button></div>
     </div>
     {error && <p role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error} {error.includes("Sign in") && <Link className="underline" href="/admin/login">Open login</Link>}</p>}
