@@ -38,4 +38,9 @@ jobs:
         run: npm test
 
       - name: Type-check and build
+        env:
+          # Prerendered shared pages initialize the Supabase client during the build.
+          # These public placeholders are used only by this CI step.
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-build-placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-build-placeholder
         run: npm run verify
