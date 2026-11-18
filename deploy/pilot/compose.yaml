@@ -1,0 +1,28 @@
+name: tokin-car-service-pilot
+
+services:
+  api:
+    build:
+      context: ../../src/backend
+      dockerfile: Dockerfile
+    image: tokin-car-service-api:pilot
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PILOT_API_PORT:-18080}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      ConnectionStrings__PrimaryDatabase: ${PILOT_SQL_CONNECTION_STRING:?Set a dedicated pilot SQL Server connection string}
+      DataProtection__KeysPath: /app/keys
+      DataProtection__CertificatePath: /app/certs/data-protection.pfx
+      DataProtection__CertificatePassword: ${PILOT_CERTIFICATE_PASSWORD:?Set the pilot PFX password}
+      WorkflowDelivery__EndpointUrl: ${PILOT_DELIVERY_ENDPOINT_URL:?Set an approved test delivery endpoint}
+      WorkflowDelivery__AppBaseUrl: ${PILOT_APP_BASE_URL:?Set the temporary HTTPS website URL}
+      WorkflowDelivery__SharedSecret: ${PILOT_DELIVERY_SHARED_SECRET:?Set a test delivery shared secret}
+      WorkflowDelivery__GaNotificationEmail: ${PILOT_GA_EMAIL:?Set an approved test GA mailbox}
+      GaGateway__SharedSecret: ${PILOT_GA_GATEWAY_SHARED_SECRET:?Set a test GA gateway shared secret}
+    volumes:
+      - api-keys:/app/keys
+      - ./secrets/data-protection.pfx:/app/certs/data-protection.pfx:ro
+
+volumes:
+  api-keys:

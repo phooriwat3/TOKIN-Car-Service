@@ -11,3 +11,6 @@ Test_Report_*.xls
 **/obj/
 .vs/
 src/backend/**/appsettings.Local.json
+deploy/pilot/.env
+deploy/pilot/secrets/
+src/backend/pilot-migration.sql
