@@ -132,7 +132,9 @@ internal sealed class GaAssignmentService(
             await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
             await EnsureAdminAsync(db, actorId, cancellationToken);
             var request = await db.TransportRequests.AsNoTracking()
-                .SingleOrDefaultAsync(x => x.Id == requestId && x.Status == TransportRequestStatus.Assigned,
+                .SingleOrDefaultAsync(x => x.Id == requestId
+                    && x.RequestType == TransportRequestType.OutsideCompany
+                    && x.Status == TransportRequestStatus.Assigned,
                     cancellationToken);
             if (request is null) return false;
             var unit = await db.TransportUnits.AsNoTracking()
